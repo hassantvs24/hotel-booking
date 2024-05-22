@@ -17,6 +17,7 @@ return new class extends Migration
             $table->string('email')->unique();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
+            $table->enum('user_type', ['main_owner', 'hotel_owner', 'hotel_guest'])->default('hotel_guest');
             $table->rememberToken();
             $table->timestamps();
         });
