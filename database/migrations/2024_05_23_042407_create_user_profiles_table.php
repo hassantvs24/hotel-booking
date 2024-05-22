@@ -22,7 +22,7 @@ return new class extends Migration
             $table->text('bio')->nullable();
             $table->string('passport')->nullable();
             $table->string('nid')->nullable();
-            $table->string('document')->nullable()->comment('Uploaded document');
+            $table->string('documents')->nullable()->comment('Uploaded document');
             $table->foreignId('users_id')->constrained()->onDelete('cascade')->onUpdate('No Action');
             $table->softDeletes();
             $table->timestamps();
