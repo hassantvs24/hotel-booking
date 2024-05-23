@@ -4,6 +4,7 @@
 - Laravel Activity log, using spatie/laravel-activitylog <a href="https://spatie.be/docs/laravel-activitylog/v4/introduction">doc link</a>
 - Laravel User Role Permission, using spatie/permission <a href="https://spatie.be/docs/laravel-permission/v6/introduction">doc link</a>
 - Preventing spam submitted through forms, using spatie/laravel-honeypot <a href="https://github.com/spatie/laravel-honeypot">doc link</a>
+- Jwt Authentication for API, using php-open-source-saver/jwt-auth <a href="https://laravel-jwt-auth.readthedocs.io/en/latest/">doc link</a>
 
 <p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
 
