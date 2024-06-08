@@ -26,6 +26,8 @@
         @endphp
         <link href="{{ $path }}" rel="{{ $style['rel'] }}" @isset($style['id'])id="{{$style['id']}}"@endisset/>
     @endforeach
+
+    @stack('styles')
 </head>
 
 <body class="g-sidenav-show   bg-gray-100">
@@ -1202,7 +1204,16 @@
                                         <h6 class="mb-0">
                                             <a href="javascript:;">John Michael</a>
                                         </h6>
-                                        <span class="badge badge-success badge-sm">Online</span>
+                                        <x-admin.badge
+                                            type="success"
+                                            size="sm"
+                                            text="Sukanta"
+                                        />
+                                        <x-admin.badge
+                                            type="warning"
+                                            size="sm"
+                                            text="Test"
+                                        />
                                     </div>
                                     <div class="col-auto">
                                         <button type="button" class="btn btn-outline-primary btn-xs mb-0">Add</button>
@@ -1262,6 +1273,12 @@
                                         <span class="badge badge-success badge-sm">Online</span>
                                     </div>
                                     <div class="col-auto">
+                                        <x-admin.button
+                                            type="button"
+                                            variant="warning"
+                                            size="xs"
+                                            text="Add Record"
+                                        />
                                         <button type="button" class="btn btn-xs btn-outline-primary mb-0">Add</button>
                                     </div>
                                 </div>
@@ -2413,6 +2430,8 @@
 
     <script src="{{ $path }}"></script>
 @endforeach
+
+@stack('scripts')
 
 </body>
 
