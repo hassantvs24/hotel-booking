@@ -2,7 +2,7 @@
 <html lang="en">
 
 <head>
-    <meta charset="utf-8" />
+    <meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <link rel="apple-touch-icon" sizes="76x76" href="{{ asset_path('img/apple-icon.png') }}">
     <link rel="icon" type="image/png" href="{{ asset_path('img/favicon.png') }}">
@@ -19,7 +19,7 @@
         $scripts = config('site.assets.admin.js');
     @endphp
 
-    <!-- Styles -->
+            <!-- Styles -->
     @foreach($styles as $style)
         @php
             $path = $style['type'] == 'local' ? asset_path('css/'.$style['src']) : $style['src'];
@@ -34,115 +34,59 @@
 <div class="min-height-300 bg-primary position-absolute w-100"></div>
 
 <! -- Sidebar -->
-<x-admin.sidebar />
+<x-admin.layouts.sidebar/>
 
 <main class="main-content position-relative border-radius-lg ">
     <!-- Navbar -->
-    <x-admin.navbar />
+    <x-admin.layouts.navbar/>
     <!-- End Navbar -->
     <div class="container-fluid py-4">
         <div class="row">
             <div class="col-lg-12">
                 <div class="row">
                     <div class="col-lg-3 col-md-6 col-12">
-                        <div class="card  mb-4">
-                            <div class="card-body p-3">
-                                <div class="row">
-                                    <div class="col-8">
-                                        <div class="numbers">
-                                            <p class="text-sm mb-0 text-uppercase font-weight-bold">Today's Money</p>
-                                            <h5 class="font-weight-bolder">
-                                                $53,000
-                                            </h5>
-                                            <p class="mb-0">
-                                                <span class="text-success text-sm font-weight-bolder">+55%</span>
-                                                since yesterday
-                                            </p>
-                                        </div>
-                                    </div>
-                                    <div class="col-4 text-end">
-                                        <div class="icon icon-shape bg-gradient-primary shadow-primary text-center rounded-circle">
-                                            <i class="ni ni-money-coins text-lg opacity-10" aria-hidden="true"></i>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                        <x-admin.card
+                                title="Today's Money"
+                                amount="$53,000"
+                                percentage="+55%"
+                                description="since"
+                                iconClass="ni ni-money-coins"
+                                iconBgClass="bg-gradient-primary"
+                                additionalClasses="custom-class"
+                        />
                     </div>
                     <div class="col-lg-3 col-md-6 col-12">
-                        <div class="card  mb-4">
-                            <div class="card-body p-3">
-                                <div class="row">
-                                    <div class="col-8">
-                                        <div class="numbers">
-                                            <p class="text-sm mb-0 text-uppercase font-weight-bold">Today's Users</p>
-                                            <h5 class="font-weight-bolder">
-                                                2,300
-                                            </h5>
-                                            <p class="mb-0">
-                                                <span class="text-success text-sm font-weight-bolder">+3%</span>
-                                                since last week
-                                            </p>
-                                        </div>
-                                    </div>
-                                    <div class="col-4 text-end">
-                                        <div class="icon icon-shape bg-gradient-danger shadow-danger text-center rounded-circle">
-                                            <i class="ni ni-world text-lg opacity-10" aria-hidden="true"></i>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                        <x-admin.card
+                                title="Today's Money"
+                                amount="$53,000"
+                                percentage="+55%"
+                                description="since"
+                                iconClass="ni ni-money-coins"
+                                iconBgClass="bg-gradient-primary"
+                                additionalClasses="custom-class"
+                        />
                     </div>
                     <div class="col-lg-3 col-md-6 col-12">
-                        <div class="card  mb-4">
-                            <div class="card-body p-3">
-                                <div class="row">
-                                    <div class="col-8">
-                                        <div class="numbers">
-                                            <p class="text-sm mb-0 text-uppercase font-weight-bold">New Clients</p>
-                                            <h5 class="font-weight-bolder">
-                                                +3,462
-                                            </h5>
-                                            <p class="mb-0">
-                                                <span class="text-danger text-sm font-weight-bolder">-2%</span>
-                                                since last quarter
-                                            </p>
-                                        </div>
-                                    </div>
-                                    <div class="col-4 text-end">
-                                        <div class="icon icon-shape bg-gradient-success shadow-success text-center rounded-circle">
-                                            <i class="ni ni-paper-diploma text-lg opacity-10" aria-hidden="true"></i>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                        <x-admin.card
+                                title="Today's Money"
+                                amount="$53,000"
+                                percentage="+55%"
+                                description="since"
+                                iconClass="ni ni-money-coins"
+                                iconBgClass="bg-gradient-primary"
+                                additionalClasses="custom-class"
+                        />
                     </div>
                     <div class="col-lg-3 col-md-6 col-12">
-                        <div class="card  mb-4">
-                            <div class="card-body p-3">
-                                <div class="row">
-                                    <div class="col-8">
-                                        <div class="numbers">
-                                            <p class="text-sm mb-0 text-uppercase font-weight-bold">Sales</p>
-                                            <h5 class="font-weight-bolder">
-                                                $103,430
-                                            </h5>
-                                            <p class="mb-0">
-                                                <span class="text-success text-sm font-weight-bolder">+5%</span> than
-                                                last month
-                                            </p>
-                                        </div>
-                                    </div>
-                                    <div class="col-4 text-end">
-                                        <div class="icon icon-shape bg-gradient-warning shadow-warning text-center rounded-circle">
-                                            <i class="ni ni-cart text-lg opacity-10" aria-hidden="true"></i>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                        <x-admin.card
+                                title="Today's Money"
+                                amount="$53,000"
+                                percentage="+55%"
+                                description="since"
+                                iconClass="ni ni-money-coins"
+                                iconBgClass="bg-gradient-primary"
+                                additionalClasses="custom-class"
+                        />
                     </div>
                 </div>
             </div>
@@ -237,14 +181,14 @@
                                             <a href="javascript:;">John Michael</a>
                                         </h6>
                                         <x-admin.badge
-                                            type="success"
-                                            size="sm"
-                                            text="Sukanta"
+                                                type="success"
+                                                size="sm"
+                                                text="Sukanta"
                                         />
                                         <x-admin.badge
-                                            type="warning"
-                                            size="sm"
-                                            text="Test"
+                                                type="warning"
+                                                size="sm"
+                                                text="Test"
                                         />
                                     </div>
                                     <div class="col-auto">
@@ -306,10 +250,10 @@
                                     </div>
                                     <div class="col-auto">
                                         <x-admin.button
-                                            type="button"
-                                            variant="warning"
-                                            size="xs"
-                                            text="Add Record"
+                                                type="button"
+                                                variant="warning"
+                                                size="xs"
+                                                text="Add Record"
                                         />
                                         <button type="button" class="btn btn-xs btn-outline-primary mb-0">Add</button>
                                     </div>
