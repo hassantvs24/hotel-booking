@@ -1,12 +1,12 @@
 <?php
 
-namespace App\View\Components\Admin;
+namespace App\View\Components\Admin\Layouts;
 
 use Closure;
 use Illuminate\Contracts\View\View;
 use Illuminate\View\Component;
 
-class Sidebar extends Component
+class NavItemProfile extends Component
 {
     /**
      * Create a new component instance.
@@ -21,6 +21,6 @@ class Sidebar extends Component
      */
     public function render(): View|Closure|string
     {
-        return view('components.admin.sidebar');
+        return view('components.admin.layouts.nav-item-profile');
     }
 }
