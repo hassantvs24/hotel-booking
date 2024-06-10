@@ -44,6 +44,11 @@ return [
                     'type' => 'local',
                     'rel'  => 'stylesheet',
                     'id' => 'pagestyle'
+                ],
+                [
+                    'src' => 'custom.css',
+                    'type' => 'local',
+                    'rel'  => 'stylesheet',
                 ]
             ],
 

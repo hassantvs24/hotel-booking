@@ -12,8 +12,6 @@
     @endif
 
     @if($slot->isNotEmpty())
-        <div>
-            {{ $slot }}
-        </div>
+        {{ $slot }}
     @endif
 </div>
