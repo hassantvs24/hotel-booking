@@ -117,22 +117,22 @@ return [
                 'children' => [
                     [
                         'name' => 'Roles',
-                        'route' => null,
+                        'route' => 'admin.acl.roles.index',
                         'icon' => 'ni ni-circle-08 text-default',
-                        'key' => 'admin/roles*',
+                        'key' => 'admin/acl/roles',
                         'children' => []
                     ],
                     [
                         'name' => 'Permissions',
-                        'route' => null,
+                        'route' => 'admin.acl.permissions.index',
                         'icon' => 'ni ni-lock-circle-open text-default',
-                        'key' => 'admin/permissions*',
+                        'key' => 'admin/acl/permissions',
                     ],
                     [
                         'name' => 'Users',
-                        'route' => null,
+                        'route' => 'admin.acl.users.index',
                         'icon' => 'ni ni-single-02 text-default',
-                        'key' => 'admin/users*',
+                        'key' => 'admin/acl/users',
                         'children' => []
                     ]
                 ]
@@ -141,7 +141,7 @@ return [
                 'name' => 'Settings',
                 'route' => null,
                 'icon' => 'ni ni-settings text-primary',
-                'key' => 'admin/settings*',
+                'key' => 'admin/settings',
                 'children' => []
             ]
         ]

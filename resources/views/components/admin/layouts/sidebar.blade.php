@@ -29,8 +29,8 @@
                     <div class="collapse  {{ request()->is($item['key']) ? 'show' : '' }} " id="sidebarUrl{{$key}}">
                         <ul class="nav ms-4">
                             @foreach($item['children'] as $childKey => $child) @if(isset($child['children']) && count($child['children']) > 0)
-                                <li class="nav-item ">
-                                    <a class="nav-link {{ request()->is($child['key']) ? 'active' : '' }}" data-bs-toggle="collapse" aria-expanded="false" href="#subSubMenu{{ $childKey }}">
+                                <li class="nav-item">
+                                    <a class="nav-link" data-bs-toggle="collapse" aria-expanded="false" href="#subSubMenu{{ $childKey }}">
                                         <span class="sidenav-mini-icon"> {{ first_letter($child['name']) }} </span>
                                         <span class="sidenav-normal"> {{ $child['name'] }} <b
                                                     class="caret"></b></span>
@@ -50,9 +50,9 @@
                                 </li>
                             @else
                                 <li class="nav-item ">
-                                    <a class="nav-link" href="{{ $child['route'] ? route($child['route']) : '#'}}">
+                                    <a class="nav-link {{request()->path() === $child['key'] ? 'active' : ''}}" href="{{ $child['route'] ? route($child['route']) : '#'}}">
                                         <span class="sidenav-mini-icon">{{ first_letter($child['name']) }}</span>
-                                        <span class="sidenav-normal"> {{ $child['name'] }} </span>
+                                        <span class="sidenav-normal"> {{ $child['name'] }}</span>
                                     </a>
                                 </li>
                             @endif @endforeach
