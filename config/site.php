@@ -98,5 +98,52 @@ return [
                 ]
             ]
         ]
-    ]
+    ],
+
+    'sidebar' => [
+        'items' => [
+            [
+                'name' => 'Dashboard',
+                'route' => 'admin.dashboard',
+                'icon' => 'ni ni-shop text-primary',
+                'key' => 'admin/dashboard*',
+                'children' => []
+            ],
+            [
+                'name' => 'Access Control',
+                'route' => null,
+                'icon' => 'ni ni-key-25 text-info',
+                'key' => 'admin/acl*',
+                'children' => [
+                    [
+                        'name' => 'Roles',
+                        'route' => null,
+                        'icon' => 'ni ni-circle-08 text-default',
+                        'key' => 'admin/roles*',
+                        'children' => []
+                    ],
+                    [
+                        'name' => 'Permissions',
+                        'route' => null,
+                        'icon' => 'ni ni-lock-circle-open text-default',
+                        'key' => 'admin/permissions*',
+                    ],
+                    [
+                        'name' => 'Users',
+                        'route' => null,
+                        'icon' => 'ni ni-single-02 text-default',
+                        'key' => 'admin/users*',
+                        'children' => []
+                    ]
+                ]
+            ],
+            [
+                'name' => 'Settings',
+                'route' => null,
+                'icon' => 'ni ni-settings text-primary',
+                'key' => 'admin/settings*',
+                'children' => []
+            ]
+        ]
+    ],
 ];
