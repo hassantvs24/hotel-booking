@@ -7,7 +7,7 @@
 
     @if($title && $icon)
         <p class="text-sm mb-0">
-            <i class="fa {{ $icon }} text-success"></i>
+            <i class="{{ $icon }} text-success"></i>
         </p>
     @endif
 

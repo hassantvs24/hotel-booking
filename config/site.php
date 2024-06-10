@@ -11,6 +11,11 @@ return [
         'email'   => 'site@gmail.com'
     ],
 
+    'developed_by' => [
+        'company' => 'Infinity Flame Soft',
+        'company_website' => 'https://infinityflamesoft.com/'
+    ],
+
     'assets' => [
         'admin' => [
             'css' => [
