@@ -1,14 +1,21 @@
 <?php
 
+use App\Http\Controllers\Portal\HomeController;
+
 use App\Http\Controllers\Admin\ACL\PermissionController;
 use App\Http\Controllers\Admin\ACL\RoleController;
 use App\Http\Controllers\Admin\ACL\UserController;
 use App\Http\Controllers\Admin\DashboardController;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', function () {
-    return view('admin.dashboard.index');
+/*----------------- Public Routes -----------------*/
+Route::prefix('')->as('portal.')->group(function () {
+
+    Route::get('/', [HomeController::class, 'index'])
+        ->name('home');
+
 });
+/*----------------- Public Routes -----------------*/
 
 
 /*----------------- Admin Routes -----------------*/
