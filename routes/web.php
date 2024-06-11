@@ -48,13 +48,6 @@ Route::prefix('')->as('portal.')->group(function () {
      /*-- single-hotel Routes --*/
     Route::get('/single-hotel', [HomeController::class, 'singleHotel'])
         ->name('single-hotel');
-
-
-
-
-
-
-
 });
 /*----------------- Public Routes -----------------*/
 
