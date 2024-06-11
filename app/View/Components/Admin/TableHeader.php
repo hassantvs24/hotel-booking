@@ -6,17 +6,14 @@ use Closure;
 use Illuminate\Contracts\View\View;
 use Illuminate\View\Component;
 
-class DataTable extends Component
+class TableHeader extends Component
 {
-    public $headers;
-    public $rows;
     /**
      * Create a new component instance.
      */
-    public function __construct($headers, $rows)
+    public function __construct()
     {
-        $this->headers = $headers;
-        $this->rows = $rows;
+        //
     }
 
     /**
@@ -24,6 +21,6 @@ class DataTable extends Component
      */
     public function render(): View|Closure|string
     {
-        return view('components.admin.data-table');
+        return view('components.admin.table-header');
     }
 }

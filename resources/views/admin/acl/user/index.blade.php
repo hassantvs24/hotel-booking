@@ -1,5 +1,4 @@
 @php
-    $headers = ['name', 'email', 'role', 'status', 'date', 'actions'];
     $rows = [
         [
             'name' => 'John Doe',
@@ -15,7 +14,41 @@
             'status' => 'Active',
             'created_at' => '2021-10-10',
         ],
-        // Add more rows as needed...
+        [
+            'name' => 'John Doe',
+            'email' => 'test@gmail.com',
+            'role' => 'Admin',
+            'status' => 'Active',
+            'created_at' => '2021-10-10',
+        ],
+        [
+            'name' => 'John Doe',
+            'email' => 'test@gmail.com',
+            'role' => 'Admin',
+            'status' => 'Active',
+            'created_at' => '2021-10-10',
+        ],
+        [
+            'name' => 'John Doe',
+            'email' => 'test@gmail.com',
+            'role' => 'Admin',
+            'status' => 'Active',
+            'created_at' => '2021-10-10',
+        ],
+        [
+            'name' => 'John Doe',
+            'email' => 'test@gmail.com',
+            'role' => 'Admin',
+            'status' => 'Active',
+            'created_at' => '2021-10-10',
+        ],
+        [
+            'name' => 'John Doe',
+            'email' => 'test@gmail.com',
+            'role' => 'Admin',
+            'status' => 'Active',
+            'created_at' => '2021-10-10',
+        ]
     ];
 @endphp
 
@@ -31,10 +64,39 @@
         </x-admin.card.card-header>
 
         <x-admin.card.card-body class="px-0 pt-0 pb-2">
-            <x-admin.data-table
-                :headers="$headers"
-                :rows="$rows"
-            />
+            <x-admin.table>
+                <x-admin.table-header>
+                    <x-admin.table-head value="Name" />
+                    <x-admin.table-head value="Email" />
+                    <x-admin.table-head value="Role" />
+                    <x-admin.table-head value="Status" />
+                    <x-admin.table-head value="Date" />
+                    <x-admin.table-head value="Actions" class="text-right"/>
+                </x-admin.table-header>
+                <x-admin.table-body>
+                    @forelse($rows as $row)
+                        <x-admin.table-row>
+                            <x-admin.table-cell :value="$row['name']" />
+                            <x-admin.table-cell :value="$row['email']" />
+                            <x-admin.table-cell :value="$row['role']" />
+                            <x-admin.table-cell :value="$row['status']" />
+                            <x-admin.table-cell :value="$row['created_at']" />
+                            <x-admin.table-cell class="text-right">
+                                <a href="{{ route('admin.acl.users.edit', 1) }}" class="btn btn-icon btn-sm btn-primary me-2">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <button class="btn btn-icon btn-sm btn-danger">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </x-admin.table-cell>
+                        </x-admin.table-row>
+                    @empty
+                        <x-admin.table-row>
+                            <x-admin.table-cell colspan="6">No records found.</x-admin.table-cell>
+                        </x-admin.table-row>
+                    @endforelse
+                </x-admin.table-body>
+            </x-admin.table>
         </x-admin.card.card-body>
     </x-admin.card>
 </x-admin.layout>
