@@ -102,7 +102,53 @@ return [
                     'type' => 'local',
                 ]
             ]
-        ]
+        ],
+                'portal' => [
+                    'css' => [
+                        [
+                            'src'=>'bootstrap.min.css',
+                            'type'=>'local',
+                            'rel'=>'stylesheet'
+                        ],
+                        [
+                            'src'=>'jquery-ui.css',
+                            'type'=>'local',
+                            'rel'=>'stylesheet'
+                        ],
+                        [
+                            'src'=>'style.css',
+                            'type'=>'local',
+                            'rel'=>'stylesheet'
+                        ],
+                        [
+                            'src'=>'responsive.css',
+                            'type'=>'local',
+                            'rel'=>'stylesheet'
+                        ]
+                    ],
+                    'js' => [
+                        [
+                            'src' => 'jquery.min.js',
+                            'type' => 'local',
+                        ],
+                        [
+                            'src' => 'bootstrap.bundle.min.js',
+                            'type' => 'local',
+                        ],
+                        [
+                            'src' => 'jquery.easing.min.js',
+                            'type' => 'local',
+                        ],
+                        [
+                            'src' => 'jquery-ui.js',
+                            'type' => 'local',
+                        ],
+                        [
+                            'src' => 'main.js',
+                            'type' => 'local',
+                        ]
+                    ]
+                ]
     ],
 
     'sidebar' => [
