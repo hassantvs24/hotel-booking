@@ -1,6 +1,6 @@
 @props(['title' => null, 'icon' => null])
 
-<div {{ $attributes->merge(['class' => 'card-header pb-0 pt-3 bg-transparent']) }}>
+<div {{ $attributes->merge(['class' => 'card-header bg-transparent']) }}>
     @if($title)
         <h6 class="text-capitalize">{{ $title }}</h6>
     @endif

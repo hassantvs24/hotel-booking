@@ -53,3 +53,7 @@
 .text-underline-overline {
     text-decoration: underline overline;
 }
+
+.table> :not(caption)>*>* {
+    padding: 0.5rem 1.5rem !important;
+}
