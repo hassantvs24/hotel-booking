@@ -2,11 +2,11 @@
 
 namespace App\Http\Controllers\Admin\ACL;
 
-use App\Http\Controllers\Controller;
+use App\Http\Controllers\BaseController;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
-class PermissionController extends Controller
+class PermissionController extends BaseController
 {
     /**
      * Display a listing of the resource.

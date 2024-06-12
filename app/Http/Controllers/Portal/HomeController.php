@@ -2,11 +2,11 @@
 
 namespace App\Http\Controllers\Portal;
 
-use App\Http\Controllers\Controller;
+use App\Http\Controllers\BaseController;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
-class HomeController extends Controller
+class HomeController extends BaseController
 {
     public function index() : View
     {
