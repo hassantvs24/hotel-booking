@@ -3,19 +3,18 @@
 namespace App\View\Components\Admin;
 
 use Closure;
-use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Contracts\View\View;
 use Illuminate\View\Component;
 
-class Pagination extends Component
+class StatusComp extends Component
 {
-    public $paginator;
+    public $value;
     /**
      * Create a new component instance.
      */
-    public function __construct(LengthAwarePaginator $paginator)
+    public function __construct($value)
     {
-        $this->paginator = $paginator;
+        $this->value = $value;
     }
 
     /**
@@ -23,6 +22,6 @@ class Pagination extends Component
      */
     public function render(): View|Closure|string
     {
-        return view('components.admin.pagination');
+        return view('components.admin.status-comp');
     }
 }

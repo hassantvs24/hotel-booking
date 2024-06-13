@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin\ACL;
 
 use App\Http\Controllers\BaseController;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
@@ -13,7 +14,8 @@ class UserController extends BaseController
      */
     public function index() : View
     {
-        return view('admin.acl.user.index');
+        $users = User::query()->paginate(10);
+        return view('admin.acl.user.index', compact('users'));
     }
 
     /**
