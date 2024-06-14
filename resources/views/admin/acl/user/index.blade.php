@@ -26,7 +26,9 @@
                             <x-admin.table-cell :value="$user->name" />
                             <x-admin.table-cell :value="$user->email" />
                             <x-admin.table-cell :value="$user->phone" />
-                            <x-admin.table-cell :value="$user->user_type" />
+                            <x-admin.table-cell>
+                                <x-admin.badge type="primary" :text="$user->user_type" />
+                            </x-admin.table-cell>
                             <x-admin.table-cell class="text-right">
                                 <a href="{{ route('admin.acl.users.edit', $user->id) }}" class="btn btn-icon btn-xs btn-outline-primary me-2">
                                     <i class="fas fa-edit"></i>
