@@ -58,6 +58,10 @@
     padding: 0.5rem 1.5rem !important;
 }
 
+.page_container {
+    min-height: 80vh !important;
+}
+
 /* -- Custom Pagination Style -- */
 
 .pagination {

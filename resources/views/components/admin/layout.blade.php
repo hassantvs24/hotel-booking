@@ -45,7 +45,9 @@
 
     <div class="container-fluid py-4">
 
-        {{ $slot }}
+        <div class="page_container">
+            {{ $slot }}
+        </div>
 
         <x-admin.layouts.footer />
     </div>
