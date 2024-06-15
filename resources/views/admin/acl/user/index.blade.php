@@ -33,9 +33,13 @@
                                 <a href="{{ route('admin.acl.users.edit', $user->id) }}" class="btn btn-icon btn-xs btn-outline-primary me-2">
                                     <i class="fas fa-edit"></i>
                                 </a>
-                                <button class="btn btn-icon btn-xs btn-outline-danger">
-                                    <i class="fas fa-trash"></i>
-                                </button>
+                                <form action="{{ route('admin.acl.users.destroy', $user->id) }}" method="POST" class="d-inline">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button onclick="return confirm('Want to delete?')" type="submit" class="btn btn-icon btn-xs btn-outline-danger">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </form>
                             </x-admin.table-cell>
                         </x-admin.table-row>
                     @empty

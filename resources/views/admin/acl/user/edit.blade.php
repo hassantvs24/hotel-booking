@@ -32,7 +32,7 @@
                                 value="{{ $user->email }}">
 
                         @error('email')
-                        <div class="text-danger">{{ $message }}</div>
+                            <div class="text-danger">{{ $message }}</div>
                         @enderror
                     </div>
                 </div>

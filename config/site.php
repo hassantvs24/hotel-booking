@@ -94,6 +94,10 @@ return [
                     'type' => 'local',
                 ],
                 [
+                    'src' => 'plugins/sweetalert.min.js',
+                    'type' => 'local',
+                ],
+                [
                     'src' => 'https://buttons.github.io/buttons.js',
                     'type' => 'cdn',
                 ],

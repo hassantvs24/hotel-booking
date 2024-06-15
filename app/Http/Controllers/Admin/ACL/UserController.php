@@ -72,20 +72,12 @@ class UserController extends BaseController
     /**
      * Update the specified resource in storage.
      */
-    public function update(UserRequest $request, User $user) : RedirectResponse
+    public function update(UserRequest $request, UserRepository $userRepository, User $user) : RedirectResponse
     {
-        dd([
-            $request,
-            $user
-        ]);
         try {
-            $user->update([
-                'name' => $request->name,
-                'email' => $request->email,
-                'phone' => $request->phone,
-            ]);
-
-            return redirect()->route('admin.acl.users.index')->with('success', 'User updated successfully.');
+            $userRepository->update($request->validated(), $user);
+            return redirect()->route('admin.acl.users.index')
+                ->with('success', 'User updated successfully.');
         } catch (\Exception $e) {
             return redirect()->back()->with('error', 'Something Went Wrong');
         }
@@ -94,8 +86,14 @@ class UserController extends BaseController
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(string $id)
+    public function destroy(UserRepository $userRepository, $user) : RedirectResponse
     {
-        //
+        try {
+            $userRepository->delete($user);
+            return redirect()->route('admin.acl.users.index')
+                ->with('success', 'User deleted successfully.');
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Something Went Wrong');
+        }
     }
 }
