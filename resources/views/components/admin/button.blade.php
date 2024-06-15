@@ -1,4 +1,4 @@
-@props(['type' => 'button', 'size' => 'xs', 'variant' => 'outline-primary', 'text' => '', 'icon' => ''])
+@props(['type' => 'button', 'size' => 'md', 'variant' => 'outline-primary', 'text' => '', 'icon' => ''])
 
 @php
     $sizeClasses = [
@@ -6,7 +6,7 @@
         'sm' => 'btn-sm',
         'md' => 'btn-md',
         'lg' => 'btn-lg',
-    ][$size ?? 'xs'];
+    ][$size ?? 'md'];
 
     $styleClasses = [
         'primary'           => 'btn-primary',
