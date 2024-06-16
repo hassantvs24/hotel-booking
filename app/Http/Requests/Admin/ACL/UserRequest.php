@@ -21,7 +21,7 @@ class UserRequest extends FormRequest
      */
     public function rules() : array
     {
-        $modelId = $this->user?->id ?: null;
+        $modelId = $this->user ?: null;
 
         $uniqueEmailRule = ($this->method() === 'PUT' && $modelId !== null)
             ? 'unique:users,email,' . $modelId

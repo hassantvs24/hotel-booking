@@ -15,6 +15,7 @@
                     <x-admin.table-head value="Date" />
                     <x-admin.table-head value="Name" />
                     <x-admin.table-head value="Description" />
+                    <x-admin.table-head value="Permissions" />
                     <x-admin.table-head value="Actions" class="text-right"/>
                 </x-admin.table-header>
                 <x-admin.table-body>
@@ -23,18 +24,21 @@
                             <x-admin.table-cell :value="format_date($role->created_at)" />
                             <x-admin.table-cell :value="$role->name" />
                             <x-admin.table-cell :value="$role->description" />
+                            <x-admin.table-cell>
+                                @foreach($role->permissions as $permission)
+                                    <x-admin.badge class="mr-2" type="primary" :text="$permission->name" />
+                                @endforeach
+                            </x-admin.table-cell>
                             <x-admin.table-cell class="text-right">
                                 <div class="d-flex">
                                 <a href="{{ route('admin.acl.roles.edit', $role->id) }}" class="btn btn-icon btn-xs btn-outline-primary me-2">
                                     <i class="fas fa-edit"></i>
                                 </a>
-                                <form action="{{ route('admin.acl.roles.destroy', $role->id) }}">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button class="btn btn-icon btn-xs btn-outline-danger" type="submit">
+                                <x-admin.form action="{{ route('admin.acl.roles.destroy', $role->id) }}" method="delete">
+                                    <button onclick="return confirm('Are you sure to delete?')" class="btn btn-icon btn-xs btn-outline-danger" type="submit">
                                         <i class="fas fa-trash"></i>
                                     </button>
-                                </form>
+                                </x-admin.form>
                             </div>
                             </x-admin.table-cell>
                         </x-admin.table-row>

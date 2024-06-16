@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin\ACL;
 
 use App\Http\Controllers\BaseController;
+use App\Repositories\Permission\PermissionRepository;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 use App\Models\Permission;
@@ -13,10 +14,19 @@ class PermissionController extends BaseController
     /**
      * Display a listing of the resource.
      */
-    public function index() : View
+    public function index(Request $request, PermissionRepository $permissionRepository) : View
     {
+        $userQuery = array_merge(
+            $request->only(['search', 'filters', 'order_by', 'order', 'per_page', 'page']),
+            [
+                'with'     => [],
+                'where'    => [],
+                'order_by' => 'id',
+                'order'    => 'DESC',
+            ]
+        );
 
-        $permissions = Permission::orderBy('id', 'desc')->paginate(10);
+        $permissions = $permissionRepository->paginate($userQuery);
         return view('admin.acl.permission.index', compact('permissions'));
     }
 

@@ -76,10 +76,11 @@ class UserController extends BaseController
     /**
      * Update the specified resource in storage.
      */
-    public function update(UserRequest $request, UserRepository $userRepository, User $user) : RedirectResponse
+    public function update(UserRequest $request, UserRepository $userRepository, $user) : RedirectResponse
     {
         try {
 
+            $user = $userRepository->getModel($user);
             $userRepository->update(
                 $request->only(['name', 'email', 'phone', 'password']),
                 $user
