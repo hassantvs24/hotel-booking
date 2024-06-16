@@ -54,9 +54,15 @@ class RoleController extends BaseController
             );
             $role->permissions()->attach($request->permissions);
 
-            return redirect()->route('admin.acl.roles.index')->with('success', 'Role added successfully');
+            return redirect()->route('admin.acl.roles.index')->with([
+                'message' => 'Role created successfully.',
+                'alert-type' => 'success'
+            ]);
         } catch (\Exception $e) {
-            return redirect()->back()->with('error', 'Something went wrong');
+            return redirect()->back()->with([
+                'message' => 'Something Went Wrong',
+                'alert-type' => 'error'
+            ]);
         }
     }
 
@@ -91,7 +97,10 @@ class RoleController extends BaseController
 
             $role->permissions()->sync($request->permissions);
 
-            return redirect()->route('admin.acl.roles.index')->with('success', 'Roles updated successfully.');
+            return redirect()->route('admin.acl.roles.index')->with([
+                'message' => 'Role updated successfully.',
+                'alert-type' => 'success'
+            ]);
         } catch (\Exception $e) {
             return redirect()->back()->with('error', 'Something Went Wrong');
         }
@@ -110,9 +119,15 @@ class RoleController extends BaseController
             $roleModel->permissions()->detach();
             $roleRepository->delete($role);
 
-            return redirect()->route('admin.acl.roles.index')->with('success', 'Role deleted successfully.');
+            return redirect()->route('admin.acl.roles.index')->with([
+                'message' => 'Role deleted successfully.',
+                'alert-type' => 'success'
+            ]);
         } catch (\Exception $e) {
-            return redirect()->back()->with('error', 'Something Went Wrong');
+            return redirect()->back()->with([
+                'message' => 'Something Went Wrong',
+                'alert-type' => 'error'
+            ]);
         }
     }
 }

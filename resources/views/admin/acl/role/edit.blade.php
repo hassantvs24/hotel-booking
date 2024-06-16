@@ -2,9 +2,7 @@
     <x-admin.card>
         <x-admin.card.card-header title="Update Role" />
         <x-admin.card.card-body>
-            <form action="{{ route('admin.acl.roles.update',$role->id) }}" method="POST">
-                @csrf
-                @method('PUT')
+            <x-admin.form action="{{ route('admin.acl.roles.update',$role->id) }}" method="put">
                 <div class="form-group">
                     <label for="name">Name</label>
                     <input type="text" name="name" id="name" class="form-control" value="{{ $role->name}}">
@@ -49,7 +47,7 @@
                         <x-admin.button variant="primary" type="submit" size="sm">Update Role</x-admin.button>
                     </div>
                 </div>
-            </form>
+            </x-admin.form>
         </x-admin.card.card-body>
     </x-admin.card>
 

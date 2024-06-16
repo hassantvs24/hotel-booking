@@ -50,9 +50,15 @@ class UserController extends BaseController
             $user = $userRepository->create($request->only(['name', 'email', 'phone', 'password']));
             $user->roles()->attach($request->roles);
 
-            return redirect()->route('admin.acl.users.index')->with('success', 'User created successfully.');
+            return redirect()->route('admin.acl.users.index')->with([
+                'message' => 'User created successfully.',
+                'alert-type' => 'success'
+            ]);
         } catch (\Exception $e) {
-            return redirect()->back()->with('error', 'Something Went Wrong');
+            return redirect()->back()->with([
+                'message' => 'Something Went Wrong',
+                'alert-type' => 'error'
+            ]);
         }
     }
 
@@ -88,10 +94,15 @@ class UserController extends BaseController
 
             $user->roles()->sync($request->roles);
 
-            return redirect()->route('admin.acl.users.index')
-                ->with('success', 'User updated successfully.');
+            return redirect()->route('admin.acl.users.index')->with([
+                    'message' => 'User updated successfully.',
+                    'alert-type' => 'success'
+                ]);
         } catch (\Exception $e) {
-            return redirect()->back()->with('error', 'Something Went Wrong');
+            return redirect()->back()->with([
+                'message' => 'Something Went Wrong',
+                'alert-type' => 'error'
+            ]);
         }
     }
 
@@ -101,11 +112,20 @@ class UserController extends BaseController
     public function destroy(UserRepository $userRepository, $user) : RedirectResponse
     {
         try {
-            $userRepository->delete($user);
-            return redirect()->route('admin.acl.users.index')
-                ->with('success', 'User deleted successfully.');
+
+            $user = $userRepository->getModel($user);
+            $user->roles()->detach();
+
+            $userRepository->delete($user->id);
+            return redirect()->route('admin.acl.users.index')->with([
+                    'message' => 'User deleted successfully.',
+                    'alert-type' => 'success'
+                ]);
         } catch (\Exception $e) {
-            return redirect()->back()->with('error', 'Something Went Wrong');
+            return redirect()->back()->with([
+                'message' => 'Something Went Wrong',
+                'alert-type' => 'error'
+            ]);
         }
     }
 }

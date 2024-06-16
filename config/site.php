@@ -12,46 +12,51 @@ return [
     ],
 
     'developed_by' => [
-        'company' => 'Infinity Flame Soft',
+        'company'         => 'Infinity Flame Soft',
         'company_website' => 'https://infinityflamesoft.com/'
     ],
 
     'assets' => [
-        'admin' => [
+        'admin'  => [
             'css' => [
                 [
-                    'src' => 'https://fonts.googleapis.com/css?family=Open+Sans:300,400,600,700',
+                    'src'  => 'https://fonts.googleapis.com/css?family=Open+Sans:300,400,600,700',
                     'type' => 'cdn',
                     'rel'  => 'stylesheet',
                 ],
                 [
-                    'src' => 'nucleo-icons.css',
+                    'src'  => 'nucleo-icons.css',
                     'type' => 'local',
                     'rel'  => 'stylesheet',
                 ],
                 [
-                    'src' => 'nucleo-svg.css',
+                    'src'  => 'nucleo-svg.css',
                     'type' => 'local',
                     'rel'  => 'stylesheet',
                 ],
                 [
-                    'src' => 'nucleo-svg.css',
+                    'src'  => 'nucleo-svg.css',
                     'type' => 'local',
                     'rel'  => 'stylesheet',
                 ],
                 [
-                    'src' => 'argon-dashboard.css',
+                    'src'  => 'argon-dashboard.css',
                     'type' => 'local',
                     'rel'  => 'stylesheet',
-                    'id' => 'pagestyle'
+                    'id'   => 'pagestyle'
                 ],
                 [
-                    'src' => 'select2.min.css',
+                    'src'  => 'select2.min.css',
                     'type' => 'local',
                     'rel'  => 'stylesheet',
                 ],
                 [
-                    'src' => 'custom.css',
+                    'src'  => 'toastr.css',
+                    'type' => 'local',
+                    'rel'  => 'stylesheet',
+                ],
+                [
+                    'src'  => 'custom.css',
                     'type' => 'local',
                     'rel'  => 'stylesheet',
                 ]
@@ -59,157 +64,161 @@ return [
 
             'js' => [
                 [
-                    'src' => 'plugins/jquery-3.7.1.min.js',
+                    'src'  => 'plugins/jquery-3.7.1.min.js',
                     'type' => 'local',
                 ],
                 [
-                    'src' => 'core/popper.min.js',
+                    'src'  => 'core/popper.min.js',
                     'type' => 'local',
                 ],
                 [
-                    'src' => 'core/bootstrap.min.js',
+                    'src'  => 'core/bootstrap.min.js',
                     'type' => 'local',
                 ],
                 [
-                    'src' => 'https://kit.fontawesome.com/42d5adcbca.js',
+                    'src'  => 'https://kit.fontawesome.com/42d5adcbca.js',
                     'type' => 'cdn',
                 ],
                 [
-                    'src' => 'plugins/perfect-scrollbar.min.js',
+                    'src'  => 'plugins/perfect-scrollbar.min.js',
                     'type' => 'local',
                 ],
                 [
-                    'src' => 'plugins/smooth-scrollbar.min.js',
+                    'src'  => 'plugins/smooth-scrollbar.min.js',
                     'type' => 'local',
                 ],
                 [
-                    'src' => 'plugins/dragula/dragula.min.js',
+                    'src'  => 'plugins/dragula/dragula.min.js',
                     'type' => 'local',
                 ],
                 [
-                    'src' => 'plugins/jkanban/jkanban.js',
+                    'src'  => 'plugins/jkanban/jkanban.js',
                     'type' => 'local',
                 ],
                 [
-                    'src' => 'plugins/chartjs.min.js',
+                    'src'  => 'plugins/chartjs.min.js',
                     'type' => 'local',
                 ],
                 [
-                    'src' => 'customs/chart.js',
+                    'src'  => 'customs/chart.js',
                     'type' => 'local',
                 ],
                 [
-                    'src' => 'customs/sidebar.js',
+                    'src'  => 'customs/sidebar.js',
                     'type' => 'local',
                 ],
                 [
-                    'src' => 'plugins/sweetalert.min.js',
+                    'src'  => 'plugins/sweetalert.min.js',
                     'type' => 'local',
                 ],
                 [
-                    'src' => 'https://buttons.github.io/buttons.js',
+                    'src'  => 'https://buttons.github.io/buttons.js',
                     'type' => 'cdn',
                 ],
                 [
-                    'src' => 'argon-dashboard.min.js',
+                    'src'  => 'argon-dashboard.min.js',
                     'type' => 'local',
                 ],
                 [
-                    'src' => 'plugins/select2.min.js',
+                    'src'  => 'plugins/select2.min.js',
+                    'type' => 'local',
+                ],
+                [
+                    'src'  => 'plugins/toastr.min.js',
                     'type' => 'local',
                 ]
             ]
         ],
-                'portal' => [
-                    'css' => [
-                        [
-                            'src'=>'bootstrap.min.css',
-                            'type'=>'local',
-                            'rel'=>'stylesheet'
-                        ],
-                        [
-                            'src'=>'jquery-ui.css',
-                            'type'=>'local',
-                            'rel'=>'stylesheet'
-                        ],
-                        [
-                            'src'=>'style.css',
-                            'type'=>'local',
-                            'rel'=>'stylesheet'
-                        ],
-                        [
-                            'src'=>'responsive.css',
-                            'type'=>'local',
-                            'rel'=>'stylesheet'
-                        ]
-                    ],
-                    'js' => [
-                        [
-                            'src' => 'jquery.min.js',
-                            'type' => 'local',
-                        ],
-                        [
-                            'src' => 'bootstrap.bundle.min.js',
-                            'type' => 'local',
-                        ],
-                        [
-                            'src' => 'jquery.easing.min.js',
-                            'type' => 'local',
-                        ],
-                        [
-                            'src' => 'jquery-ui.js',
-                            'type' => 'local',
-                        ],
-                        [
-                            'src' => 'main.js',
-                            'type' => 'local',
-                        ]
-                    ]
+        'portal' => [
+            'css' => [
+                [
+                    'src'  => 'bootstrap.min.css',
+                    'type' => 'local',
+                    'rel'  => 'stylesheet'
+                ],
+                [
+                    'src'  => 'jquery-ui.css',
+                    'type' => 'local',
+                    'rel'  => 'stylesheet'
+                ],
+                [
+                    'src'  => 'style.css',
+                    'type' => 'local',
+                    'rel'  => 'stylesheet'
+                ],
+                [
+                    'src'  => 'responsive.css',
+                    'type' => 'local',
+                    'rel'  => 'stylesheet'
                 ]
+            ],
+            'js'  => [
+                [
+                    'src'  => 'jquery.min.js',
+                    'type' => 'local',
+                ],
+                [
+                    'src'  => 'bootstrap.bundle.min.js',
+                    'type' => 'local',
+                ],
+                [
+                    'src'  => 'jquery.easing.min.js',
+                    'type' => 'local',
+                ],
+                [
+                    'src'  => 'jquery-ui.js',
+                    'type' => 'local',
+                ],
+                [
+                    'src'  => 'main.js',
+                    'type' => 'local',
+                ]
+            ]
+        ]
     ],
 
     'sidebar' => [
         'items' => [
             [
-                'name' => 'Dashboard',
-                'route' => 'admin.dashboard',
-                'icon' => 'ni ni-shop text-primary',
-                'key' => 'admin/dashboard*',
+                'name'     => 'Dashboard',
+                'route'    => 'admin.dashboard',
+                'icon'     => 'ni ni-shop text-primary',
+                'key'      => 'admin/dashboard*',
                 'children' => []
             ],
             [
-                'name' => 'Access Control',
-                'route' => null,
-                'icon' => 'ni ni-key-25 text-info',
-                'key' => 'admin/acl*',
+                'name'     => 'Access Control',
+                'route'    => null,
+                'icon'     => 'ni ni-key-25 text-info',
+                'key'      => 'admin/acl*',
                 'children' => [
                     [
-                        'name' => 'Roles',
-                        'route' => 'admin.acl.roles.index',
-                        'icon' => 'ni ni-circle-08 text-default',
-                        'key' => 'admin/acl/roles',
+                        'name'     => 'Roles',
+                        'route'    => 'admin.acl.roles.index',
+                        'icon'     => 'ni ni-circle-08 text-default',
+                        'key'      => 'admin/acl/roles',
                         'children' => []
                     ],
                     [
-                        'name' => 'Permissions',
+                        'name'  => 'Permissions',
                         'route' => 'admin.acl.permissions.index',
-                        'icon' => 'ni ni-lock-circle-open text-default',
-                        'key' => 'admin/acl/permissions',
+                        'icon'  => 'ni ni-lock-circle-open text-default',
+                        'key'   => 'admin/acl/permissions',
                     ],
                     [
-                        'name' => 'Users',
-                        'route' => 'admin.acl.users.index',
-                        'icon' => 'ni ni-single-02 text-default',
-                        'key' => 'admin/acl/users',
+                        'name'     => 'Users',
+                        'route'    => 'admin.acl.users.index',
+                        'icon'     => 'ni ni-single-02 text-default',
+                        'key'      => 'admin/acl/users',
                         'children' => []
                     ]
                 ]
             ],
             [
-                'name' => 'Settings',
-                'route' => null,
-                'icon' => 'ni ni-settings text-primary',
-                'key' => 'admin/settings',
+                'name'     => 'Settings',
+                'route'    => null,
+                'icon'     => 'ni ni-settings text-primary',
+                'key'      => 'admin/settings',
                 'children' => []
             ]
         ]

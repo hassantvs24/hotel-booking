@@ -1,6 +1,6 @@
 @props([ 'title' => null ])
 
-<!DOCTYPE html>
+        <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="utf-8"/>
@@ -49,7 +49,7 @@
             {{ $slot }}
         </div>
 
-        <x-admin.layouts.footer />
+        <x-admin.layouts.footer/>
     </div>
 </main>
 
@@ -61,6 +61,36 @@
 
     <script src="{{ $path }}"></script>
 @endforeach
+
+<script>
+    @if (Session::has('message'))
+    (function () {
+        let type = "{{ Session::get('alert-type', 'info') }}";
+        let message = "{{ Session::get('message') }}";
+
+        function showToast(type, message) {
+            toastr.options.timeOut = 1000;
+            toastr[type](message);
+        }
+
+        switch (type) {
+            case 'info':
+                showToast('info', message);
+                break;
+            case 'success':
+                showToast('success', message);
+                break;
+            case 'warning':
+                showToast('warning', message);
+                break;
+            case 'error':
+                showToast('error', message);
+                break;
+        }
+    })();
+    @endif
+</script>
+
 
 @stack('scripts')
 
