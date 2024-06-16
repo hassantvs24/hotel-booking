@@ -34,6 +34,7 @@ class UserRequest extends FormRequest
             'email'    => "required|string|email|max:255|{$uniqueEmailRule}",
             'phone'    => 'nullable|string|max:255',
             'password' => "{$passwordRule}|string|min:8|max:255",
+            'roles'    => 'nullable|array'
         ];
     }
 
@@ -60,6 +61,7 @@ class UserRequest extends FormRequest
             'password.max'      => 'User password must not be greater than 255 characters',
             'phone.string'      => 'User phone must be a string',
             'phone.max'         => 'User phone must not be greater than 255 characters',
+            'roles.array'       => 'User roles must be an array'
         ];
     }
 }

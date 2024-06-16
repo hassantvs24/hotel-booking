@@ -1,10 +1,15 @@
-<x-admin.layout title="Add New User">
+@php
+    /**
+     * @var \App\Models\User $user
+     */
+        $userRoles = $user->roles->pluck('id')->toArray();
+@endphp
+
+<x-admin.layout title="Update User">
     <x-admin.card>
         <x-admin.card.card-header title="Update User" />
         <x-admin.card.card-body>
-            <form action="{{ route('admin.acl.users.update', $user->id) }}" method="POST">
-                @csrf
-                @method('PUT')
+            <x-admin.form action="{{ route('admin.acl.users.update', $user->id) }}" method="PUT">
                 <div class="row">
                     <div class="col-md-6">
                         <div class="form-group">
@@ -32,7 +37,7 @@
                                 value="{{ $user->email }}">
 
                         @error('email')
-                            <div class="text-danger">{{ $message }}</div>
+                        <div class="text-danger">{{ $message }}</div>
                         @enderror
                     </div>
                 </div>
@@ -50,8 +55,31 @@
                         @enderror
                     </div>
                 </div>
-                <x-admin.button class="mt-3" type="submit">Update User</x-admin.button>
-            </form>
+                <div class="form-group mt-3">
+                    <label for="roles">Roles:</label>
+                    <select class="form-control" id="roles" name="roles[]" multiple="multiple">
+                        @foreach($roles as $key => $role)
+                            <option value="{{ $key }}" {{ in_array($key, $userRoles) ? 'selected' : '' }}>{{ $role }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="row mt-3">
+                    <div class="col-md-6">
+                        <a href="{{ route('admin.acl.users.index') }}" class="btn btn-danger btn-sm">Back To Users</a>
+                    </div>
+                    <div class="col-md-6 text-right">
+                        <x-admin.button variant="primary" type="submit" size="sm">Update User</x-admin.button>
+                    </div>
+                </div>
+            </x-admin.form>
         </x-admin.card.card-body>
     </x-admin.card>
+
+    @push('scripts')
+        <script>
+            $(document).ready(function() {
+                $('#roles').select2();
+            });
+        </script>
+    @endpush
 </x-admin.layout>

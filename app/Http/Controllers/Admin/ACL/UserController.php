@@ -10,6 +10,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\View\View;
+use Spatie\Permission\Models\Role;
 
 class UserController extends BaseController
 {
@@ -36,7 +37,8 @@ class UserController extends BaseController
      */
     public function create() :View
     {
-        return view('admin.acl.user.create');
+        $roles = Role::query()->pluck('name', 'id')->toArray();
+        return view('admin.acl.user.create', compact('roles'));
     }
 
     /**
@@ -45,7 +47,8 @@ class UserController extends BaseController
     public function store(UserRequest $request, UserRepository $userRepository) :RedirectResponse
     {
         try {
-            $userRepository->create($request->validated());
+            $user = $userRepository->create($request->only(['name', 'email', 'phone', 'password']));
+            $user->roles()->attach($request->roles);
 
             return redirect()->route('admin.acl.users.index')->with('success', 'User created successfully.');
         } catch (\Exception $e) {
@@ -66,7 +69,8 @@ class UserController extends BaseController
      */
     public function edit(User $user) :View
     {
-        return view('admin.acl.user.edit', compact('user'));
+        $roles = Role::query()->pluck('name', 'id')->toArray();
+        return view('admin.acl.user.edit', compact('user', 'roles'));
     }
 
     /**
@@ -75,7 +79,14 @@ class UserController extends BaseController
     public function update(UserRequest $request, UserRepository $userRepository, User $user) : RedirectResponse
     {
         try {
-            $userRepository->update($request->validated(), $user);
+
+            $userRepository->update(
+                $request->only(['name', 'email', 'phone', 'password']),
+                $user
+            );
+
+            $user->roles()->sync($request->roles);
+
             return redirect()->route('admin.acl.users.index')
                 ->with('success', 'User updated successfully.');
         } catch (\Exception $e) {

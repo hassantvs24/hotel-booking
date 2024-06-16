@@ -46,6 +46,11 @@ return [
                     'id' => 'pagestyle'
                 ],
                 [
+                    'src' => 'select2.min.css',
+                    'type' => 'local',
+                    'rel'  => 'stylesheet',
+                ],
+                [
                     'src' => 'custom.css',
                     'type' => 'local',
                     'rel'  => 'stylesheet',
@@ -53,6 +58,10 @@ return [
             ],
 
             'js' => [
+                [
+                    'src' => 'plugins/jquery-3.7.1.min.js',
+                    'type' => 'local',
+                ],
                 [
                     'src' => 'core/popper.min.js',
                     'type' => 'local',
@@ -103,6 +112,10 @@ return [
                 ],
                 [
                     'src' => 'argon-dashboard.min.js',
+                    'type' => 'local',
+                ],
+                [
+                    'src' => 'plugins/select2.min.js',
                     'type' => 'local',
                 ]
             ]

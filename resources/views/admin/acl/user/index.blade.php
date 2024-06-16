@@ -16,7 +16,7 @@
                     <x-admin.table-head value="Name" />
                     <x-admin.table-head value="Email" />
                     <x-admin.table-head value="Phone" />
-                    <x-admin.table-head value="User Type" />
+                    <x-admin.table-head value="Roles" />
                     <x-admin.table-head value="Actions" class="text-right"/>
                 </x-admin.table-header>
                 <x-admin.table-body>
@@ -27,7 +27,9 @@
                             <x-admin.table-cell :value="$user->email" />
                             <x-admin.table-cell :value="$user->phone" />
                             <x-admin.table-cell>
-                                <x-admin.badge type="primary" :text="$user->user_type" />
+                                @foreach($user->roles as $role)
+                                    <x-admin.badge class="mr-2" type="primary" :text="$role->name" />
+                                @endforeach
                             </x-admin.table-cell>
                             <x-admin.table-cell class="text-right">
                                 <a href="{{ route('admin.acl.users.edit', $user->id) }}" class="btn btn-icon btn-xs btn-outline-primary me-2">
