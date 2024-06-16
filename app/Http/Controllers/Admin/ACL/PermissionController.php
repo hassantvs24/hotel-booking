@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Admin\ACL;
 use App\Http\Controllers\BaseController;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
+use App\Models\Permission;
+
 
 class PermissionController extends BaseController
 {
@@ -13,7 +15,9 @@ class PermissionController extends BaseController
      */
     public function index() : View
     {
-        return view('admin.acl.permission.index');
+
+        $permissions = Permission::orderBy('id', 'desc')->paginate(10);
+        return view('admin.acl.permission.index', compact('permissions'));
     }
 
     /**
