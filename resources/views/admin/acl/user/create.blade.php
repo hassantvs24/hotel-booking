@@ -2,8 +2,7 @@
     <x-admin.card>
         <x-admin.card.card-header title="Add New User" />
         <x-admin.card.card-body>
-            <form action="{{ route('admin.acl.users.store') }}" method="POST">
-                @csrf
+            <x-admin.form action="{{ route('admin.acl.users.store') }}" method="POST">
                 <div class="row">
                     <div class="col-md-6">
                         <div class="form-group">
@@ -58,7 +57,7 @@
                         <x-admin.button variant="primary" type="submit" size="sm">Add User</x-admin.button>
                     </div>
                 </div>
-            </form>
+            </x-admin.form>
         </x-admin.card.card-body>
     </x-admin.card>
 
