@@ -27,12 +27,16 @@ class UserRequest extends FormRequest
             ? 'unique:users,email,' . $modelId
             : 'unique:users,email';
 
+        $uniquePhoneRule = ($this->method() === 'PUT' && $modelId !== null)
+            ? 'unique:users,phone,' . $modelId
+            : 'unique:users,phone';
+
         $passwordRule = $this->method() === 'PUT' ? 'nullable' : 'required';
 
         return [
             'name'     => 'required|string|max:255',
             'email'    => "required|string|email|max:255|{$uniqueEmailRule}",
-            'phone'    => 'nullable|string|max:255',
+            'phone'    => "nullable|string|max:255|{$uniquePhoneRule}",
             'password' => "{$passwordRule}|string|min:8|max:255",
             'roles'    => 'nullable|array'
         ];

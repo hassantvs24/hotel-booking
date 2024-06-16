@@ -41,7 +41,14 @@
                     </select>
                 </div>
 
-                <x-admin.button class="mt-3" type="submit">Update Role</x-admin.button>
+                <div class="row mt-3">
+                    <div class="col-md-6">
+                        <a href="{{ route('admin.acl.roles.index') }}" class="btn btn-danger btn-sm">Back To Roles</a>
+                    </div>
+                    <div class="col-md-6 text-right">
+                        <x-admin.button variant="primary" type="submit" size="sm">Update Role</x-admin.button>
+                    </div>
+                </div>
             </form>
         </x-admin.card.card-body>
     </x-admin.card>

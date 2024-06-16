@@ -1,10 +1,10 @@
-<x-admin.layout title="Users">
+<x-admin.layout title="Roles">
     <x-admin.card>
-        <x-admin.card.card-header title="Users" class="d-flex align-content-center">
+        <x-admin.card.card-header title="Roles" class="d-flex align-content-center">
             <x-admin.page-action>
                 <a href="{{ route('admin.acl.roles.create') }}" class="btn btn-xs btn-outline-primary m-0">
                     <i class="fas fa-plus me-2"></i>
-                    Create
+                    Add Role
                 </a>
             </x-admin.page-action>
         </x-admin.card.card-header>
@@ -24,12 +24,10 @@
                             <x-admin.table-cell :value="format_date($role->created_at)" />
                             <x-admin.table-cell :value="$role->name" />
                             <x-admin.table-cell :value="$role->description" />
-                            <x-admin.table-cell>
-                            <div class="word-wrap">
+                            <x-admin.table-cell class="word-wrap">
                                 @foreach($role->permissions as $permission)
                                     <x-admin.badge class="mr-2" type="primary" :text="$permission->name" />
                                 @endforeach
-                            </div>
                             </x-admin.table-cell>
                             <x-admin.table-cell class="text-right">
                                 <div class="d-flex">

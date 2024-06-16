@@ -94,6 +94,6 @@
     background-color: #fff;
     border-color: #dee2e6;
 }
-.word-wrap{
-    text-wrap: wrap;
+.word-wrap {
+    text-wrap: wrap !important;
 }

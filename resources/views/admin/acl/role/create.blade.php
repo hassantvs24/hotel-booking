@@ -32,14 +32,21 @@
                     @enderror
                 </div>
                 <div class="form-group mt-3">
-                    <label for="permissions">Roles:</label>
+                    <label for="permissions">Permissions</label>
                     <select class="form-control" id="permissions" name="permissions[]" multiple="multiple">
                         @foreach($permissions as $key => $permission)
                             <option value="{{ $key }}">{{ $permission }}</option>
                         @endforeach
                     </select>
                 </div>
-                <x-admin.button class="mt-3" type="submit">Add Role</x-admin.button>
+                <div class="row mt-3">
+                    <div class="col-md-6">
+                        <a href="{{ route('admin.acl.roles.index') }}" class="btn btn-danger btn-sm">Back To Roles</a>
+                    </div>
+                    <div class="col-md-6 text-right">
+                        <x-admin.button variant="primary" type="submit" size="sm">Save  Role</x-admin.button>
+                    </div>
+                </div>
             </x-admin.form>
         </x-admin.card.card-body>
     </x-admin.card>
