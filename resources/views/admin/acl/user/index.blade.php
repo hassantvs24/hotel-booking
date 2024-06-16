@@ -27,9 +27,11 @@
                             <x-admin.table-cell :value="$user->email" />
                             <x-admin.table-cell :value="$user->phone" />
                             <x-admin.table-cell>
+                                <div class="word-wrap">
                                 @foreach($user->roles as $role)
                                     <x-admin.badge class="mr-2" type="primary" :text="$role->name" />
                                 @endforeach
+                                </div>
                             </x-admin.table-cell>
                             <x-admin.table-cell class="text-right">
                                 <a href="{{ route('admin.acl.users.edit', $user->id) }}" class="btn btn-icon btn-xs btn-outline-primary me-2">

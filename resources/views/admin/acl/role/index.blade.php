@@ -25,9 +25,11 @@
                             <x-admin.table-cell :value="$role->name" />
                             <x-admin.table-cell :value="$role->description" />
                             <x-admin.table-cell>
+                            <div class="word-wrap">
                                 @foreach($role->permissions as $permission)
                                     <x-admin.badge class="mr-2" type="primary" :text="$permission->name" />
                                 @endforeach
+                            </div>
                             </x-admin.table-cell>
                             <x-admin.table-cell class="text-right">
                                 <div class="d-flex">

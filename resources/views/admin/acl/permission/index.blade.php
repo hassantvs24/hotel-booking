@@ -9,13 +9,17 @@
             <x-admin.table>
                 <x-admin.table-header>
                     <x-admin.table-head value="Date" />
-                    <x-admin.table-head value="All Permission" />
+                    <x-admin.table-head value="Name" />
+                    <x-admin.table-head value="Slug" />
+                    <x-admin.table-head value="Subject" />
                 </x-admin.table-header>
                 <x-admin.table-body>
                     @forelse($permissions as $permission)
                         <x-admin.table-row>
                             <x-admin.table-cell :value="format_date($permission->created_at)" />
                             <x-admin.table-cell :value="$permission->name" />
+                            <x-admin.table-cell :value="$permission->slug" />
+                            <x-admin.table-cell :value="$permission->subject" />
                         </x-admin.table-row>
                     @empty
                         <x-admin.table-row>
