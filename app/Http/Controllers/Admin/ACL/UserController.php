@@ -8,7 +8,6 @@ use App\Models\User;
 use App\Repositories\User\UserRepository;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\View\View;
 use Spatie\Permission\Models\Role;
 

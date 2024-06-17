@@ -1,52 +1,59 @@
 <x-admin.layout title="Add New User">
     <x-admin.card>
-        <x-admin.card.card-header title="Add New User" />
+        <x-admin.card.card-header title="Add New User"/>
         <x-admin.card.card-body>
             <x-admin.form action="{{ route('admin.acl.users.store') }}" method="POST">
                 <div class="row">
                     <div class="col-md-6">
-                        <div class="form-group">
-                            <label for="name">Name</label>
-                            <input type="text" name="name" id="name" class="form-control" value="{{ old('name') }}">
-
-                            @error('name')
-                                <div class="text-danger">{{ $message }}</div>
-                            @enderror
-                        </div>
+                        <x-admin.input
+                            type="text"
+                            name="name"
+                            id="name"
+                            label="Name"
+                            value="{{ old('name') }}"
+                        />
                     </div>
                     <div class="col-md-6">
-                        <label for="email">Email</label>
-                        <input type="email" name="email" id="email" class="form-control" value="{{ old('email') }}">
-
-                        @error('email')
-                        <div class="text-danger">{{ $message }}</div>
-                        @enderror
+                        <x-admin.input
+                            type="email"
+                            name="email"
+                            id="email"
+                            label="Email"
+                            value="{{ old('email') }}"
+                        />
                     </div>
                 </div>
                 <div class="row">
                     <div class="col-md-6">
-                        <label for="phone">Phone</label>
-                        <input type="text" name="phone" id="phone" class="form-control" value="{{ old('phone') }}">
-                        @error('phone')
-                            <div class="text-danger">{{ $message }}</div>
-                        @enderror
+                        <x-admin.input
+                            type="text"
+                            name="phone"
+                            id="phone"
+                            label="Phone"
+                            value="{{ old('phone') }}"
+                        />
                     </div>
                     <div class="col-md-6">
-                        <label for="password">Password</label>
-                        <input type="password" name="password" id="password" class="form-control">
-
-                        @error('password')
-                        <div class="text-danger">{{ $message }}</div>
-                        @enderror
+                        <x-admin.input
+                            type="password"
+                            name="password"
+                            id="password"
+                            label="Password"
+                        />
                     </div>
                 </div>
-                <div class="form-group mt-3">
-                    <label for="roles">Roles:</label>
-                    <select class="form-control" id="roles" name="roles[]" multiple="multiple">
-                        @foreach($roles as $key => $role)
-                            <option value="{{ $key }}">{{ $role }}</option>
-                        @endforeach
-                    </select>
+
+                <div class="row">
+                    <div class="col-12">
+                        <x-admin.input
+                            type="select"
+                            name="roles[]"
+                            id="roles"
+                            label="Roles"
+                            :options="$roles"
+                            multiple
+                        />
+                    </div>
                 </div>
 
                 <div class="row mt-3">
@@ -63,7 +70,7 @@
 
     @push('scripts')
         <script>
-            $(document).ready(function() {
+            $(document).ready(function () {
                 $('#roles').select2();
             });
         </script>
