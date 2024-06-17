@@ -1,4 +1,4 @@
-@props(['type' => null, 'value' => null, 'name' => null, 'id' => null, 'label' => null, 'options' => [], 'multiple' => false])
+@props(['type' => null, 'value' => null, 'placeholder' => null, 'name' => null, 'id' => null, 'label' => null, 'options' => [], 'multiple' => false])
 
 @php
     $id = $id ?: $name;
@@ -20,7 +20,11 @@
     @endif
 
     @if($type === 'textarea')
-        <textarea name="{{ $name }}" id="{{ $id }}" class="form-control">{{ $value }}</textarea>
+        <textarea
+            placeholder="{{ $placeholder }}"
+            name="{{ $name }}"
+            id="{{ $id }}"
+            class="form-control">{{ $value }}</textarea>
     @elseif($type === 'select')
         <select name="{{ $name }}" id="{{ $id }}" class="form-control" {{ $multiple ? 'multiple' : '' }}>
             @foreach($options as $key => $option)
@@ -28,10 +32,17 @@
             @endforeach
         </select>
     @else
-        <input type="{{ $type }}" name="{{ $name }}" id="{{ $id }}" value="{{ $value }}" class="form-control">
+        <input
+            type="{{ $type }}"
+            name="{{ $name }}"
+            id="{{ $id }}"
+            value="{{ $value }}"
+            placeholder="{{ $placeholder }}"
+            class="form-control"
+        >
     @endif
 
     @error($name)
-    <div class="text-danger">{{ $message }}</div>
+        <div class="text-danger">{{ $message }}</div>
     @enderror
 </div>

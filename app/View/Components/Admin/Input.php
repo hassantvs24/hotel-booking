@@ -15,6 +15,7 @@ class Input extends Component
     public $value;
     public $options;
     public $multiple;
+    public $placeholder;
 
     /**
      * Create a new component instance.
@@ -24,6 +25,7 @@ class Input extends Component
         $name = null,
         $id = null,
         $label = null,
+        $placeholder = null,
         $value = null,
         $options = [],
         $multiple = false
@@ -35,6 +37,7 @@ class Input extends Component
         $this->value = $value;
         $this->options = $options;
         $this->multiple = $multiple;
+        $this->placeholder = $placeholder;
     }
 
     /**
