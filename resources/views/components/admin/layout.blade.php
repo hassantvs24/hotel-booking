@@ -1,6 +1,11 @@
 @props([ 'title' => null ])
 
-        <!DOCTYPE html>
+@php
+    $styles = config('site.assets.admin.css');
+    $scripts = config('site.assets.admin.js');
+@endphp
+
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="utf-8"/>
@@ -14,12 +19,6 @@
             {{ config('site.site_info.name') }}
         @endif
     </title>
-
-    @php
-        $styles = config('site.assets.admin.css');
-        $scripts = config('site.assets.admin.js');
-    @endphp
-
             <!-- Styles -->
     @foreach($styles as $style)
         @php
