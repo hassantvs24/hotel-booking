@@ -8,4 +8,10 @@ use Illuminate\Database\Eloquent\Model;
 class Surrounding extends Model
 {
     use HasFactory;
+
+    protected $fillable = [
+        'name',
+        'icon',
+        'notes'
+    ];
 }

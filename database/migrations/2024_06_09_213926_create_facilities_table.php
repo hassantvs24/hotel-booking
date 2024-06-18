@@ -13,6 +13,10 @@ return new class extends Migration
     {
         Schema::create('facilities', function (Blueprint $table) {
             $table->id();
+            $table->string('name');
+            $table->string('icon')->nullable();
+            $table->string('notes')->nullable();
+            $table->string('facility_type')->comment('Add if applicable. Example: Property, Place, Room etc')->nullable();
             $table->softDeletes();
             $table->timestamps();
         });

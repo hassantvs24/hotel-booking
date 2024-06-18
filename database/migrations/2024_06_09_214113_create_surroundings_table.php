@@ -13,6 +13,9 @@ return new class extends Migration
     {
         Schema::create('surroundings', function (Blueprint $table) {
             $table->id();
+            $table->string('name');
+            $table->string('icon')->nullable();
+            $table->string('notes')->nullable();
             $table->softDeletes();
             $table->timestamps();
         });

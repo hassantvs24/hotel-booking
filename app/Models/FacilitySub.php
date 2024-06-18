@@ -8,4 +8,10 @@ use Illuminate\Database\Eloquent\Model;
 class FacilitySub extends Model
 {
     use HasFactory;
+
+    protected $fillable = [
+        'name',
+        'icon',
+        'facilities_id'
+    ];
 }
