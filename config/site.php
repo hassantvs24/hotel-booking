@@ -16,6 +16,8 @@ return [
         'company_website' => 'https://infinityflamesoft.com/'
     ],
 
+    'portal_filter_not_exists' => ['/'],
+
     'assets' => [
         'admin'  => [
             'css' => [
@@ -223,4 +225,39 @@ return [
             ]
         ]
     ],
+
+    'portal_navbar' => [
+        'items' => [
+            [
+                'name' => 'Home',
+                'route' => 'portal.home',
+                'key' => 'portal/home',
+                'children' => [],
+            ],
+            [
+                'name' => 'Deals',
+                'route' => null,
+                'key' => 'portal/deals',
+                'children' => [],
+            ],
+            [
+                'name' => 'Properties',
+                'route' => 'portal.properties.index',
+                'key' => 'portal/properties',
+                'children' => [],
+            ],
+            [
+                'name' => 'Hotels',
+                'route' => 'portal.hotels.index',
+                'key' => 'portal/hotels',
+                'children' => [],
+            ],
+            [
+                'name' => 'Support',
+                'route' => null,
+                'key' => 'portal/support',
+                'children' => [],
+            ]
+        ]
+    ]
 ];

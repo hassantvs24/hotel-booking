@@ -6,18 +6,17 @@ use App\Http\Controllers\Admin\ACL\PermissionController;
 use App\Http\Controllers\Admin\ACL\RoleController;
 use App\Http\Controllers\Admin\ACL\UserController;
 use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Portal\HotelController;
+use App\Http\Controllers\Portal\PropertyController;
 use Illuminate\Support\Facades\Route;
 
 /*----------------- Public Routes -----------------*/
 Route::prefix('')->as('portal.')->group(function () {
 
     /*-- Home Routes --*/
-    Route::get('/', [HomeController::class, 'index'])
-        ->name('home');
-
-    /*-- Non-requested Routes --*/
-    Route::get('/non-requested', [HomeController::class, 'nonRequested'])
-        ->name('non-requested');
+    Route::get('/', [HomeController::class, 'index'])->name('home');
+    Route::get('/properties', [PropertyController::class, 'index'])->name('properties.index');
+    Route::get('/hotels', [HotelController::class, 'index'])->name('hotels.index');
 
      /*-- Payment Routes --*/
     Route::get('/payment', [HomeController::class, 'payment'])

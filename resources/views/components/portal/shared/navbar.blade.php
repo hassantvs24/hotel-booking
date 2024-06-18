@@ -2,6 +2,7 @@
 
 @php
     $homeClass = $isHome ? 'home' : '';
+    $navItems = config('site.portal_navbar.items');
 @endphp
 
 <header class="header {{ $homeClass }}">
@@ -9,27 +10,23 @@
         <div class="row align-items-end">
             <div class="col-xl-8">
                 <nav class="navbar navbar-expand-xl align-items-end">
-                    <a class="navbar-brand" href="#"><img src="{{asset('assets/portal/img/logo.png')}}" alt=""></a>
+                    <a class="navbar-brand" href="{{ route('portal.home') }}">
+                        <img src="{{asset('assets/portal/img/logo.png')}}" alt=""></a>
                     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarTogglerDemo02" aria-controls="navbarTogglerDemo02" aria-expanded="false" aria-label="Toggle navigation">
                         <span class="navbar-toggler-icon"></span>
                     </button>
                     <div class="collapse navbar-collapse" id="navbarTogglerDemo02">
                         <ul class="navbar-nav me-auto menu">
-                            <li class="nav-item">
-                                <a class="nav-link" href="#">Home</a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" href="#">Deals</a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" href="#">Porperty List</a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" href="#">Add Property</a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" href="#">Support</a>
-                            </li>
+                            @foreach($navItems as $item)
+                                <li class="nav-item">
+                                    <a
+                                       class="nav-link"
+                                       href="{{ $item['route'] ? route($item['route']) : '#' }}"
+                                    >
+                                        {{ $item['name'] }}
+                                    </a>
+                                </li>
+                            @endforeach
                         </ul>
                     </div>
                 </nav>

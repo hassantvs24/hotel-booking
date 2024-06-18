@@ -28,11 +28,6 @@ class HomeController extends BaseController
         return view('portal.property-add.property-add');
     }
 
-    public function property() : View
-    {
-        return view('portal.property.property');
-    }
-
     public function requestedWaiting() : View
     {
         return view('portal.requested-waiting.requested-waiting');

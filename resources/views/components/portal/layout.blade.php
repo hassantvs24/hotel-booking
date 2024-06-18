@@ -3,6 +3,8 @@
 @php
     $styles = config('site.assets.portal.css');
     $scripts = config('site.assets.portal.js');
+
+    $filterNotExists = config('site.portal_filter_not_exists', []);
 @endphp
 
 <!DOCTYPE html>
@@ -32,6 +34,10 @@
 </head>
 <body>
     <x-portal.shared.navbar is-home="{{ request()->path() === '/' }}"/>
+
+    @if(!in_array(request()->path(), $filterNotExists))
+        <x-portal.shared.filter />
+    @endif
 
     {{ $slot }}
 
