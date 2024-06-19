@@ -45,6 +45,6 @@ class BaseController extends Controller
 
     public function unauthorized() : void
     {
-        abort(403, 'Unauthorized');
+        abort(403, 'Unauthorized Action');
     }
 }

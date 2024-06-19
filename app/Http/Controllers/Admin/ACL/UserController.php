@@ -48,6 +48,10 @@ class UserController extends BaseController
      */
     public function create() : View
     {
+        if (!hasPermission('can_create_acl_user')) {
+            $this->unauthorized();
+        }
+
         $roles = Role::query()->pluck('name', 'id')->toArray();
         return view('admin.acl.user.create', compact('roles'));
     }
@@ -57,6 +61,10 @@ class UserController extends BaseController
      */
     public function store(UserRequest $request, UserRepository $userRepository) : RedirectResponse
     {
+        if (!hasPermission('can_create_acl_user')) {
+            $this->unauthorized();
+        }
+
         try {
             $user = $userRepository->create($request->only(['name', 'email', 'phone', 'password']));
             $user->roles()->attach($request->roles);
@@ -86,6 +94,10 @@ class UserController extends BaseController
      */
     public function edit(User $user) : View
     {
+        if (!hasPermission('can_update_acl_user')) {
+            $this->unauthorized();
+        }
+
         $roles = Role::query()->pluck('name', 'id')->toArray();
         return view('admin.acl.user.edit', compact('user', 'roles'));
     }
@@ -95,6 +107,10 @@ class UserController extends BaseController
      */
     public function update(UserRequest $request, UserRepository $userRepository, $user) : RedirectResponse
     {
+        if (!hasPermission('can_update_acl_user')) {
+            $this->unauthorized();
+        }
+
         try {
 
             $user = $userRepository->getModel($user);
@@ -122,6 +138,10 @@ class UserController extends BaseController
      */
     public function destroy(UserRepository $userRepository, $user) : RedirectResponse
     {
+        if (!hasPermission('can_delete_acl_user')) {
+            $this->unauthorized();
+        }
+
         try {
 
             $user = $userRepository->getModel($user);
