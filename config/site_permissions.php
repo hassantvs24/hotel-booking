@@ -168,6 +168,7 @@ return [
         'CAN_UPDATE_ACL_USER'       => 'can_update_acl_user',
         'CAN_DELETE_ACL_USER'       => 'can_delete_acl_user',
         'CAN_LOGIN_TO_ADMIN'        => 'can_login_to_admin',
+        'CAN_VIEW_SETTINGS'         => 'can_view_settings',
         'CAN_VIEW_DASHBOARD'        => 'can_view_dashboard',
         'CAN_VIEW_ACL'              => 'can_view_acl',
         'CAN_VIEW_CONTACT'          => 'can_view_contact',
