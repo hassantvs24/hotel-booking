@@ -182,46 +182,52 @@ return [
     'sidebar' => [
         'items' => [
             [
-                'name'     => 'Dashboard',
-                'route'    => 'admin.dashboard',
-                'icon'     => 'ni ni-shop text-primary',
-                'key'      => 'admin/dashboard*',
-                'children' => []
+                'name'       => 'Dashboard',
+                'route'      => 'admin.dashboard',
+                'icon'       => 'ni ni-shop text-primary',
+                'key'        => 'admin/dashboard*',
+                'permission' => 'can_view_dashboard',
+                'children'   => []
             ],
             [
-                'name'     => 'Access Control',
-                'route'    => null,
-                'icon'     => 'ni ni-key-25 text-info',
-                'key'      => 'admin/acl*',
-                'children' => [
+                'name'       => 'Access Control',
+                'route'      => null,
+                'icon'       => 'ni ni-key-25 text-info',
+                'key'        => 'admin/acl*',
+                'permission' => 'can_view_acl',
+                'children'   => [
                     [
-                        'name'     => 'Roles',
-                        'route'    => 'admin.acl.roles.index',
-                        'icon'     => 'ni ni-circle-08 text-default',
-                        'key'      => 'admin/acl/roles',
-                        'children' => []
+                        'name'       => 'Roles',
+                        'route'      => 'admin.acl.roles.index',
+                        'icon'       => 'ni ni-circle-08 text-default',
+                        'key'        => 'admin/acl/roles',
+                        'permission' => 'can_view_acl_role',
+                        'children'   => []
                     ],
                     [
-                        'name'  => 'Permissions',
-                        'route' => 'admin.acl.permissions.index',
-                        'icon'  => 'ni ni-lock-circle-open text-default',
-                        'key'   => 'admin/acl/permissions',
+                        'name'       => 'Permissions',
+                        'route'      => 'admin.acl.permissions.index',
+                        'icon'       => 'ni ni-lock-circle-open text-default',
+                        'permission' => 'can_view_acl_permission',
+                        'key'        => 'admin/acl/permissions',
                     ],
                     [
-                        'name'     => 'Users',
-                        'route'    => 'admin.acl.users.index',
-                        'icon'     => 'ni ni-single-02 text-default',
-                        'key'      => 'admin/acl/users',
-                        'children' => []
+                        'name'       => 'Users',
+                        'route'      => 'admin.acl.users.index',
+                        'icon'       => 'ni ni-single-02 text-default',
+                        'key'        => 'admin/acl/users',
+                        'permission' => 'can_view_acl_user',
+                        'children'   => []
                     ]
                 ]
             ],
             [
-                'name'     => 'Settings',
-                'route'    => null,
-                'icon'     => 'ni ni-settings text-primary',
-                'key'      => 'admin/settings',
-                'children' => []
+                'name'       => 'Settings',
+                'route'      => null,
+                'icon'       => 'ni ni-settings text-primary',
+                'key'        => 'admin/settings',
+                'permission' => 'can_view_settings',
+                'children'   => []
             ]
         ]
     ],
@@ -229,33 +235,33 @@ return [
     'portal_navbar' => [
         'items' => [
             [
-                'name' => 'Home',
-                'route' => 'portal.home',
-                'key' => 'portal/home',
+                'name'     => 'Home',
+                'route'    => 'portal.home',
+                'key'      => 'portal/home',
                 'children' => [],
             ],
             [
-                'name' => 'Deals',
-                'route' => null,
-                'key' => 'portal/deals',
+                'name'     => 'Deals',
+                'route'    => null,
+                'key'      => 'portal/deals',
                 'children' => [],
             ],
             [
-                'name' => 'Properties',
-                'route' => 'portal.properties.index',
-                'key' => 'portal/properties',
+                'name'     => 'Properties',
+                'route'    => 'portal.properties.index',
+                'key'      => 'portal/properties',
                 'children' => [],
             ],
             [
-                'name' => 'Hotels',
-                'route' => 'portal.hotels.index',
-                'key' => 'portal/hotels',
+                'name'     => 'Hotels',
+                'route'    => 'portal.hotels.index',
+                'key'      => 'portal/hotels',
                 'children' => [],
             ],
             [
-                'name' => 'Support',
-                'route' => null,
-                'key' => 'portal/support',
+                'name'     => 'Support',
+                'route'    => null,
+                'key'      => 'portal/support',
                 'children' => [],
             ]
         ]

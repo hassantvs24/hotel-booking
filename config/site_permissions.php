@@ -129,8 +129,18 @@ return [
             [
                 'name'    => 'View Dashboard',
                 'slug'    => 'can_view_dashboard',
+                'subject' => 'ACL',
+            ],
+            [
+                'name'    => 'View ACL',
+                'slug'    => 'can_view_acl',
                 'subject' => 'misc',
             ],
+            [
+                'name' => 'View Settings',
+                'slug' => 'can_view_settings',
+                'subject' => 'misc',
+            ]
         ],
 
     ],
@@ -144,10 +154,10 @@ return [
         'CAN_CREATE_CATEGORY'       => 'can_create_category',
         'CAN_UPDATE_CATEGORY'       => 'can_update_category',
         'CAN_DELETE_CATEGORY'       => 'can_delete_category',
-        'CAN_VIEW_ACL_ROLE'        => 'can_view_acl_role',
-        'CAN_CREATE_ACL_ROLE'      => 'can_create_acl_role',
-        'CAN_UPDATE_ACL_ROLE'      => 'can_update_acl_role',
-        'CAN_DELETE_ACL_ROLE'      => 'can_delete_acl_role',
+        'CAN_VIEW_ACL_ROLE'         => 'can_view_acl_role',
+        'CAN_CREATE_ACL_ROLE'       => 'can_create_acl_role',
+        'CAN_UPDATE_ACL_ROLE'       => 'can_update_acl_role',
+        'CAN_DELETE_ACL_ROLE'       => 'can_delete_acl_role',
         'CAN_VIEW_ACL_PERMISSION'   => 'can_view_acl_permission',
         'CAN_CREATE_ACL_PERMISSION' => 'can_create_acl_permission',
         'CAN_UPDATE_ACL_PERMISSION' => 'can_update_acl_permission',
@@ -159,6 +169,7 @@ return [
         'CAN_DELETE_ACL_USER'       => 'can_delete_acl_user',
         'CAN_LOGIN_TO_ADMIN'        => 'can_login_to_admin',
         'CAN_VIEW_DASHBOARD'        => 'can_view_dashboard',
+        'CAN_VIEW_ACL'              => 'can_view_acl',
         'CAN_VIEW_CONTACT'          => 'can_view_contact',
     ]
 ];
