@@ -16,6 +16,10 @@ class PermissionController extends BaseController
      */
     public function index(Request $request, PermissionRepository $permissionRepository) : View
     {
+        if (!hasPermission('can_view_acl_permission')) {
+            $this->unauthorized();
+        }
+
         $userQuery = array_merge(
             $request->only(['search', 'filters', 'order_by', 'order', 'per_page', 'page']),
             [
@@ -35,7 +39,11 @@ class PermissionController extends BaseController
      */
     public function create()
     {
-        //
+        if (!hasPermission('can_create_acl_permission')) {
+            $this->unauthorized();
+        }
+
+        //return view('admin.acl.permission.create');
     }
 
     /**
@@ -43,7 +51,9 @@ class PermissionController extends BaseController
      */
     public function store(Request $request)
     {
-        //
+        if (!hasPermission('can_create_acl_permission')) {
+            $this->unauthorized();
+        }
     }
 
     /**
@@ -59,7 +69,9 @@ class PermissionController extends BaseController
      */
     public function edit(string $id)
     {
-        //
+        if (!hasPermission('can_update_acl_permission')) {
+            $this->unauthorized();
+        }
     }
 
     /**
@@ -67,7 +79,9 @@ class PermissionController extends BaseController
      */
     public function update(Request $request, string $id)
     {
-        //
+        if (!hasPermission('can_update_acl_permission')) {
+            $this->unauthorized();
+        }
     }
 
     /**
@@ -75,6 +89,8 @@ class PermissionController extends BaseController
      */
     public function destroy(string $id)
     {
-        //
+        if (!hasPermission('can_delete_acl_permission')) {
+            $this->unauthorized();
+        }
     }
 }
