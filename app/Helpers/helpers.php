@@ -22,3 +22,10 @@ if (!function_exists('format_date')) {
         return date($format, strtotime($date));
     }
 }
+
+if (!function_exists('hasPermission')) {
+    function hasPermission($permission) : bool
+    {
+        return auth()->user()->hasPermission($permission);
+    }
+}

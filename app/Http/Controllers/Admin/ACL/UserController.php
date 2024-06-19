@@ -18,6 +18,10 @@ class UserController extends BaseController
      */
     public function index(Request $request, UserRepository $userRepository) : View
     {
+        if (!hasPermission('can_view_acl_user')) {
+            $this->unauthorized();
+        }
+
         $userQuery = array_merge(
             $request->only(['search', 'filters', 'order_by', 'order', 'per_page', 'page']),
             [
@@ -28,13 +32,21 @@ class UserController extends BaseController
             ]
         );
         $users = $userRepository->paginate($userQuery);
-        return view('admin.acl.user.index', compact('users'));
+
+        $permissions = [
+            'manage' => 'can_view_acl_user',
+            'create' => 'can_create_acl_user',
+            'update' => 'can_update_acl_user',
+            'delete' => 'can_delete_acl_user',
+        ];
+
+        return view('admin.acl.user.index', compact('users', 'permissions'));
     }
 
     /**
      * Show the form for creating a new resource.
      */
-    public function create() :View
+    public function create() : View
     {
         $roles = Role::query()->pluck('name', 'id')->toArray();
         return view('admin.acl.user.create', compact('roles'));
@@ -43,19 +55,19 @@ class UserController extends BaseController
     /**
      * Store a newly created resource in storage.
      */
-    public function store(UserRequest $request, UserRepository $userRepository) :RedirectResponse
+    public function store(UserRequest $request, UserRepository $userRepository) : RedirectResponse
     {
         try {
             $user = $userRepository->create($request->only(['name', 'email', 'phone', 'password']));
             $user->roles()->attach($request->roles);
 
             return redirect()->route('admin.acl.users.index')->with([
-                'message' => 'User created successfully.',
+                'message'    => 'User created successfully.',
                 'alert-type' => 'success'
             ]);
         } catch (\Exception $e) {
             return redirect()->back()->with([
-                'message' => 'Something Went Wrong',
+                'message'    => 'Something Went Wrong',
                 'alert-type' => 'error'
             ]);
         }
@@ -72,7 +84,7 @@ class UserController extends BaseController
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(User $user) :View
+    public function edit(User $user) : View
     {
         $roles = Role::query()->pluck('name', 'id')->toArray();
         return view('admin.acl.user.edit', compact('user', 'roles'));
@@ -94,12 +106,12 @@ class UserController extends BaseController
             $user->roles()->sync($request->roles);
 
             return redirect()->route('admin.acl.users.index')->with([
-                    'message' => 'User updated successfully.',
-                    'alert-type' => 'success'
-                ]);
+                'message'    => 'User updated successfully.',
+                'alert-type' => 'success'
+            ]);
         } catch (\Exception $e) {
             return redirect()->back()->with([
-                'message' => 'Something Went Wrong',
+                'message'    => 'Something Went Wrong',
                 'alert-type' => 'error'
             ]);
         }
@@ -117,12 +129,12 @@ class UserController extends BaseController
 
             $userRepository->delete($user->id);
             return redirect()->route('admin.acl.users.index')->with([
-                    'message' => 'User deleted successfully.',
-                    'alert-type' => 'success'
-                ]);
+                'message'    => 'User deleted successfully.',
+                'alert-type' => 'success'
+            ]);
         } catch (\Exception $e) {
             return redirect()->back()->with([
-                'message' => 'Something Went Wrong',
+                'message'    => 'Something Went Wrong',
                 'alert-type' => 'error'
             ]);
         }

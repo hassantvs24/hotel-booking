@@ -5,12 +5,12 @@ return [
 
         'CUSTOMER' => [
             [
-                'name'    => 'View customer',
+                'name'    => 'View Customer',
                 'slug'    => 'can_view_customer',
                 'subject' => 'customer',
             ],
             [
-                'name'    => 'Create customer',
+                'name'    => 'Create Customer',
                 'slug'    => 'can_create_customer',
                 'subject' => 'customer',
             ],
@@ -26,23 +26,23 @@ return [
 
         'CATEGORY' => [
             [
-                'name'    => 'View category',
+                'name'    => 'View Category',
                 'slug'    => 'can_view_category',
                 'subject' => 'Menu',
             ],
             [
-                'name'    => 'Create category',
+                'name'    => 'Create Category',
                 'slug'    => 'can_create_category',
                 'subject' => 'Menu',
             ],
             [
-                'name'    => 'Update category',
+                'name'    => 'Update Category',
                 'slug'    => 'can_update_category',
                 'subject' => 'Menu',
             ],
 
             [
-                'name'    => 'Delete category',
+                'name'    => 'Delete Category',
                 'slug'    => 'can_delete_category',
                 'subject' => 'Menu',
             ]
@@ -50,23 +50,23 @@ return [
 
         'ACL_GROUP' => [
             [
-                'name'    => 'View group',
+                'name'    => 'View Group',
                 'slug'    => 'can_view_acl_group',
                 'subject' => 'ACL',
             ],
             [
-                'name'    => 'Create group',
+                'name'    => 'Create Group',
                 'slug'    => 'can_create_acl_group',
                 'subject' => 'ACL',
             ],
             [
-                'name'    => 'Update group',
+                'name'    => 'Update Group',
                 'slug'    => 'can_update_acl_group',
                 'subject' => 'ACL',
             ],
 
             [
-                'name'    => 'Delete group',
+                'name'    => 'Delete Group',
                 'slug'    => 'can_delete_acl_group',
                 'subject' => 'ACL',
             ]
@@ -74,23 +74,23 @@ return [
 
         'ACL_PERMISSION' => [
             [
-                'name'    => 'View permission',
+                'name'    => 'View Permission',
                 'slug'    => 'can_view_acl_permission',
                 'subject' => 'ACL',
             ],
             [
-                'name'    => 'Create permission',
+                'name'    => 'Create Permission',
                 'slug'    => 'can_create_acl_permission',
                 'subject' => 'permission',
             ],
             [
-                'name'    => 'Update permission',
+                'name'    => 'Update Permission',
                 'slug'    => 'can_update_acl_permission',
                 'subject' => 'permission',
             ],
 
             [
-                'name'    => 'Delete permission',
+                'name'    => 'Delete Permission',
                 'slug'    => 'can_delete_acl_permission',
                 'subject' => 'permission',
             ]
@@ -98,23 +98,23 @@ return [
 
         'ACL_USER' => [
             [
-                'name'    => 'View acl user',
+                'name'    => 'View Acl User',
                 'slug'    => 'can_view_acl_user',
                 'subject' => 'ACL',
             ],
             [
-                'name'    => 'Create acl user',
+                'name'    => 'Create Acl User',
                 'slug'    => 'can_create_acl_user',
                 'subject' => 'user',
             ],
             [
-                'name'    => 'Update acl user',
+                'name'    => 'Update Acl User',
                 'slug'    => 'can_update_acl_user',
                 'subject' => 'ACL',
             ],
 
             [
-                'name'    => 'Delete acl user',
+                'name'    => 'Delete Acl User',
                 'slug'    => 'can_delete_acl_user',
                 'subject' => 'ACL',
             ]
@@ -122,12 +122,12 @@ return [
 
         'MISC' => [
             [
-                'name'    => 'Login to admin',
+                'name'    => 'Login To Admin',
                 'slug'    => 'can_login_to_admin',
                 'subject' => 'misc',
             ],
             [
-                'name'    => 'View dashboard',
+                'name'    => 'View Dashboard',
                 'slug'    => 'can_view_dashboard',
                 'subject' => 'misc',
             ],

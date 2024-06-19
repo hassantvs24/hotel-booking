@@ -42,4 +42,9 @@ class BaseController extends Controller
 
         return response()->json($response, $code);
     }
+
+    public function unauthorized() : void
+    {
+        abort(403, 'Unauthorized');
+    }
 }

@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Route;
 
 /*----------------- Admin Routes -----------------*/
 
-Route::prefix('admin')->as('admin.')->group(function () {
+Route::prefix('admin')->as('admin.')->middleware(['auth'])->group(function () {
 
     /*-- Dashboard Routes --*/
     Route::get('dashboard', [DashboardController::class, 'index'])
