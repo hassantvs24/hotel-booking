@@ -50,24 +50,24 @@ return [
 
         'ACL_GROUP' => [
             [
-                'name'    => 'View Group',
-                'slug'    => 'can_view_acl_group',
+                'name'    => 'View Role',
+                'slug'    => 'can_view_acl_role',
                 'subject' => 'ACL',
             ],
             [
-                'name'    => 'Create Group',
-                'slug'    => 'can_create_acl_group',
+                'name'    => 'Create Role',
+                'slug'    => 'can_create_acl_role',
                 'subject' => 'ACL',
             ],
             [
-                'name'    => 'Update Group',
-                'slug'    => 'can_update_acl_group',
+                'name'    => 'Update Role',
+                'slug'    => 'can_update_acl_role',
                 'subject' => 'ACL',
             ],
 
             [
-                'name'    => 'Delete Group',
-                'slug'    => 'can_delete_acl_group',
+                'name'    => 'Delete Role',
+                'slug'    => 'can_delete_acl_role',
                 'subject' => 'ACL',
             ]
         ],
@@ -144,10 +144,10 @@ return [
         'CAN_CREATE_CATEGORY'       => 'can_create_category',
         'CAN_UPDATE_CATEGORY'       => 'can_update_category',
         'CAN_DELETE_CATEGORY'       => 'can_delete_category',
-        'CAN_VIEW_ACL_GROUP'        => 'can_view_acl_group',
-        'CAN_CREATE_ACL_GROUP'      => 'can_create_acl_group',
-        'CAN_UPDATE_ACL_GROUP'      => 'can_update_acl_group',
-        'CAN_DELETE_ACL_GROUP'      => 'can_delete_acl_group',
+        'CAN_VIEW_ACL_ROLE'        => 'can_view_acl_role',
+        'CAN_CREATE_ACL_ROLE'      => 'can_create_acl_role',
+        'CAN_UPDATE_ACL_ROLE'      => 'can_update_acl_role',
+        'CAN_DELETE_ACL_ROLE'      => 'can_delete_acl_role',
         'CAN_VIEW_ACL_PERMISSION'   => 'can_view_acl_permission',
         'CAN_CREATE_ACL_PERMISSION' => 'can_create_acl_permission',
         'CAN_UPDATE_ACL_PERMISSION' => 'can_update_acl_permission',
