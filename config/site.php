@@ -222,12 +222,37 @@ return [
                 ]
             ],
             [
-                'name'       => 'Countries',
-                'route'      => 'admin.countries.index',
+                'name'       => 'Places',
+                'route'      => null,
                 'icon'       => 'ni ni-world text-primary',
-                'key'        => 'admin/countries',
-                'permission' => 'can_view_country',
-                'children'   => []
+                'key'        => 'admin/places*',
+                'permission' => 'can_view_place',
+                'children'   => [
+                    [
+                        'name'       => 'Countries',
+                        'route'      => 'admin.places.countries.index',
+                        'icon'       => 'ni ni-world text-default',
+                        'key'        => 'admin/places/countries',
+                        'permission' => 'can_view_country',
+                        'children'   => []
+                    ],
+                    [
+                        'name'       => 'States',
+                        'route'      => 'admin.places.states.index',
+                        'icon'       => 'ni ni-world text-default',
+                        'key'        => 'admin/places/states',
+                        'permission' => 'can_view_state',
+                        'children'   => []
+                    ],
+                    [
+                        'name'       => 'Cities',
+                        'route'      => 'admin.places.cities.index',
+                        'icon'       => 'ni ni-world text-default',
+                        'key'        => 'admin/places/cities',
+                        'permission' => 'can_view_city',
+                        'children'   => []
+                    ]
+                ]
             ],
             [
                 'name'       => 'Settings',

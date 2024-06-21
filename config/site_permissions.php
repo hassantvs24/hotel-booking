@@ -72,6 +72,54 @@ return [
             ]
         ],
 
+        'STATE' => [
+            [
+                'name'    => 'View State',
+                'slug'    => 'can_view_state',
+                'subject' => 'state',
+            ],
+            [
+                'name'    => 'Create State',
+                'slug'    => 'can_create_state',
+                'subject' => 'state',
+            ],
+            [
+                'name'    => 'Update State',
+                'slug'    => 'can_update_state',
+                'subject' => 'state',
+            ],
+
+            [
+                'name'    => 'Delete State',
+                'slug'    => 'can_delete_state',
+                'subject' => 'state',
+            ]
+        ],
+
+        'CITY' => [
+            [
+                'name'    => 'View City',
+                'slug'    => 'can_view_city',
+                'subject' => 'city',
+            ],
+            [
+                'name'    => 'Create City',
+                'slug'    => 'can_create_city',
+                'subject' => 'city',
+            ],
+            [
+                'name'    => 'Update City',
+                'slug'    => 'can_update_city',
+                'subject' => 'city',
+            ],
+
+            [
+                'name'    => 'Delete City',
+                'slug'    => 'can_delete_city',
+                'subject' => 'city',
+            ]
+        ],
+
         'ACL_GROUP' => [
             [
                 'name'    => 'View Role',
@@ -161,6 +209,11 @@ return [
                 'subject' => 'misc',
             ],
             [
+                'name' => 'View Place',
+                'slug' => 'can_view_place',
+                'subject' => 'misc',
+            ],
+            [
                 'name' => 'View Settings',
                 'slug' => 'can_view_settings',
                 'subject' => 'misc',
@@ -201,7 +254,9 @@ return [
 
         'CAN_VIEW_SETTINGS'         => 'can_view_settings',
         'CAN_VIEW_DASHBOARD'        => 'can_view_dashboard',
+
         'CAN_VIEW_ACL'              => 'can_view_acl',
+        'CAN_VIEW_PLACE'            => 'can_view_place',
 
         'CAN_VIEW_CONTACT'          => 'can_view_contact',
         'CAN_LOGIN_TO_ADMIN'        => 'can_login_to_admin',
