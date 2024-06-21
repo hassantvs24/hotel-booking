@@ -2,6 +2,7 @@
 use App\Http\Controllers\Admin\ACL\PermissionController;
 use App\Http\Controllers\Admin\ACL\RoleController;
 use App\Http\Controllers\Admin\ACL\UserController;
+use App\Http\Controllers\Admin\Country\CountryController;
 use App\Http\Controllers\Admin\DashboardController;
 use Illuminate\Support\Facades\Route;
 
@@ -20,5 +21,6 @@ Route::prefix('admin')->as('admin.')->middleware(['auth'])->group(function () {
         Route::resource('permissions', PermissionController::class);
     });
 
+    Route::resource('countries', CountryController::class);
 });
 /*----------------- Admin Routes -----------------*/

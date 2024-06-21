@@ -48,6 +48,30 @@ return [
             ]
         ],
 
+        'COUNTRY' => [
+            [
+                'name'    => 'View Country',
+                'slug'    => 'can_view_country',
+                'subject' => 'country',
+            ],
+            [
+                'name'    => 'Create Country',
+                'slug'    => 'can_create_country',
+                'subject' => 'country',
+            ],
+            [
+                'name'    => 'Update Country',
+                'slug'    => 'can_update_country',
+                'subject' => 'country',
+            ],
+
+            [
+                'name'    => 'Delete Country',
+                'slug'    => 'can_delete_country',
+                'subject' => 'country',
+            ]
+        ],
+
         'ACL_GROUP' => [
             [
                 'name'    => 'View Role',
@@ -146,31 +170,40 @@ return [
     ],
 
     'PERMISSION_NAMES' => [
+        'CAN_VIEW_COUNTRY'          => 'can_view_country',
+
         'CAN_VIEW_CUSTOMER'         => 'can_view_customer',
         'CAN_CREATE_CUSTOMER'       => 'can_create_customer',
         'CAN_UPDATE_CUSTOMER'       => 'can_update_customer',
         'CAN_DELETE_CUSTOMER'       => 'can_delete_customer',
+
         'CAN_VIEW_CATEGORY'         => 'can_view_category',
         'CAN_CREATE_CATEGORY'       => 'can_create_category',
         'CAN_UPDATE_CATEGORY'       => 'can_update_category',
         'CAN_DELETE_CATEGORY'       => 'can_delete_category',
+
         'CAN_VIEW_ACL_ROLE'         => 'can_view_acl_role',
         'CAN_CREATE_ACL_ROLE'       => 'can_create_acl_role',
         'CAN_UPDATE_ACL_ROLE'       => 'can_update_acl_role',
         'CAN_DELETE_ACL_ROLE'       => 'can_delete_acl_role',
+
         'CAN_VIEW_ACL_PERMISSION'   => 'can_view_acl_permission',
         'CAN_CREATE_ACL_PERMISSION' => 'can_create_acl_permission',
         'CAN_UPDATE_ACL_PERMISSION' => 'can_update_acl_permission',
         'CAN_DELETE_ACL_PERMISSION' => 'can_delete_acl_permission',
+
+        'CAN_UPDATE_USER_GROUP'     => 'can_update_user_group',
+
         'CAN_VIEW_ACL_USER'         => 'can_view_acl_user',
         'CAN_CREATE_ACL_USER'       => 'can_create_acl_user',
-        'CAN_UPDATE_USER_GROUP'     => 'can_update_user_group',
         'CAN_UPDATE_ACL_USER'       => 'can_update_acl_user',
         'CAN_DELETE_ACL_USER'       => 'can_delete_acl_user',
-        'CAN_LOGIN_TO_ADMIN'        => 'can_login_to_admin',
+
         'CAN_VIEW_SETTINGS'         => 'can_view_settings',
         'CAN_VIEW_DASHBOARD'        => 'can_view_dashboard',
         'CAN_VIEW_ACL'              => 'can_view_acl',
+
         'CAN_VIEW_CONTACT'          => 'can_view_contact',
+        'CAN_LOGIN_TO_ADMIN'        => 'can_login_to_admin',
     ]
 ];

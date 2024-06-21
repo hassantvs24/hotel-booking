@@ -222,6 +222,14 @@ return [
                 ]
             ],
             [
+                'name'       => 'Countries',
+                'route'      => 'admin.countries.index',
+                'icon'       => 'ni ni-world text-primary',
+                'key'        => 'admin/countries',
+                'permission' => 'can_view_country',
+                'children'   => []
+            ],
+            [
                 'name'       => 'Settings',
                 'route'      => null,
                 'icon'       => 'ni ni-settings text-primary',
