@@ -2,8 +2,8 @@
 use App\Http\Controllers\Admin\ACL\PermissionController;
 use App\Http\Controllers\Admin\ACL\RoleController;
 use App\Http\Controllers\Admin\ACL\UserController;
-use App\Http\Controllers\Admin\Country\CountryController;
 use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\Place\CountryController;
 use App\Http\Controllers\Admin\Place\CityController;
 use App\Http\Controllers\Admin\Place\StateController;
 use Illuminate\Support\Facades\Route;

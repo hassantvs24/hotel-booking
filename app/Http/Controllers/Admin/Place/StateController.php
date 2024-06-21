@@ -12,7 +12,8 @@ class StateController extends Controller
      */
     public function index()
     {
-        //
+
+        return view('admin.place.state.index');
     }
 
     /**
