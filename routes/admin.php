@@ -27,7 +27,16 @@ Route::prefix('admin')->as('admin.')->middleware(['auth'])->group(function () {
 
     /*-- Place Routes --*/
     Route::prefix('places')->as('places.')->group(function () {
-        Route::resource('', PlaceController::class);
+
+        Route::controller(PlaceController::class)->group(function () {
+            Route::get('', 'index')->name('index');
+            Route::get('create', 'create')->name('create');
+            Route::post('', 'store')->name('store');
+            Route::get('{id}/edit', 'edit')->name('edit');
+            Route::put('{id}', 'update')->name('update');
+            Route::delete('destroy/{id}', 'destroy')->name('destroy');
+        });
+
         Route::resource('cities', CityController::class);
         Route::resource('states', StateController::class);
         Route::resource('countries', CountryController::class);
