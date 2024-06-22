@@ -11,18 +11,16 @@
             @endHasPermission
         </x-admin.card.card-header>
 
-        <x-admin.card.card-body class="px-0 pt-0 pb-2">
+        <x-admin.card.card-body class="px-0 pt-0 pb-2 table-responsive">
             <x-admin.table>
                 <x-admin.table-header>
                     <x-admin.table-head value="Name"/>
                     <x-admin.table-head value="Latitude"/>
                     <x-admin.table-head value="Longitude"/>
                     <x-admin.table-head value="Zip Code"/>
-                    <x-admin.table-head value="Description"/>
                     <x-admin.table-head value="Nearest Police"/>
                     <x-admin.table-head value="Nearest Hospital"/>
                     <x-admin.table-head value="Nearest Fire"/>
-                    <x-admin.table-head value="Photo"/>
                     <x-admin.table-head value="Country"/>
                     @if( hasPermission($permissions['update']) || hasPermission($permissions['delete']) )
                         <x-admin.table-head class="text-right" value="Actions"/>
@@ -35,11 +33,9 @@
                             <x-admin.table-cell :value="$place->lat"/>
                             <x-admin.table-cell :value="$place->long"/>
                             <x-admin.table-cell :value="$place->zip_code"/>
-                            <x-admin.table-cell class="word-wrap" :value="truncate_Words($place->description, 5)"/>
                             <x-admin.table-cell :value="$place->nearest_police"/>
                             <x-admin.table-cell :value="$place->nearest_hospital"/>
                             <x-admin.table-cell :value="$place->nearest_fire"/>
-                            <x-admin.table-cell :value="$place->photo"/>
                             <x-admin.table-cell :value="$place->city?->name"/>
                             @if( hasPermission($permissions['update']) || hasPermission($permissions['delete']) )
                                 <x-admin.table-cell class="text-right">

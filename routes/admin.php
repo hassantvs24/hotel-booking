@@ -34,9 +34,9 @@ Route::prefix('admin')->as('admin.')->middleware(['auth'])->group(function () {
             Route::get('', 'index')->name('index');
             Route::get('create', 'create')->name('create');
             Route::post('', 'store')->name('store');
-            Route::get('{id}/edit', 'edit')->name('edit');
-            Route::put('{id}', 'update')->name('update');
-            Route::delete('destroy/{id}', 'destroy')->name('destroy');
+            Route::get('{place}/edit', 'edit')->name('edit');
+            Route::put('{place}', 'update')->name('update');
+            Route::delete('destroy/{place}', 'destroy')->name('destroy');
         });
 
         Route::resource('cities', CityController::class);
@@ -51,9 +51,9 @@ Route::prefix('admin')->as('admin.')->middleware(['auth'])->group(function () {
             Route::get('', 'index')->name('index');
             Route::get('create', 'create')->name('create');
             Route::post('', 'store')->name('store');
-            Route::get('{id}/edit', 'edit')->name('edit');
-            Route::put('{id}', 'update')->name('update');
-            Route::delete('destroy/{id}', 'destroy')->name('destroy');
+            Route::get('{facility}/edit', 'edit')->name('edit');
+            Route::put('{facility}', 'update')->name('update');
+            Route::delete('destroy/{facility}', 'destroy')->name('destroy');
         });
 
         Route::resource('sub-facilities', SubFacilityController::class)->parameters(['sub-facilities' => 'subFacility']);

@@ -96,21 +96,21 @@
                 <div class="row">
                     <div class="col-6">
                         <x-admin.input
+                            type="select"
+                            name="city_id"
+                            id="city_id"
+                            label="City"
+                            :options="$cities"
+                        />
+                    </div>
+                    <div class="col-6">
+                        <x-admin.input
                             type="file"
                             name="photo"
                             id="photo"
                             placeholder="Photo"
                             label="Photo"
                             value="{{ old('photo') }}"
-                        />
-                    </div>
-                    <div class="col-6">
-                        <x-admin.input
-                            type="select"
-                            name="city_id"
-                            id="city_id"
-                            label="City"
-                            :options="$cities"
                         />
                     </div>
                 </div>
