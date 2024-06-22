@@ -2,18 +2,44 @@
 
 namespace App\Http\Controllers\Admin\Place;
 
-use App\Http\Controllers\Controller;
+use App\Http\Controllers\BaseController;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
+use App\Http\Requests\Admin\Place\StateRequest;
+use App\Repositories\Place\CityRepository;
+use App\Repositories\Place\PlaceRepository;
+use App\Models\Place;
 
-class PlaceController extends Controller
+class PlaceController extends BaseController
 {
     /**
      * Display a listing of the resource.
      */
-    public function index() : View
+    public function index(Request $request, PlaceRepository $placeRepository) : View
     {
-        return view('admin.place.place.index');
+        if (!hasPermission('can_view_place')) {
+            $this->unauthorized();
+        }
+        $query = array_merge(
+            $request->only(['search', 'filters', 'order_by', 'order', 'per_page', 'page']),
+            [
+                'with'     => [],
+                'where'    => [],
+                'order_by' => 'id',
+                'order'    => 'DESC',
+            ]
+        );
+
+        $places = $placeRepository->paginate($query);
+
+        $permissions = [
+            'manage' => 'can_view_place',
+            'create' => 'can_create_place',
+            'update' => 'can_update_place',
+            'delete' => 'can_delete_place',
+        ];
+
+        return view('admin.place.place.index',compact('places','permissions'));
     }
 
     /**
