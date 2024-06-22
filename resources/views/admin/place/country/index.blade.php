@@ -15,14 +15,12 @@
                 <x-admin.table-body>
                     @forelse($countries as $country)
                         <x-admin.table-row>
-                            <x-admin.table-cell>
-                                <img src="{{$country->flag}}" alt="{{$country->flag}}">
-                            </x-admin.table-cell>
+                            <x-admin.table-cell :value="$country->flag"/>
                             <x-admin.table-cell :value="$country->name"/>
                             <x-admin.table-cell :value="$country->short_name"/>
                             <x-admin.table-cell :value="$country->country_code"/>
                             <x-admin.table-cell :value="$country->currency"/>
-                            <x-admin.table-cell >
+                            <x-admin.table-cell>
                                 <x-admin.badge :text="$country->currency_code"/>
                             </x-admin.table-cell>
                             <x-admin.table-cell class="word-wrap" :value="$country->language"/>
