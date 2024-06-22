@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin\Place;
 use App\Http\Controllers\BaseController;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\Place\CityRequest;
+use App\Models\City;
 use App\Models\State;
 use App\Repositories\Place\CityRepository;
 use App\Repositories\Place\StateRepository;
@@ -62,7 +63,7 @@ class CityController extends BaseController
     /**
      * Store a newly created resource in storage.
      */
-    public function store(CityRequest $request, CityRepository $cityRepository) :RedirectResponse
+    public function store(CityRequest $request, CityRepository $cityRepository) : RedirectResponse
     {
         if (!hasPermission('can_create_city')) {
             $this->unauthorized();
@@ -76,8 +77,9 @@ class CityController extends BaseController
                 'alert-type' => 'success'
             ]);
         } catch (\Exception $e) {
-            return redirect()->back()->with('notification', [
-                [ 'type' => 'error', 'message' => 'City could not be created' ]
+            return redirect()->back()->with([
+                'message'    => 'Something went wrong.',
+                'alert-type' => 'error'
             ]);
         }
     }
@@ -93,24 +95,64 @@ class CityController extends BaseController
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(string $id)
+    public function edit(StateRepository $stateRepository, City $city) : View
     {
-        //
+        if (!hasPermission('can_update_city')) {
+            $this->unauthorized();
+        }
+
+        $states = $stateRepository->pluck('name', 'id')->toArray();
+
+        return view('admin.place.city.edit', compact('city', 'states'));
     }
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, string $id)
+    public function update(CityRequest $request, CityRepository $cityRepository, $city) : RedirectResponse
     {
-        //
+        if (!hasPermission('can_update_city')) {
+            $this->unauthorized();
+        }
+
+        try {
+            $city = $cityRepository->getModel($city);
+            $cityRepository->update($request->validated(), $city);
+
+            return redirect()->route('admin.places.cities.index')->with([
+                'message'    => 'City updated successfully.',
+                'alert-type' => 'success'
+            ]);
+        } catch (\Exception $e) {
+            return redirect()->back()->with([
+                'message'    => 'Something went wrong.',
+                'alert-type' => 'error'
+            ]);
+        }
     }
 
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(string $id)
+    public function destroy(CityRepository $cityRepository, $city)
     {
-        //
+        if (!hasPermission('can_delete_city')) {
+            $this->unauthorized();
+        }
+
+        try {
+            $city = $cityRepository->getModel($city);
+            $cityRepository->delete($city->id);
+
+            return redirect()->route('admin.places.cities.index')->with([
+                'message'    => 'City deleted successfully.',
+                'alert-type' => 'success'
+            ]);
+        } catch (\Exception $e) {
+            return redirect()->back()->with([
+                'message'    => 'Something went wrong.',
+                'alert-type' => 'error'
+            ]);
+        }
     }
 }

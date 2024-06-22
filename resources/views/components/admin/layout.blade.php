@@ -64,8 +64,8 @@
 <script>
     @if (Session::has('message'))
     (function () {
-        let type = "{{ Session::get('alert-type', 'info') }}";
-        let message = "{{ Session::get('message') }}";
+        let type = "{{ Session::get('alert-type', 'info') }}"
+        let message = "{{ Session::get('message') }}"
 
         function showToast(type, message) {
             toastr.options.timeOut = 1000;
