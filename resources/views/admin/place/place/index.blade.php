@@ -3,7 +3,7 @@
         <x-admin.card.card-header title="Places" class="d-flex align-content-center">
             @hasPermission($permissions['create'])
             <x-admin.page-action>
-                <a href="{{ route('admin.places.places.create') }}" class="m-0 btn btn-xs btn-outline-primary">
+                <a href="{{ route('admin.places.create') }}" class="m-0 btn btn-xs btn-outline-primary">
                     <i class="fas fa-plus me-2"></i>
                     Add Place
                 </a>
@@ -24,36 +24,34 @@
                     <x-admin.table-head value="Nearest Fire"/>
                     <x-admin.table-head value="Photo"/>
                     <x-admin.table-head value="Country"/>
-                    <x-admin.table-head value="State"/>
                     @if( hasPermission($permissions['update']) || hasPermission($permissions['delete']) )
                         <x-admin.table-head class="text-right" value="Actions"/>
                     @endif
                 </x-admin.table-header>
                 <x-admin.table-body>
-                    @forelse($cities as $city)
+                    @forelse($places as $place)
                         <x-admin.table-row>
-                            <x-admin.table-cell :value="$places->name"/>
-                            <x-admin.table-cell :value="$places->lat"/>
-                            <x-admin.table-cell :value="$places->lat"/>
-                            <x-admin.table-cell :value="$places->long"/>
-                            <x-admin.table-cell :value="$places->zip_code"/>
-                            <x-admin.table-cell :value="$places->description"/>
-                            <x-admin.table-cell :value="$places->nearest_police"/>
-                            <x-admin.table-cell :value="$places->nearest_hospital"/>
-                            <x-admin.table-cell :value="$places->nearest_fire"/>
-                            <x-admin.table-cell :value="$places->photo"/>
-                            <x-admin.table-cell :value="$places->city?->name"/>
+                            <x-admin.table-cell :value="$place->name"/>
+                            <x-admin.table-cell :value="$place->lat"/>
+                            <x-admin.table-cell :value="$place->long"/>
+                            <x-admin.table-cell :value="$place->zip_code"/>
+                            <x-admin.table-cell class="word-wrap" :value="truncate_Words($place->description, 5)"/>
+                            <x-admin.table-cell :value="$place->nearest_police"/>
+                            <x-admin.table-cell :value="$place->nearest_hospital"/>
+                            <x-admin.table-cell :value="$place->nearest_fire"/>
+                            <x-admin.table-cell :value="$place->photo"/>
+                            <x-admin.table-cell :value="$place->city?->name"/>
                             @if( hasPermission($permissions['update']) || hasPermission($permissions['delete']) )
                                 <x-admin.table-cell class="text-right">
                                     @hasPermission($permissions['update'])
-                                    <a href="{{ route('admin.places.cities.edit', $city->id) }}"
+                                    <a href="{{ route('admin.places.edit', $place->id) }}"
                                        class="btn btn-icon btn-xs btn-outline-primary">
                                         <i class="fas fa-edit"></i>
                                     </a>
                                     @endHasPermission
                                     @hasPermission($permissions['delete'])
                                     <x-admin.form
-                                            action="{{ route('admin.places.places.destroy', $place->id) }}"
+                                            action="{{ route('admin.places.destroy', $place->id) }}"
                                             method="delete"
                                             class="d-inline"
                                     >
