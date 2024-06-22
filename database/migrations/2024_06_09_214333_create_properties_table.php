@@ -24,9 +24,9 @@ return new class extends Migration
             $table->string('seo_title')->nullable();
             $table->string('seo_meta')->nullable();
             $table->enum('status', ['Pending', 'Published', 'Unpublished'])->nullable();
-            $table->foreignId('property_categories_id')->nullable()->constrained()->onDelete('set null')->onUpdate('No Action');
-            $table->foreignId('places_id')->nullable()->constrained()->onDelete('set null')->onUpdate('No Action');
-            $table->foreignId('users_id')->constrained()->onDelete('cascade')->onUpdate('No Action');
+            $table->foreignId('property_category_id')->nullable()->constrained()->onDelete('set null')->onUpdate('No Action');
+            $table->foreignId('place_id')->nullable()->constrained()->onDelete('set null')->onUpdate('No Action');
+            $table->foreignId('user_id')->constrained()->onDelete('cascade')->onUpdate('No Action');
             $table->softDeletes();
             $table->timestamps();
         });

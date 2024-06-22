@@ -22,7 +22,7 @@ return new class extends Migration
             $table->string('nearest_hospital')->nullable();
             $table->string('nearest_fire')->nullable();
             $table->string('photo')->nullable();
-            $table->foreignId('cities_id')->constrained()->onDelete('cascade')->onUpdate('No Action');
+            $table->foreignId('city_id')->constrained()->onDelete('cascade')->onUpdate('No Action');
             $table->softDeletes();
             $table->timestamps();
         });

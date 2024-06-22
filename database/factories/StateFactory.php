@@ -22,7 +22,7 @@ class StateFactory extends Factory
         return [
             'name'         => $this->faker->city,
             'short_name'   => $this->faker->citySuffix,
-            'countries_id' => $this->faker->randomElement($countries)->id,
+            'country_id' => $this->faker->randomElement($countries)->id,
         ];
     }
 }

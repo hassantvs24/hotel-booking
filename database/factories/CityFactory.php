@@ -20,7 +20,7 @@ class CityFactory extends Factory
         return [
             'name'      => $this->faker->city,
             'zip_code'  => $this->faker->postcode,
-            'states_id' => $this->faker->randomElement(State::all())->id,
+            'state_id' => $this->faker->randomElement(State::all())->id,
             'lat'       => $this->faker->latitude,
             'long'      => $this->faker->longitude,
         ];

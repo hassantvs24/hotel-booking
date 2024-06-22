@@ -18,8 +18,8 @@ return new class extends Migration
             $table->decimal('long');
             $table->string('notes')->nullable();
             $table->string('photo')->nullable();
-            $table->foreignId('places_id')->nullable()->constrained()->onDelete('No Action')->onUpdate('No Action');
-            $table->foreignId('surroundings_id')->constrained()->onDelete('cascade')->onUpdate('No Action');
+            $table->foreignId('place_id')->nullable()->constrained()->onDelete('No Action')->onUpdate('No Action');
+            $table->foreignId('surrounding_id')->constrained()->onDelete('cascade')->onUpdate('No Action');
             $table->softDeletes();
             $table->timestamps();
         });
