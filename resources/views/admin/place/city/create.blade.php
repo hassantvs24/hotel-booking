@@ -28,7 +28,7 @@
                 <div class="row">
                     <div class="col-md-6">
                         <x-admin.input
-                            type="text"
+                            type="number"
                             name="lat"
                             id="lat"
                             placeholder="Latitude"
@@ -38,7 +38,7 @@
                     </div>
                     <div class="col-md-6">
                         <x-admin.input
-                            type="text"
+                            type="number"
                             name="long"
                             id="long"
                             placeholder="Longitude"
@@ -52,8 +52,8 @@
                     <div class="col-12">
                         <x-admin.input
                             type="select"
-                            name="states_id"
-                            id="states_id"
+                            name="state_id"
+                            id="state_id"
                             label="State"
                             :options="$states"
                         />

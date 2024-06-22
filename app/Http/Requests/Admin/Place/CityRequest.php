@@ -21,10 +21,16 @@ class CityRequest extends FormRequest
      */
     public function rules() : array
     {
+        $modelId = $this->city ?: null;
+
+        $uniqueNameRule = ($this->method() === 'PUT' && $modelId !== null)
+            ? 'unique:cities,name,' . $modelId
+            : 'unique:cities,name';
+
         return [
-            'name'      => 'required|string|max:255',
+            'name'      => "required|string|max:255|{$uniqueNameRule}",
             'zip_code'  => 'required|string|max:255',
-            'states_id' => 'required|integer|exists:states,id',
+            'state_id' => 'required|integer|exists:states,id',
             'lat'       => 'required|numeric',
             'long'      => 'required|numeric',
         ];
@@ -38,13 +44,13 @@ class CityRequest extends FormRequest
     public function messages() : array
     {
         return [
-            'name.required'      => 'City name is required',
-            'zip_code.required'  => 'Zip code is required',
-            'states_id.required' => 'State is required',
-            'lat.required'       => 'Latitude is required',
-            'lat.numeric'        => 'Latitude must be a number',
-            'long.required'      => 'Longitude is required',
-            'long.numeric'       => 'Longitude must be a number',
+            'name.required'     => 'City name is required',
+            'zip_code.required' => 'Zip code is required',
+            'state_id.required' => 'State is required',
+            'lat.required'      => 'Latitude is required',
+            'lat.numeric'       => 'Latitude must be a number',
+            'long.required'     => 'Longitude is required',
+            'long.numeric'      => 'Longitude must be a number',
         ];
     }
 }
