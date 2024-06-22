@@ -40,7 +40,7 @@
 
                 <div class="mt-3 row">
                     <div class="col-md-6">
-                        <a href="{{ route('admin.places.cities.index') }}" class="btn btn-danger btn-sm">Back To Cities</a>
+                        <a href="{{ route('admin.places.states.index') }}" class="btn btn-danger btn-sm">Back To States</a>
                     </div>
                     <div class="text-right col-md-6">
                         <x-admin.button variant="primary" type="submit" size="sm">
