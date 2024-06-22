@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Admin\Place;
 use App\Http\Controllers\BaseController;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
-use App\Http\Requests\Admin\Place\StateRequest;
+use App\Http\Requests\Admin\Place\PlaceRequest;
 use App\Repositories\Place\CityRepository;
 use App\Repositories\Place\PlaceRepository;
 use App\Models\Place;
@@ -45,17 +45,35 @@ class PlaceController extends BaseController
     /**
      * Show the form for creating a new resource.
      */
-    public function create() : View
+    public function create(CityRepository $cityRepository) : View
     {
-        return view('admin.place.place.create');
+        if (!hasPermission('can_create_place')) {
+            $this->unauthorized();
+        }
+
+        $cities=$cityRepository->pluck('name','id')->toArray();
+        return view('admin.place.place.create',compact('cities'));
     }
 
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request)
+    public function store(PlaceRequest $request, PlaceRepository $placeRepository)
     {
-        //
+        if (!hasPermission('can_create_place')) {
+            $this->unauthorized();
+        }
+        // try {
+            $placeRepository->create($request->validated());
+            return redirect()->route('admin.places.index')->with([
+                'message'    => 'Place added successfully.',
+                'alert-type' => 'success'
+            ]);
+        // } catch (\Exception $e) {
+            return redirect()->back()->with('notification', [
+                [ 'type' => 'error', 'message' => 'Place could not be created' ]
+            ]);
+        // }
     }
 
     /**
@@ -69,24 +87,63 @@ class PlaceController extends BaseController
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(string $id) : View
+    public function edit(CityRepository $cityRepository,Place $place) : View
     {
-        return view('admin.place.place.edit');
+        if (!hasPermission('can_update_place')) {
+            $this->unauthorized();
+        }
+
+        $cities = $cityRepository->pluck('name','id')->toArray();
+
+        return view('admin.place.place.edit',compact('place','cities'));
     }
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, string $id)
+    public function update(PlaceRequest $request,PlaceRepository $placeRepository, $place)
     {
-        //
+        if (!hasPermission('can_update_place')) {
+            $this->unauthorized();
+        }
+        try {
+            $place = $placeRepository->getModel($place);
+            $placeRepository->update($request->validated(), $place);
+
+            return redirect()->route('admin.places.index')->with([
+                'message'    => 'Place updated successfully.',
+                'alert-type' => 'success'
+            ]);
+        } catch (\Exception $e) {
+            return redirect()->back()->with([
+                'message'    => 'Something went wrong.',
+                'alert-type' => 'error'
+            ]);
+        }
     }
 
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(string $id)
+    public function destroy(PlaceRepository $placeRepository, $place)
     {
-        //
+        if (!hasPermission('can_delete_place')) {
+            $this->unauthorized();
+        }
+
+        try {
+            $place = $placeRepository->getModel($place);
+            $placeRepository->delete($place->id);
+
+            return redirect()->route('admin.places.index')->with([
+                'message'    => 'Place deleted successfully.',
+                'alert-type' => 'success'
+            ]);
+        } catch (\Exception $e) {
+            return redirect()->back()->with([
+                'message'    => 'Something went wrong.',
+                'alert-type' => 'error'
+            ]);
+        }
     }
 }

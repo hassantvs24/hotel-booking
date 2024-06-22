@@ -29,3 +29,14 @@ if (!function_exists('hasPermission')) {
         return auth()->user()->hasPermission($permission);
     }
 }
+if(!function_exists('truncate_Words')){
+    function truncate_Words($text, $limit)
+    {
+        $words = explode(' ', $text);
+        if (count($words) <= $limit) {
+            return $text;
+        }
+        return implode(' ', array_slice($words, 0, $limit)) . '...';
+    }
+}
+
