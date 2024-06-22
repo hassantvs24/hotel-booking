@@ -5,7 +5,7 @@ namespace App\Repositories\Place;
 use App\Models\Country;
 use App\Repositories\Repository;
 
-class CounrtyRepository extends Repository
+class CountryRepository extends Repository
 {
     public function __construct()
     {

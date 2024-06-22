@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Admin\Place;
 
 use App\Http\Controllers\BaseController;
 use Illuminate\Http\Request;
-use App\Repositories\Place\CounrtyRepository;
+use App\Repositories\Place\CountryRepository;
 use Illuminate\View\View;
 
 class CountryController extends BaseController
@@ -12,7 +12,7 @@ class CountryController extends BaseController
     /**
      * Display a listing of the resource.
      */
-    public function index(Request $request, CounrtyRepository $countryRepository) : View
+    public function index(Request $request, CountryRepository $countryRepository) : View
     {
         if (!hasPermission('can_view_country')) {
             $this->unauthorized();
