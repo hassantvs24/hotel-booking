@@ -31,11 +31,11 @@
                         />
                     </div>
                 </div>
-                <div class="row mt-3">
+                <div class="mt-3 row">
                     <div class="col-md-6">
                         <a href="{{ route('admin.acl.roles.index') }}" class="btn btn-danger btn-sm">Back To Roles</a>
                     </div>
-                    <div class="col-md-6 text-right">
+                    <div class="text-right col-md-6">
                         <x-admin.button variant="primary" type="submit" size="sm">Save Role</x-admin.button>
                     </div>
                 </div>
