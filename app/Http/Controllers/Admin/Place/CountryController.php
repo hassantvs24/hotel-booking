@@ -2,18 +2,17 @@
 
 namespace App\Http\Controllers\Admin\Place;
 
-use App\Http\Controllers\Controller;
+use App\Http\Controllers\BaseController;
 use Illuminate\Http\Request;
-use Spatie\Permission\Models\Permission;
-use Spatie\Permission\Models\Role;
 use App\Repositories\Place\CounrtyRepository;
+use Illuminate\View\View;
 
-class CountryController extends Controller
+class CountryController extends BaseController
 {
     /**
      * Display a listing of the resource.
      */
-    public function index(Request $request, CounrtyRepository $countryRepository)
+    public function index(Request $request, CounrtyRepository $countryRepository) : View
     {
         if (!hasPermission('can_view_country')) {
             $this->unauthorized();
@@ -24,8 +23,8 @@ class CountryController extends Controller
             [
                 'with'     => [],
                 'where'    => [],
-                'order_by' => 'id',
-                'order'    => 'DESC',
+                'order_by' => 'name',
+                'order'    => 'ASC',
             ]
         );
         $countries = $countryRepository->paginate($countryQuery);
