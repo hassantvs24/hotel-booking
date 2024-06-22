@@ -48,6 +48,54 @@ return [
             ]
         ],
 
+        'FACILITY' => [
+            [
+                'name'    => 'View Facility',
+                'slug'    => 'can_view_facility',
+                'subject' => 'facility',
+            ],
+            [
+                'name'    => 'Create Facility',
+                'slug'    => 'can_create_facility',
+                'subject' => 'facility',
+            ],
+            [
+                'name'    => 'Update Facility',
+                'slug'    => 'can_update_facility',
+                'subject' => 'facility',
+            ],
+
+            [
+                'name'    => 'Delete Facility',
+                'slug'    => 'can_delete_facility',
+                'subject' => 'facility',
+            ]
+        ],
+
+        'SUB_FACILITY' => [
+            [
+                'name'    => 'View Sub Facility',
+                'slug'    => 'can_view_sub_facility',
+                'subject' => 'sub_facility',
+            ],
+            [
+                'name'    => 'Create Sub Facility',
+                'slug'    => 'can_create_sub_facility',
+                'subject' => 'sub_facility',
+            ],
+            [
+                'name'    => 'Update Sub Facility',
+                'slug'    => 'can_update_sub_facility',
+                'subject' => 'sub_facility',
+            ],
+
+            [
+                'name'    => 'Delete Sub Facility',
+                'slug'    => 'can_delete_sub_facility',
+                'subject' => 'sub_facility',
+            ]
+        ],
+
         'COUNTRY' => [
             [
                 'name'    => 'View Country',
@@ -238,6 +286,11 @@ return [
                 'subject' => 'misc',
             ],
             [
+                'name'    => 'View Facilities',
+                'slug'    => 'can_view_facilities',
+                'subject' => 'misc',
+            ],
+            [
                 'name'    => 'View Settings',
                 'slug'    => 'can_view_settings',
                 'subject' => 'misc',
@@ -279,8 +332,9 @@ return [
         'CAN_VIEW_SETTINGS'  => 'can_view_settings',
         'CAN_VIEW_DASHBOARD' => 'can_view_dashboard',
 
-        'CAN_VIEW_ACL'       => 'can_view_acl',
-        'CAN_VIEW_LOCATIONS' => 'can_view_locations',
+        'CAN_VIEW_ACL'        => 'can_view_acl',
+        'CAN_VIEW_LOCATIONS'  => 'can_view_locations',
+        'CAN_VIEW_FACILITIES' => 'can_view_facilities',
 
         'CAN_VIEW_CONTACT'   => 'can_view_contact',
         'CAN_LOGIN_TO_ADMIN' => 'can_login_to_admin',

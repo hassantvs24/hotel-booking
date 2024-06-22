@@ -4,6 +4,8 @@ use App\Http\Controllers\Admin\ACL\PermissionController;
 use App\Http\Controllers\Admin\ACL\RoleController;
 use App\Http\Controllers\Admin\ACL\UserController;
 use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\Facility\FacilityController;
+use App\Http\Controllers\Admin\Facility\SubFacilityController;
 use App\Http\Controllers\Admin\Place\CountryController;
 use App\Http\Controllers\Admin\Place\CityController;
 use App\Http\Controllers\Admin\Place\PlaceController;
@@ -40,6 +42,21 @@ Route::prefix('admin')->as('admin.')->middleware(['auth'])->group(function () {
         Route::resource('cities', CityController::class);
         Route::resource('states', StateController::class);
         Route::resource('countries', CountryController::class);
+    });
+
+    /*-- Facilities Routes --*/
+    Route::prefix('facilities')->as('facilities.')->group(function () {
+
+        Route::controller(FacilityController::class)->group(function () {
+            Route::get('', 'index')->name('index');
+            Route::get('create', 'create')->name('create');
+            Route::post('', 'store')->name('store');
+            Route::get('{id}/edit', 'edit')->name('edit');
+            Route::put('{id}', 'update')->name('update');
+            Route::delete('destroy/{id}', 'destroy')->name('destroy');
+        });
+
+        Route::resource('sub-facilities', SubFacilityController::class)->parameters(['sub-facilities' => 'subFacility']);
     });
 });
 /*----------------- Admin Routes -----------------*/

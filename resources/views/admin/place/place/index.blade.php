@@ -3,7 +3,7 @@
         <x-admin.card.card-header title="Places" class="d-flex align-content-center">
             @hasPermission($permissions['create'])
             <x-admin.page-action>
-                <a href="{{ route('admin.places.places.create') }}" class="m-0 btn btn-xs btn-outline-primary">
+                <a href="{{ route('admin.places.create') }}" class="m-0 btn btn-xs btn-outline-primary">
                     <i class="fas fa-plus me-2"></i>
                     Add Place
                 </a>

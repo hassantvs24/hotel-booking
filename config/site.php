@@ -190,33 +190,26 @@ return [
                 'children'   => []
             ],
             [
-                'name'       => 'Access Control',
-                'route'      => null,
-                'icon'       => 'ni ni-key-25 text-info',
-                'key'        => 'admin/acl*',
-                'permission' => 'can_view_acl',
-                'children'   => [
+                'name' => 'Facilities',
+                'route' => null,
+                'icon' => 'ni ni-building text-primary',
+                'key'  => 'admin/facilities*',
+                'permission' => 'can_view_facilities',
+                'children' => [
                     [
-                        'name'       => 'Roles',
-                        'route'      => 'admin.acl.roles.index',
-                        'icon'       => 'ni ni-circle-08 text-default',
-                        'key'        => 'admin/acl/roles',
-                        'permission' => 'can_view_acl_role',
+                        'name'       => 'Sub Facilities',
+                        'route'      => 'admin.facilities.sub-facilities.index',
+                        'icon'       => 'ni ni-building text-default',
+                        'key'        => 'admin/facilities/sub-facilities',
+                        'permission' => 'can_view_sub_facility',
                         'children'   => []
                     ],
                     [
-                        'name'       => 'Permissions',
-                        'route'      => 'admin.acl.permissions.index',
-                        'icon'       => 'ni ni-lock-circle-open text-default',
-                        'permission' => 'can_view_acl_permission',
-                        'key'        => 'admin/acl/permissions',
-                    ],
-                    [
-                        'name'       => 'Users',
-                        'route'      => 'admin.acl.users.index',
-                        'icon'       => 'ni ni-single-02 text-default',
-                        'key'        => 'admin/acl/users',
-                        'permission' => 'can_view_acl_user',
+                        'name'       => 'Facilities',
+                        'route'      => 'admin.facilities.index',
+                        'icon'       => 'ni ni-building text-default',
+                        'key'        => 'admin/facilities',
+                        'permission' => 'can_view_facility',
                         'children'   => []
                     ]
                 ]
@@ -260,6 +253,38 @@ return [
                         'permission' => 'can_view_country',
                         'children'   => []
                     ],
+                ]
+            ],
+            [
+                'name'       => 'Access Control',
+                'route'      => null,
+                'icon'       => 'ni ni-key-25 text-info',
+                'key'        => 'admin/acl*',
+                'permission' => 'can_view_acl',
+                'children'   => [
+                    [
+                        'name'       => 'Roles',
+                        'route'      => 'admin.acl.roles.index',
+                        'icon'       => 'ni ni-circle-08 text-default',
+                        'key'        => 'admin/acl/roles',
+                        'permission' => 'can_view_acl_role',
+                        'children'   => []
+                    ],
+                    [
+                        'name'       => 'Permissions',
+                        'route'      => 'admin.acl.permissions.index',
+                        'icon'       => 'ni ni-lock-circle-open text-default',
+                        'permission' => 'can_view_acl_permission',
+                        'key'        => 'admin/acl/permissions',
+                    ],
+                    [
+                        'name'       => 'Users',
+                        'route'      => 'admin.acl.users.index',
+                        'icon'       => 'ni ni-single-02 text-default',
+                        'key'        => 'admin/acl/users',
+                        'permission' => 'can_view_acl_user',
+                        'children'   => []
+                    ]
                 ]
             ],
             [
