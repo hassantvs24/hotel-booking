@@ -1,10 +1,12 @@
 <?php
+
 use App\Http\Controllers\Admin\ACL\PermissionController;
 use App\Http\Controllers\Admin\ACL\RoleController;
 use App\Http\Controllers\Admin\ACL\UserController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\Place\CountryController;
 use App\Http\Controllers\Admin\Place\CityController;
+use App\Http\Controllers\Admin\Place\PlaceController;
 use App\Http\Controllers\Admin\Place\StateController;
 use Illuminate\Support\Facades\Route;
 
@@ -25,9 +27,10 @@ Route::prefix('admin')->as('admin.')->middleware(['auth'])->group(function () {
 
     /*-- Place Routes --*/
     Route::prefix('places')->as('places.')->group(function () {
-        Route::resource('countries', CountryController::class);
-        Route::resource('states', StateController::class);
+        Route::resource('', PlaceController::class);
         Route::resource('cities', CityController::class);
+        Route::resource('states', StateController::class);
+        Route::resource('countries', CountryController::class);
     });
 });
 /*----------------- Admin Routes -----------------*/

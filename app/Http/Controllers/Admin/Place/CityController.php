@@ -3,10 +3,8 @@
 namespace App\Http\Controllers\Admin\Place;
 
 use App\Http\Controllers\BaseController;
-use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\Place\CityRequest;
 use App\Models\City;
-use App\Models\State;
 use App\Repositories\Place\CityRepository;
 use App\Repositories\Place\StateRepository;
 use Illuminate\Http\RedirectResponse;
@@ -134,7 +132,7 @@ class CityController extends BaseController
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(CityRepository $cityRepository, $city)
+    public function destroy(CityRepository $cityRepository, $city) : RedirectResponse
     {
         if (!hasPermission('can_delete_city')) {
             $this->unauthorized();

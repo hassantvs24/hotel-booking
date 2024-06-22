@@ -44,7 +44,7 @@
                     </div>
                     <div class="text-right col-md-6">
                         <x-admin.button variant="primary" type="submit" size="sm">
-                            Add State
+                            Update State
                         </x-admin.button>
                     </div>
                 </div>
