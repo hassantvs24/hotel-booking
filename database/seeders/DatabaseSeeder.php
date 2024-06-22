@@ -20,7 +20,8 @@ class DatabaseSeeder extends Seeder
             UserSeeder::class,
             ACLSeeder::class,
             CountrySeeder::class,
-            StateSeeder::class
+            StateSeeder::class,
+            CitySeeder::class,
         ]);
     }
 }
