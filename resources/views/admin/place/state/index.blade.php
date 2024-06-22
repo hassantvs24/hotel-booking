@@ -27,9 +27,7 @@
                         <x-admin.table-row>
                             <x-admin.table-cell :value="$state->name"/>
                             <x-admin.table-cell :value="$state->short_name"/>
-                            <x-admin.table-cell>
-                                <x-admin.badge :text="$state->country?->name"/>
-                            </x-admin.table-cell>
+                            <x-admin.table-cell :value="$state->country?->name" />
 
 
                             @if( hasPermission($permissions['update']) || hasPermission($permissions['delete']) )

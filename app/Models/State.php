@@ -9,7 +9,7 @@ class State extends Model
     /*----------------------------------------
      * Relationships
      ----------------------------------------*/
-    public function country(): BelongsTo
+    public function country() : BelongsTo
     {
         return $this->belongsTo(Country::class);
     }

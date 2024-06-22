@@ -2,7 +2,15 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+
 class Place extends Model
 {
-    //
+    /*----------------------------------------
+     * Relationships
+     ----------------------------------------*/
+    public function city() : BelongsTo
+    {
+        return $this->belongsTo(City::class);
+    }
 }

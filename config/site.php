@@ -222,18 +222,26 @@ return [
                 ]
             ],
             [
-                'name'       => 'Places',
+                'name'       => 'Locations',
                 'route'      => null,
                 'icon'       => 'ni ni-world text-primary',
                 'key'        => 'admin/places*',
-                'permission' => 'can_view_place',
+                'permission' => 'can_view_locations',
                 'children'   => [
                     [
-                        'name'       => 'Countries',
-                        'route'      => 'admin.places.countries.index',
+                        'name'       => 'Places',
+                        'route'      => 'admin.places.index',
                         'icon'       => 'ni ni-world text-default',
-                        'key'        => 'admin/places/countries',
-                        'permission' => 'can_view_country',
+                        'key'        => 'admin/places',
+                        'permission' => 'can_view_place',
+                        'children'   => []
+                    ],
+                    [
+                        'name'       => 'Cities',
+                        'route'      => 'admin.places.cities.index',
+                        'icon'       => 'ni ni-world text-default',
+                        'key'        => 'admin/places/cities',
+                        'permission' => 'can_view_city',
                         'children'   => []
                     ],
                     [
@@ -245,13 +253,13 @@ return [
                         'children'   => []
                     ],
                     [
-                        'name'       => 'Cities',
-                        'route'      => 'admin.places.cities.index',
+                        'name'       => 'Countries',
+                        'route'      => 'admin.places.countries.index',
                         'icon'       => 'ni ni-world text-default',
-                        'key'        => 'admin/places/cities',
-                        'permission' => 'can_view_city',
+                        'key'        => 'admin/places/countries',
+                        'permission' => 'can_view_country',
                         'children'   => []
-                    ]
+                    ],
                 ]
             ],
             [
