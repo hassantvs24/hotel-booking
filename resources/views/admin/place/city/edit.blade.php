@@ -67,7 +67,7 @@
                     </div>
                     <div class="col-md-6 text-right">
                         <x-admin.button variant="primary" type="submit" size="sm">
-                            Add City
+                            Update City
                         </x-admin.button>
                     </div>
                 </div>

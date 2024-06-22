@@ -91,13 +91,14 @@ class StateController extends BaseController
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(State $state) : View
+    public function edit(CountryRepository $countryRepository, State $state) : View
     {
         if (!hasPermission('can_update_state')) {
             $this->unauthorized();
         }
 
-        $countries = Country::query()->pluck('name', 'id')->toArray();
+        $countries = $countryRepository->pluck('name', 'id')->toArray();
+
         return view('admin.place.state.edit',compact('state','countries'));
     }
 
