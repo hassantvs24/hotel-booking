@@ -21,14 +21,14 @@ class SurroundingPlaceRequest extends FormRequest
      */
     public function rules(): array
     {
-        // $modelId = $this->city ?: null;
+        $modelId = $this->surroundingPlace ?: null;
 
-        // $uniqueNameRule = ($this->method() === 'PUT' && $modelId !== null)
-        //     ? 'unique:surrounding_places,name,' . $modelId
-        //     : 'unique:surrounding_places,name';
+        $uniqueNameRule = ($this->method() === 'PUT' && $modelId !== null)
+            ? 'unique:surrounding_places,name,' . $modelId
+            : 'unique:surrounding_places,name';
 
         return [
-            'name'      => "required|string|max:255",
+            'name'      => "required|string|max:255|{$uniqueNameRule}",
             'lat'       => 'required|numeric',
             'long'      => 'required|numeric',
             'notes' => 'nullable|string',
@@ -37,16 +37,16 @@ class SurroundingPlaceRequest extends FormRequest
             'surrounding_id' => 'required|integer|exists:surroundings,id',
         ];
     }
-            /**
+    /**
      * Get the error messages for the defined validation rules.
      *
      * @return array<string, string>
      */
-    public function messages() : array
+    public function messages(): array
     {
         return [
             'name.required'         => 'The  name is required.',
-            // 'name.unique'           => 'The name has already been taken.',
+            'name.unique'           => 'The name has already been taken.',
             'name.string'       => 'The name must be an string.',
             'lat.required'          => 'The latitude is required.',
             'lat.numeric'           => 'The latitude must be a number.',
