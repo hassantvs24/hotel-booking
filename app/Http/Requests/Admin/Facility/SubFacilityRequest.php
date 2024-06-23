@@ -21,14 +21,14 @@ class SubFacilityRequest extends FormRequest
      */
     public function rules(): array
     {
-        $modelId = $this-> facilitysub?: null;
+        $modelId = $this-> subFacility?: null;
 
         $uniqueNameRule = ($this->method() === 'PUT' && $modelId !== null)
             ? 'unique: facility_subs,name,' . $modelId
             : 'unique: facility_subs,name';
 
         return [
-            'name'      => "required|string|max:255|{$uniqueNameRule}",
+            'name'      => "required|string|max:255",
             'facility_id' => 'required',
         ];
     }
