@@ -11,7 +11,7 @@
             @endHasPermission
         </x-admin.card.card-header>
 
-        <x-admin.card.card-body class="px-0 pt-0 pb-2">
+        <x-admin.card.card-body class="px-0 pt-0 pb-2 table-responsive">
             <x-admin.table>
                 <x-admin.table-header>
                     <x-admin.table-head value="Date" />
@@ -28,7 +28,7 @@
                             <x-admin.table-cell :value="format_date($surrounding->created_at)" />
                             <x-admin.table-cell :value="$surrounding->name" />
                             <x-admin.table-cell />
-                            <x-admin.table-cell :value="$surrounding->notes" />
+                            <x-admin.table-cell class="word-wrap" :value="\Illuminate\Support\Str::limit($surrounding->notes, 50)" />
                             @if (hasPermission($permissions['update']) || hasPermission($permissions['delete']))
                                 <x-admin.table-cell>
                                     @hasPermission($permissions['update'])

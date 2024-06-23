@@ -2,9 +2,8 @@
 
 namespace Database\Factories;
 
-use Illuminate\Database\Eloquent\Factories\Factory;
 use App\Models\Place;
-use App\Models\Surrounding;
+use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
  * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\SurroundingPlace>
@@ -16,17 +15,14 @@ class SurroundingPlaceFactory extends Factory
      *
      * @return array<string, mixed>
      */
-    public function definition(): array
+    public function definition() : array
     {
         return [
-
-            'name' => $this->faker->name,
-            'lat' => $this->faker->latitude,
-            'long' => $this->faker->longitude,
-            'notes' => $this->faker->text,
-            'photo' => $this->faker->imageUrl(),
+            'name'     => $this->faker->word,
+            'notes'    => $this->faker->text,
+            'lat'      => $this->faker->latitude,
+            'long'     => $this->faker->longitude,
             'place_id' => $this->faker->randomElement(Place::all())->id,
-            'surrounding_id' => $this->faker->randomElement(Surrounding::all())->id,
         ];
     }
 }
