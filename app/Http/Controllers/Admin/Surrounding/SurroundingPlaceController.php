@@ -4,6 +4,9 @@ namespace App\Http\Controllers\Admin\Surrounding;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\RedirectResponse;
+use App\Repositories\Surrounding\SurroundingPlaceRepository;
+use App\Http\Requests\Admin\Surrounding\SurroundingPlaceRequest;
+use App\Models\SurroundingPlace;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
@@ -12,9 +15,32 @@ class SurroundingPlaceController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index() : View
+    public function index(Request $request, SurroundingPlaceRepository $surroundingPlaceRepository) : View
     {
-        return view('admin.surrounding.place.index');
+        if (!hasPermission('can_view_surrounding_place')) {
+            $this->unauthorized();
+        }
+
+        $query = array_merge(
+            $request->only(['search', 'filters', 'order_by', 'order', 'per_page', 'page']),
+            [
+                'with'     => [],
+                'where'    => [],
+                'order_by' => 'id',
+                'order'    => 'DESC',
+            ]
+        );
+
+        $surroundingplaces  = $surroundingPlaceRepository->paginate($query);
+
+        $permissions = [
+            'manage' => 'can_view_surrounding_place',
+            'create' => 'can_create_surrounding_place',
+            'update' => 'can_update_surrounding_place',
+            'delete' => 'can_delete_surrounding_place',
+        ];
+
+        return view('admin.surrounding.place.index', compact('surroundingplaces', 'permissions'));
     }
 
     /**

@@ -24,6 +24,7 @@ class DatabaseSeeder extends Seeder
             CitySeeder::class,
             PlaceSeeder::class,
             FacilitySeeder::class,
+            SurroundingplaceSeeder::class
         ]);
     }
 }

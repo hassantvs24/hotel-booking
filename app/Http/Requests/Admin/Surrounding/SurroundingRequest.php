@@ -46,6 +46,7 @@ class SurroundingRequest extends FormRequest
             'name.unique'           => 'The name has already been taken.',
             'name.string'       => 'The name must be an string.',
             'notes.string'       => 'The note must be an string.',
+
         ];
     }
 }

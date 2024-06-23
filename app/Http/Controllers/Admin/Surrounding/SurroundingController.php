@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers\Admin\Surrounding;
 
-use App\Http\Controllers\Controller;
+use App\Http\Controllers\BaseController;
 use Illuminate\Http\RedirectResponse;
 use App\Repositories\Surrounding\SurroundingRepository;
 use App\Http\Requests\Admin\Surrounding\SurroundingRequest;
@@ -10,7 +10,7 @@ use App\Models\Surrounding;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
-class SurroundingController extends Controller
+class SurroundingController extends BaseController
 {
     /**
      * Display a listing of the resource.
