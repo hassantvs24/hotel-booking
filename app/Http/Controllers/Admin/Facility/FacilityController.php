@@ -21,7 +21,7 @@ class FacilityController extends BaseController
             $this->unauthorized();
         }
 
-        $Query = array_merge(
+        $query = array_merge(
             $request->only(['search', 'filters', 'order_by', 'order', 'per_page', 'page']),
             [
                 'with'     => [],
@@ -31,7 +31,7 @@ class FacilityController extends BaseController
             ]
         );
 
-        $facilities  = $facilityRepository->paginate($Query);
+        $facilities  = $facilityRepository->paginate($query);
 
         $permissions = [
             'manage' => 'can_view_facility',

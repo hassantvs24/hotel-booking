@@ -34,7 +34,7 @@
                                 <x-admin.badge class="mr-2" type="primary" :text="$facility->facility_type "/>
                             </x-admin.table-cell>
                             @if( hasPermission($permissions['update']) || hasPermission($permissions['delete']) )
-                                <x-admin.table-cell class="text-right">
+                                <x-admin.table-cell>
                                     @hasPermission($permissions['update'])
                                         <a href="{{ route('admin.facilities.edit', $facility->id) }}"
                                            class="btn btn-icon btn-xs btn-outline-primary">
