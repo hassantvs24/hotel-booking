@@ -11,10 +11,12 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('room_media', function (Blueprint $table) {
+        Schema::create('room_prices', function (Blueprint $table) {
             $table->id();
-            $table->string('media_file');
-            $table->string('media_type')->nullable();
+            $table->double('price')->default(0);
+            $table->string('note')->nullable();
+            $table->boolean('is_activated')->default(0)->nullable('0 means not activate');
+            $table->foreignId('price_types_id')->constrained()->onDelete('Set Null')->onUpdate('No Action');
             $table->foreignId('rooms_id')->constrained()->onDelete('cascade')->onUpdate('No Action');
             $table->softDeletes();
             $table->timestamps();
@@ -26,6 +28,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('room_media');
+        Schema::dropIfExists('room_prices');
     }
 };

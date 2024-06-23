@@ -8,4 +8,9 @@ use Illuminate\Database\Eloquent\Model;
 class PropertyFacility extends Model
 {
     use HasFactory;
+
+    protected $fillable = [
+        'facility_subs_id',
+        'properties_id'
+    ];
 }

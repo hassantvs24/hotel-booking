@@ -17,6 +17,7 @@ return new class extends Migration
             $table->string('icon')->nullable();
             $table->string('notes')->nullable();
             $table->string('facility_type')->comment('Add if applicable. Example: Property, Place, Room etc')->nullable();
+            $table->enum('facility_for', ['Property', 'Room'])->default('Property');
             $table->softDeletes();
             $table->timestamps();
         });

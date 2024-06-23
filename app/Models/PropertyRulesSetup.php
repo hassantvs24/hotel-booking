@@ -8,4 +8,11 @@ use Illuminate\Database\Eloquent\Model;
 class PropertyRulesSetup extends Model
 {
     use HasFactory;
+
+    protected $fillable = [
+        'rule_description',
+        'is_active',
+        'property_rules_id',
+        'properties_id'
+    ];
 }

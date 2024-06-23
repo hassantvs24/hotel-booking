@@ -11,8 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('bed_categories', function (Blueprint $table) {
+        Schema::create('property_media', function (Blueprint $table) {
             $table->id();
+            $table->string('media_file');
+            $table->string('media_type')->nullable();
+            $table->foreignId('properties_id')->constrained()->onDelete('cascade')->onUpdate('No Action');
             $table->softDeletes();
             $table->timestamps();
         });
@@ -23,6 +26,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('bed_categories');
+        Schema::dropIfExists('property_media');
     }
 };

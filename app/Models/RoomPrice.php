@@ -5,7 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class BedCategory extends Model
+class RoomPrice extends Model
 {
     use HasFactory;
 }

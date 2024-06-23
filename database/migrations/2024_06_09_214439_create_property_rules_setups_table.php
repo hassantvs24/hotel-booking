@@ -13,6 +13,10 @@ return new class extends Migration
     {
         Schema::create('property_rules_setups', function (Blueprint $table) {
             $table->id();
+            $table->text('rule_description');
+            $table->boolean('is_active')->default(1)->comment('1 means active');
+            $table->foreignId('property_rules_id')->constrained()->onDelete('cascade')->onUpdate('No Action');
+            $table->foreignId('properties_id')->constrained()->onDelete('cascade')->onUpdate('No Action');
             $table->softDeletes();
             $table->timestamps();
         });

@@ -11,8 +11,12 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('room_facilities', function (Blueprint $table) {
+        Schema::create('bed_types', function (Blueprint $table) {
             $table->id();
+            $table->string('name')->nullable();
+            $table->integer('capacity')->nullable()->nullable('Guest');
+            $table->integer('total_bed')->nullable();
+            $table->integer('bed_size')->nullable();//Square meter
             $table->softDeletes();
             $table->timestamps();
         });
@@ -23,6 +27,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('room_facilities');
+        Schema::dropIfExists('bed_types');
     }
 };

@@ -13,6 +13,19 @@ return new class extends Migration
     {
         Schema::create('rooms', function (Blueprint $table) {
             $table->id();
+            $table->string('name');
+            $table->string('photo')->nullable();
+            $table->integer('room_number')->nullable();
+            $table->integer('room_size')->nullable();//Square meter
+            $table->integer('guest_capacity')->nullable();
+            $table->boolean('extra_bed')->default(1)->comment('1 means possible');
+            $table->integer('total_balcony')->default(0);
+            $table->integer('total_window')->default(0);
+            $table->double('base_price')->default(0);
+            $table->text('notes')->nullable();
+            $table->foreignId('bed_types_id')->constrained()->onDelete('Set Null')->onUpdate('No Action');
+            $table->foreignId('room_types_id')->constrained()->onDelete('Set Null')->onUpdate('No Action');
+            $table->foreignId('properties_id')->constrained()->onDelete('cascade')->onUpdate('No Action');
             $table->softDeletes();
             $table->timestamps();
         });

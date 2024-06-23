@@ -8,4 +8,10 @@ use Illuminate\Database\Eloquent\Model;
 class RoomExtraFacilitySet extends Model
 {
     use HasFactory;
+
+    protected $fillable = [
+        'description',
+        'room_extra_facilities_id',
+        'rooms_id'
+    ];
 }

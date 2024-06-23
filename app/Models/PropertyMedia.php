@@ -8,4 +8,10 @@ use Illuminate\Database\Eloquent\Model;
 class PropertyMedia extends Model
 {
     use HasFactory;
+
+    protected $fillable = [
+        'media_file',
+        'media_type',
+        'properties_id'
+    ];
 }

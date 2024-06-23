@@ -13,6 +13,8 @@ return new class extends Migration
     {
         Schema::create('property_rules', function (Blueprint $table) {
             $table->id();
+            $table->string('rule_title');
+            $table->string('rule_note')->nullable();
             $table->softDeletes();
             $table->timestamps();
         });

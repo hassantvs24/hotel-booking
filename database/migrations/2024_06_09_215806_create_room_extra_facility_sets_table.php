@@ -13,6 +13,9 @@ return new class extends Migration
     {
         Schema::create('room_extra_facility_sets', function (Blueprint $table) {
             $table->id();
+            $table->text('description');
+            $table->foreignId('room_extra_facilities_id')->constrained()->onDelete('cascade')->onUpdate('No Action');
+            $table->foreignId('rooms_id')->constrained()->onDelete('cascade')->onUpdate('No Action');
             $table->softDeletes();
             $table->timestamps();
         });
