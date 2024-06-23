@@ -6,6 +6,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Spatie\Permission\Traits\HasPermissions;
 use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticatable
@@ -46,5 +47,16 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+
+
+    public function hasPermission($permission) : bool
+    {
+        return $this->permissions()->where('slug', $permission)
+            ->orWhere('name', $permission)->exists() ||
+            $this->roles()->whereHas('permissions', function ($query) use ($permission) {
+                $query->where('name', $permission);
+                $query->orWhere('slug', $permission);
+            })->exists();
     }
 }

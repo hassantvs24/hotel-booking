@@ -18,7 +18,7 @@ return new class extends Migration
             $table->decimal('lat')->nullable();
             $table->decimal('long')->nullable();
             $table->string('photo')->nullable();
-            $table->foreignId('states_id')->constrained()->onDelete('cascade')->onUpdate('No Action');
+            $table->foreignId('state_id')->constrained()->onDelete('cascade')->onUpdate('No Action');
             $table->softDeletes();
             $table->timestamps();
         });

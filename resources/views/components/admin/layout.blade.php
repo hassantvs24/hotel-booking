@@ -1,6 +1,11 @@
 @props([ 'title' => null ])
 
-        <!DOCTYPE html>
+@php
+    $styles = config('site.assets.admin.css');
+    $scripts = config('site.assets.admin.js');
+@endphp
+
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="utf-8"/>
@@ -14,12 +19,6 @@
             {{ config('site.site_info.name') }}
         @endif
     </title>
-
-    @php
-        $styles = config('site.assets.admin.css');
-        $scripts = config('site.assets.admin.js');
-    @endphp
-
             <!-- Styles -->
     @foreach($styles as $style)
         @php
@@ -65,8 +64,8 @@
 <script>
     @if (Session::has('message'))
     (function () {
-        let type = "{{ Session::get('alert-type', 'info') }}";
-        let message = "{{ Session::get('message') }}";
+        let type = "{{ Session::get('alert-type', 'info') }}"
+        let message = "{{ Session::get('message') }}"
 
         function showToast(type, message) {
             toastr.options.timeOut = 1000;

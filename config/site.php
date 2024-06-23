@@ -16,6 +16,8 @@ return [
         'company_website' => 'https://infinityflamesoft.com/'
     ],
 
+    'portal_filter_not_exists' => ['/'],
+
     'assets' => [
         'admin'  => [
             'css' => [
@@ -180,47 +182,154 @@ return [
     'sidebar' => [
         'items' => [
             [
-                'name'     => 'Dashboard',
-                'route'    => 'admin.dashboard',
-                'icon'     => 'ni ni-shop text-primary',
-                'key'      => 'admin/dashboard*',
-                'children' => []
+                'name'       => 'Dashboard',
+                'route'      => 'admin.dashboard',
+                'icon'       => 'ni ni-shop text-primary',
+                'key'        => 'admin/dashboard*',
+                'permission' => 'can_view_dashboard',
+                'children'   => []
             ],
             [
-                'name'     => 'Access Control',
-                'route'    => null,
-                'icon'     => 'ni ni-key-25 text-info',
-                'key'      => 'admin/acl*',
+                'name' => 'Facilities',
+                'route' => null,
+                'icon' => 'ni ni-building text-primary',
+                'key'  => 'admin/facilities*',
+                'permission' => 'can_view_facilities',
                 'children' => [
                     [
-                        'name'     => 'Roles',
-                        'route'    => 'admin.acl.roles.index',
-                        'icon'     => 'ni ni-circle-08 text-default',
-                        'key'      => 'admin/acl/roles',
-                        'children' => []
+                        'name'       => 'Sub Facilities',
+                        'route'      => 'admin.facilities.sub-facilities.index',
+                        'icon'       => 'ni ni-building text-default',
+                        'key'        => 'admin/facilities/sub-facilities',
+                        'permission' => 'can_view_sub_facility',
+                        'children'   => []
                     ],
                     [
-                        'name'  => 'Permissions',
-                        'route' => 'admin.acl.permissions.index',
-                        'icon'  => 'ni ni-lock-circle-open text-default',
-                        'key'   => 'admin/acl/permissions',
-                    ],
-                    [
-                        'name'     => 'Users',
-                        'route'    => 'admin.acl.users.index',
-                        'icon'     => 'ni ni-single-02 text-default',
-                        'key'      => 'admin/acl/users',
-                        'children' => []
+                        'name'       => 'Facilities',
+                        'route'      => 'admin.facilities.index',
+                        'icon'       => 'ni ni-building text-default',
+                        'key'        => 'admin/facilities',
+                        'permission' => 'can_view_facility',
+                        'children'   => []
                     ]
                 ]
             ],
             [
-                'name'     => 'Settings',
-                'route'    => null,
-                'icon'     => 'ni ni-settings text-primary',
-                'key'      => 'admin/settings',
-                'children' => []
+                'name'       => 'Locations',
+                'route'      => null,
+                'icon'       => 'ni ni-world text-primary',
+                'key'        => 'admin/places*',
+                'permission' => 'can_view_locations',
+                'children'   => [
+                    [
+                        'name'       => 'Places',
+                        'route'      => 'admin.places.index',
+                        'icon'       => 'ni ni-world text-default',
+                        'key'        => 'admin/places',
+                        'permission' => 'can_view_place',
+                        'children'   => []
+                    ],
+                    [
+                        'name'       => 'Cities',
+                        'route'      => 'admin.places.cities.index',
+                        'icon'       => 'ni ni-world text-default',
+                        'key'        => 'admin/places/cities',
+                        'permission' => 'can_view_city',
+                        'children'   => []
+                    ],
+                    [
+                        'name'       => 'States',
+                        'route'      => 'admin.places.states.index',
+                        'icon'       => 'ni ni-world text-default',
+                        'key'        => 'admin/places/states',
+                        'permission' => 'can_view_state',
+                        'children'   => []
+                    ],
+                    [
+                        'name'       => 'Countries',
+                        'route'      => 'admin.places.countries.index',
+                        'icon'       => 'ni ni-world text-default',
+                        'key'        => 'admin/places/countries',
+                        'permission' => 'can_view_country',
+                        'children'   => []
+                    ],
+                ]
+            ],
+            [
+                'name'       => 'Access Control',
+                'route'      => null,
+                'icon'       => 'ni ni-key-25 text-info',
+                'key'        => 'admin/acl*',
+                'permission' => 'can_view_acl',
+                'children'   => [
+                    [
+                        'name'       => 'Roles',
+                        'route'      => 'admin.acl.roles.index',
+                        'icon'       => 'ni ni-circle-08 text-default',
+                        'key'        => 'admin/acl/roles',
+                        'permission' => 'can_view_acl_role',
+                        'children'   => []
+                    ],
+                    [
+                        'name'       => 'Permissions',
+                        'route'      => 'admin.acl.permissions.index',
+                        'icon'       => 'ni ni-lock-circle-open text-default',
+                        'permission' => 'can_view_acl_permission',
+                        'key'        => 'admin/acl/permissions',
+                    ],
+                    [
+                        'name'       => 'Users',
+                        'route'      => 'admin.acl.users.index',
+                        'icon'       => 'ni ni-single-02 text-default',
+                        'key'        => 'admin/acl/users',
+                        'permission' => 'can_view_acl_user',
+                        'children'   => []
+                    ]
+                ]
+            ],
+            [
+                'name'       => 'Settings',
+                'route'      => null,
+                'icon'       => 'ni ni-settings text-primary',
+                'key'        => 'admin/settings',
+                'permission' => 'can_view_settings',
+                'children'   => []
             ]
         ]
     ],
+
+    'portal_navbar' => [
+        'items' => [
+            [
+                'name'     => 'Home',
+                'route'    => 'portal.home',
+                'key'      => 'portal/home',
+                'children' => [],
+            ],
+            [
+                'name'     => 'Deals',
+                'route'    => null,
+                'key'      => 'portal/deals',
+                'children' => [],
+            ],
+            [
+                'name'     => 'Properties',
+                'route'    => 'portal.properties.index',
+                'key'      => 'portal/properties',
+                'children' => [],
+            ],
+            [
+                'name'     => 'Hotels',
+                'route'    => 'portal.hotels.index',
+                'key'      => 'portal/hotels',
+                'children' => [],
+            ],
+            [
+                'name'     => 'Support',
+                'route'    => null,
+                'key'      => 'portal/support',
+                'children' => [],
+            ]
+        ]
+    ]
 ];

@@ -71,6 +71,16 @@ abstract class Repository
     }
 
     /**
+     * @param $value
+     * @param $key
+     * @return mixed
+     */
+    public function pluck($value, $key = null) : mixed
+    {
+        return $this->model->pluck($value, $key);
+    }
+
+    /**
      * Store a newly created resource in storage.
      * @param array $attributes
      * @param array $relations

@@ -1,12 +1,14 @@
 <x-admin.layout title="Users">
     <x-admin.card>
         <x-admin.card.card-header title="Users" class="d-flex align-content-center">
-            <x-admin.page-action>
-                <a href="{{ route('admin.acl.users.create') }}" class="btn btn-xs btn-outline-primary m-0">
-                    <i class="fas fa-plus me-2"></i>
-                    Add User
-                </a>
-            </x-admin.page-action>
+            @hasPermission($permissions['create'])
+                <x-admin.page-action>
+                    <a href="{{ route('admin.acl.users.create') }}" class="btn btn-xs btn-outline-primary m-0">
+                        <i class="fas fa-plus me-2"></i>
+                        Add User
+                    </a>
+                </x-admin.page-action>
+            @endHasPermission
         </x-admin.card.card-header>
 
         <x-admin.card.card-body class="px-0 pt-0 pb-2">
@@ -17,7 +19,9 @@
                     <x-admin.table-head value="Email"/>
                     <x-admin.table-head value="Phone"/>
                     <x-admin.table-head value="Roles"/>
-                    <x-admin.table-head value="Actions" class="text-right"/>
+                    @if( hasPermission($permissions['update']) || hasPermission($permissions['delete']) )
+                        <x-admin.table-head value="Actions"/>
+                    @endif
                 </x-admin.table-header>
                 <x-admin.table-body>
                     @forelse($users as $user)
@@ -31,22 +35,28 @@
                                     <x-admin.badge class="mr-2" type="primary" :text="$role->name"/>
                                 @endforeach
                             </x-admin.table-cell>
-                            <x-admin.table-cell class="text-right">
-                                <a href="{{ route('admin.acl.users.edit', $user->id) }}"
-                                   class="btn btn-icon btn-xs btn-outline-primary me-2">
-                                    <i class="fas fa-edit"></i>
-                                </a>
-                                <x-admin.form
-                                    action="{{ route('admin.acl.users.destroy', $user->id) }}"
-                                    method="delete"
-                                    class="d-inline"
-                                >
-                                    <button onclick="return confirm('Want to delete?')" type="submit"
-                                            class="btn btn-icon btn-xs btn-outline-danger">
-                                        <i class="fas fa-trash"></i>
-                                    </button>
-                                </x-admin.form>
-                            </x-admin.table-cell>
+                            @if( hasPermission($permissions['update']) || hasPermission($permissions['delete']) )
+                                <x-admin.table-cell class="text-right">
+                                    @hasPermission($permissions['update'])
+                                        <a href="{{ route('admin.acl.users.edit', $user->id) }}"
+                                           class="btn btn-icon btn-xs btn-outline-primary">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                    @endHasPermission
+                                    @hasPermission($permissions['delete'])
+                                        <x-admin.form
+                                                action="{{ route('admin.acl.users.destroy', $user->id) }}"
+                                                method="delete"
+                                                class="d-inline"
+                                        >
+                                            <button onclick="return confirm('Want to delete?')" type="submit"
+                                                    class="btn btn-icon btn-xs btn-outline-danger">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </x-admin.form>
+                                    @endHasPermission
+                                </x-admin.table-cell>
+                            @endif
                         </x-admin.table-row>
                     @empty
                         <x-admin.table-row>

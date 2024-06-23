@@ -2,16 +2,16 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class FacilitySub extends Model
 {
-    use HasFactory;
+    /*----------------------------------------
+     * Relationships
+     ----------------------------------------*/
 
-    protected $fillable = [
-        'name',
-        'icon',
-        'facilities_id'
-    ];
+    public function facility() : BelongsTo
+    {
+        return $this->belongsTo(Facility::class);
+    }
 }
