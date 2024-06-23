@@ -190,12 +190,12 @@ return [
                 'children'   => []
             ],
             [
-                'name' => 'Facilities',
-                'route' => null,
-                'icon' => 'ni ni-building text-primary',
-                'key'  => 'admin/facilities*',
+                'name'       => 'Facilities',
+                'route'      => null,
+                'icon'       => 'ni ni-building text-primary',
+                'key'        => 'admin/facilities*',
                 'permission' => 'can_view_facilities',
-                'children' => [
+                'children'   => [
                     [
                         'name'       => 'Sub Facilities',
                         'route'      => 'admin.facilities.sub-facilities.index',
@@ -210,6 +210,31 @@ return [
                         'icon'       => 'ni ni-building text-default',
                         'key'        => 'admin/facilities',
                         'permission' => 'can_view_facility',
+                        'children'   => []
+                    ]
+                ]
+            ],
+            [
+                'name'       => 'Surroundings',
+                'route'      => null,
+                'icon'       => 'ni ni-map-big text-primary',
+                'key'        => 'admin/surroundings*',
+                'permission' => 'can_view_surroundings',
+                'children'   => [
+                    [
+                        'name'       => 'Surrounding Places',
+                        'route'      => 'admin.surroundings.surrounding-places.index',
+                        'icon'       => 'ni ni-world text-default',
+                        'key'        => 'admin/surroundings/surrounding-places',
+                        'permission' => 'can_view_surrounding_place',
+                        'children'   => []
+                    ],
+                    [
+                        'name'       => 'Surroundings',
+                        'route'      => 'admin.surroundings.index',
+                        'icon'       => 'ni ni-world text-default',
+                        'key'        => 'admin/surroundings',
+                        'permission' => 'can_view_surrounding',
                         'children'   => []
                     ]
                 ]

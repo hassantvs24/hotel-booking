@@ -48,6 +48,54 @@ return [
             ]
         ],
 
+        'SURROUNDING' => [
+            [
+                'name'    => 'View Surrounding',
+                'slug'    => 'can_view_surrounding',
+                'subject' => 'surrounding',
+            ],
+            [
+                'name'    => 'Create Surrounding',
+                'slug'    => 'can_create_surrounding',
+                'subject' => 'surrounding',
+            ],
+            [
+                'name'    => 'Update Surrounding',
+                'slug'    => 'can_update_surrounding',
+                'subject' => 'surrounding',
+            ],
+
+            [
+                'name'    => 'Delete Surrounding',
+                'slug'    => 'can_delete_surrounding',
+                'subject' => 'surrounding',
+            ]
+        ],
+
+        'SURROUNDING_PLACE' => [
+            [
+                'name'    => 'View Surrounding Place',
+                'slug'    => 'can_view_surrounding_place',
+                'subject' => 'surrounding_place',
+            ],
+            [
+                'name'    => 'Create Surrounding Place',
+                'slug'    => 'can_create_surrounding_place',
+                'subject' => 'surrounding_place',
+            ],
+            [
+                'name'    => 'Update Surrounding Place',
+                'slug'    => 'can_update_surrounding_place',
+                'subject' => 'surrounding_place',
+            ],
+
+            [
+                'name'    => 'Delete Surrounding Place',
+                'slug'    => 'can_delete_surrounding_place',
+                'subject' => 'surrounding_place',
+            ]
+        ],
+
         'FACILITY' => [
             [
                 'name'    => 'View Facility',
@@ -291,10 +339,15 @@ return [
                 'subject' => 'misc',
             ],
             [
+                'name'    => 'View Surroundings',
+                'slug'    => 'can_view_surroundings',
+                'subject' => 'misc',
+            ],
+            [
                 'name'    => 'View Settings',
                 'slug'    => 'can_view_settings',
                 'subject' => 'misc',
-            ]
+            ],
         ],
 
     ],

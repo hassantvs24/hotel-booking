@@ -10,6 +10,8 @@ use App\Http\Controllers\Admin\Place\CountryController;
 use App\Http\Controllers\Admin\Place\CityController;
 use App\Http\Controllers\Admin\Place\PlaceController;
 use App\Http\Controllers\Admin\Place\StateController;
+use App\Http\Controllers\Admin\Surrounding\SurroundingController;
+use App\Http\Controllers\Admin\Surrounding\SurroundingPlaceController;
 use Illuminate\Support\Facades\Route;
 
 /*----------------- Admin Routes -----------------*/
@@ -56,7 +58,23 @@ Route::prefix('admin')->as('admin.')->middleware(['auth'])->group(function () {
             Route::delete('destroy/{facility}', 'destroy')->name('destroy');
         });
 
-        Route::resource('sub-facilities', SubFacilityController::class)->parameters(['sub-facilities' => 'subFacility']);
+        Route::resource('sub-facilities',
+            SubFacilityController::class)->parameters(['sub-facilities' => 'subFacility']);
+    });
+
+    /*-- Surrounding Routes --*/
+    Route::prefix('surroundings')->as('surroundings.')->group(function () {
+        Route::controller(SurroundingController::class)->group(function () {
+            Route::get('', 'index')->name('index');
+            Route::get('create', 'create')->name('create');
+            Route::post('', 'store')->name('store');
+            Route::get('{surrounding}/edit', 'edit')->name('edit');
+            Route::put('{surrounding}', 'update')->name('update');
+            Route::delete('destroy/{surrounding}', 'destroy')->name('destroy');
+        });
+
+        Route::resource('surrounding-places', SurroundingPlaceController::class)
+            ->parameters(['surrounding-places' => 'surroundingPlace']);
     });
 });
 /*----------------- Admin Routes -----------------*/
