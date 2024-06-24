@@ -4,9 +4,9 @@ namespace App\Http\Controllers\Admin\ACL;
 
 use App\Http\Controllers\BaseController;
 use App\Repositories\Permission\PermissionRepository;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
-use App\Models\Permission;
 
 
 class PermissionController extends BaseController
@@ -37,23 +37,25 @@ class PermissionController extends BaseController
     /**
      * Show the form for creating a new resource.
      */
-    public function create()
+    public function create() : View
     {
         if (!hasPermission('can_create_acl_permission')) {
             $this->unauthorized();
         }
 
-        //return view('admin.acl.permission.create');
+        return view('admin.acl.permission.create');
     }
 
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request)
+    public function store(Request $request) : RedirectResponse
     {
         if (!hasPermission('can_create_acl_permission')) {
             $this->unauthorized();
         }
+
+        return redirect()->route('permissions.index');
     }
 
     /**
@@ -67,30 +69,36 @@ class PermissionController extends BaseController
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(string $id)
+    public function edit(string $id) : View
     {
         if (!hasPermission('can_update_acl_permission')) {
             $this->unauthorized();
         }
+
+        return view('admin.acl.permission.edit');
     }
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, string $id)
+    public function update(Request $request, string $id) : RedirectResponse
     {
         if (!hasPermission('can_update_acl_permission')) {
             $this->unauthorized();
         }
+
+        return redirect()->route('permissions.index');
     }
 
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(string $id)
+    public function destroy(string $id) : RedirectResponse
     {
         if (!hasPermission('can_delete_acl_permission')) {
             $this->unauthorized();
         }
+
+        return redirect()->route('permissions.index');
     }
 }
