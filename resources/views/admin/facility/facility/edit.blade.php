@@ -26,20 +26,32 @@
                 <div class="row">
                     <div class="col-md-6">
                         <x-admin.input
-                            type="textarea"
-                            name="notes"
-                            id="notes"
-                            label="Note"
-                            value="{{$facility->notes}}"
-                        />
-                    </div>
-                    <div class="col-md-6">
-                        <x-admin.input
                             type="text"
                             name="facility_type"
                             id="facility_type"
                             label="facility_type"
                             value="{{$facility->facility_type}}"
+                        />
+                    </div>
+                    <div class="col-md-6">
+                        <x-admin.input
+                            type="select"
+                            name="facility_for"
+                            id="facility_for"
+                            label="Facility For"
+                            :options="$facilityForItems"
+                            :value="$facility->facility_for"
+                        />
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-12">
+                        <x-admin.input
+                            type="textarea"
+                            name="notes"
+                            id="notes"
+                            label="Note"
+                            value="{{$facility->notes}}"
                         />
                     </div>
                 </div>

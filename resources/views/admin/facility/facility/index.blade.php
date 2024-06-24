@@ -19,6 +19,7 @@
                     <x-admin.table-head value="Icon"/>
                     <x-admin.table-head value="Notes"/>
                     <x-admin.table-head value="Facility Type"/>
+                    <x-admin.table-head value="Facility For"/>
                     @if( hasPermission($permissions['update']) || hasPermission($permissions['delete']) )
                         <x-admin.table-head value="Actions"/>
                     @endif
@@ -30,9 +31,11 @@
                             <x-admin.table-cell :value="$facility->name"/>
                             <x-admin.table-cell />
                             <x-admin.table-cell :value="$facility->notes"/>
+                            <x-admin.table-cell :value="$facility->facility_type"/>
                             <x-admin.table-cell class="word-wrap">
-                                <x-admin.badge class="mr-2" type="primary" :text="$facility->facility_type "/>
+                                <x-admin.badge class="mr-2" type="primary" :text="$facility->facility_for"/>
                             </x-admin.table-cell>
+                            {{-- <x-admin.table-cell :value="$facility->"/> --}}
                             @if( hasPermission($permissions['update']) || hasPermission($permissions['delete']) )
                                 <x-admin.table-cell>
                                     @hasPermission($permissions['update'])

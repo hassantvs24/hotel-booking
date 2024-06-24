@@ -116,10 +116,10 @@
                 </div>
                 <div class="mt-3 row">
                     <div class="col-md-6">
-                        <a href="{{ route('admin.places.index') }}" class="btn btn-danger btn-sm">Back To Cities</a>
+                        <a href="{{ route('admin.places.index') }}" class="btn btn-danger btn-sm">Back To Place</a>
                     </div>
                     <div class="text-right col-md-6">
-                        <x-admin.button variant="primary" type="submit" size="sm">Add City</x-admin.button>
+                        <x-admin.button variant="primary" type="submit" size="sm">Add Place</x-admin.button>
                     </div>
                 </div>
             </x-admin.form>
