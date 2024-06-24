@@ -11,7 +11,7 @@
             @endHasPermission
         </x-admin.card.card-header>
 
-        <x-admin.card.card-body class="px-0 pt-0 pb-2">
+        <x-admin.card.card-body class="px-0 pt-0 pb-2 table-responsive">
             <x-admin.table>
                 <x-admin.table-header>
                     <x-admin.table-head value="Date"/>
