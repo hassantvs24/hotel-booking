@@ -11,8 +11,13 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('offer_applies', function (Blueprint $table) {
+        Schema::create('offer_applies', function (Blueprint $table) {//This is initiated by property owner
             $table->id();
+            $table->double('owner_price')->nullable();
+            $table->double('customer_price')->nullable();
+            $table->string('notes')->nullable();
+            $table->foreignId('offers_id')->constrained()->onDelete('cascade')->onUpdate('No Action');
+            $table->foreignId('users_id')->constrained()->onDelete('cascade')->onUpdate('No Action');
             $table->softDeletes();
             $table->timestamps();
         });

@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->string('name');
             $table->string('photo')->nullable();
-            $table->integer('room_number')->nullable();
+            $table->integer('room_number')->comment('use if applicable')->nullable();
             $table->integer('room_size')->nullable();//Square meter
             $table->integer('guest_capacity')->nullable();
             $table->boolean('extra_bed')->default(1)->comment('1 means possible');
