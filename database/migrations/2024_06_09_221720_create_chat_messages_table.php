@@ -13,6 +13,9 @@ return new class extends Migration
     {
         Schema::create('chat_messages', function (Blueprint $table) {
             $table->id();
+            $table->text('message');
+            $table->foreignId('sender_id')->nullable()->constrained()->onDelete('Set Null')->onUpdate('No Action');
+            $table->foreignId('receiver_id')->nullable()->constrained()->onDelete('Set Null')->onUpdate('No Action');
             $table->softDeletes();
             $table->timestamps();
         });

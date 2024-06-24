@@ -15,7 +15,7 @@ class SurroundingController extends BaseController
     /**
      * Display a listing of the resource.
      */
-    public function index(Request $request,SurroundingRepository $surroundingRepository): View
+    public function index(Request $request, SurroundingRepository $surroundingRepository) : View
     {
         if (!hasPermission('can_view_surrounding')) {
             $this->unauthorized();
@@ -31,7 +31,7 @@ class SurroundingController extends BaseController
             ]
         );
 
-        $surroundings  = $surroundingRepository->paginate($query);
+        $surroundings = $surroundingRepository->paginate($query);
 
         $permissions = [
             'manage' => 'can_view_surrounding',
@@ -46,7 +46,7 @@ class SurroundingController extends BaseController
     /**
      * Show the form for creating a new resource.
      */
-    public function create(): View
+    public function create() : View
     {
         if (!hasPermission('can_create_surrounding')) {
             $this->unauthorized();
@@ -57,7 +57,7 @@ class SurroundingController extends BaseController
     /**
      * Store a newly created resource in storage.
      */
-    public function store(SurroundingRequest $request, SurroundingRepository $surroundingRepository): RedirectResponse
+    public function store(SurroundingRequest $request, SurroundingRepository $surroundingRepository) : RedirectResponse
     {
         if (!hasPermission('can_create_surrounding')) {
             $this->unauthorized();
@@ -88,7 +88,7 @@ class SurroundingController extends BaseController
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(Surrounding $surrounding): View
+    public function edit(Surrounding $surrounding) : View
     {
         if (!hasPermission('can_update_surrounding')) {
             $this->unauthorized();
@@ -100,14 +100,17 @@ class SurroundingController extends BaseController
     /**
      * Update the specified resource in storage.
      */
-    public function update(SurroundingRequest $request, SurroundingRepository $surroundingRepository,$surrounding): RedirectResponse
-    {
+    public function update(
+        SurroundingRequest $request,
+        SurroundingRepository $surroundingRepository,
+        $surrounding
+    ) : RedirectResponse {
         if (!hasPermission('can_update_surrounding')) {
             $this->unauthorized();
         }
         try {
-            $surrounding =  $surroundingRepository->getModel($surrounding);
-            $surroundingRepository->update($request->validated(),$surrounding);
+            $surrounding = $surroundingRepository->getModel($surrounding);
+            $surroundingRepository->update($request->validated(), $surrounding);
             return redirect()->route('admin.surroundings.index')->with([
                 'message'    => 'Surrounding updated successfully.',
                 'alert-type' => 'success'
@@ -124,7 +127,7 @@ class SurroundingController extends BaseController
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(SurroundingRepository $surroundingRepository,$surrounding): RedirectResponse
+    public function destroy(SurroundingRepository $surroundingRepository, $surrounding) : RedirectResponse
     {
         if (!hasPermission('can_delete_surrounding')) {
             $this->unauthorized();

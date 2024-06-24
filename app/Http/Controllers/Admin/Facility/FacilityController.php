@@ -3,10 +3,11 @@
 namespace App\Http\Controllers\Admin\Facility;
 
 use App\Http\Controllers\BaseController;
-use Illuminate\Http\RedirectResponse;
-use App\Repositories\Facility\FacilityRepository;
 use App\Http\Requests\Admin\Facility\FacilityRequest;
 use App\Models\Facility;
+use App\Repositories\Facility\FacilityRepository;
+use Exception;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
@@ -31,7 +32,7 @@ class FacilityController extends BaseController
             ]
         );
 
-        $facilities  = $facilityRepository->paginate($query);
+        $facilities = $facilityRepository->paginate($query);
 
         $permissions = [
             'manage' => 'can_view_facility',
@@ -44,24 +45,11 @@ class FacilityController extends BaseController
     }
 
     /**
-     * Show the form for creating a new resource.
-     */
-    public function create() : View
-    {
-        if (!hasPermission('can_create_facility'))
-        {
-            $this->unauthorized();
-        }
-        return view('admin.facility.facility.create');
-    }
-
-    /**
      * Store a newly created resource in storage.
      */
     public function store(FacilityRequest $request, FacilityRepository $facilityRepository) : RedirectResponse
     {
-        if (!hasPermission('can_create_facility'))
-        {
+        if (!hasPermission('can_create_facility')) {
             $this->unauthorized();
         }
         try {
@@ -71,12 +59,23 @@ class FacilityController extends BaseController
                 'message'    => 'Facility created successfully.',
                 'alert-type' => 'success'
             ]);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return redirect()->back()->with([
                 'message'    => 'Something Went Wrong',
                 'alert-type' => 'error'
             ]);
         }
+    }
+
+    /**
+     * Show the form for creating a new resource.
+     */
+    public function create() : View
+    {
+        if (!hasPermission('can_create_facility')) {
+            $this->unauthorized();
+        }
+        return view('admin.facility.facility.create');
     }
 
     /**
@@ -92,32 +91,34 @@ class FacilityController extends BaseController
      */
     public function edit(FacilityRepository $facilityRepository, Facility $facility) : View
     {
-        if (!hasPermission('can_update_facility'))
-        {
+        if (!hasPermission('can_update_facility')) {
             $this->unauthorized();
         }
 
-        return view('admin.facility.facility.edit',compact('facility'));
+        return view('admin.facility.facility.edit', compact('facility'));
     }
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(FacilityRequest $request,FacilityRepository $facilityRepository, $facility) : RedirectResponse
-    {
+    public function update(
+        FacilityRequest $request,
+        FacilityRepository $facilityRepository,
+        $facility
+    ) : RedirectResponse {
         if (!hasPermission('can_update_facility')) {
             $this->unauthorized();
         }
 
         try {
-            $facility =  $facilityRepository->getModel($facility);
+            $facility = $facilityRepository->getModel($facility);
             $facilityRepository->update($request->validated(), $facility);
 
             return redirect()->route('admin.facilities.index')->with([
                 'message'    => 'Facility updated successfully.',
                 'alert-type' => 'success'
             ]);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return redirect()->back()->with('error', 'Something Went Wrong');
         }
     }
@@ -141,7 +142,7 @@ class FacilityController extends BaseController
                 'alert-type' => 'success'
             ]);
 
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return redirect()->back()->with([
                 'message'    => 'Something went wrong.',
                 'alert-type' => 'error'

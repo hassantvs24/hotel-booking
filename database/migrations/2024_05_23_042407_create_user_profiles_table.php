@@ -23,7 +23,7 @@ return new class extends Migration
             $table->string('passport')->nullable();
             $table->string('nid')->nullable();
             $table->string('documents')->nullable()->comment('Uploaded document');
-            $table->foreignId('users_id')->constrained()->onDelete('cascade')->onUpdate('No Action');
+            $table->foreignId('user_id')->constrained()->onDelete('cascade')->onUpdate('No Action');
             $table->softDeletes();
             $table->timestamps();
         });

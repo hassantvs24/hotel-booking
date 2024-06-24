@@ -3,13 +3,13 @@
 namespace App\Http\Controllers\Admin\Place;
 
 use App\Http\Controllers\BaseController;
+use App\Http\Requests\Admin\Place\StateRequest;
+use App\Models\State;
+use App\Repositories\Place\CountryRepository;
+use App\Repositories\Place\StateRepository;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
-use App\Http\Requests\Admin\Place\StateRequest;
-use App\Repositories\Place\CountryRepository;
-use App\Repositories\Place\StateRepository;
-use App\Models\State;
 
 
 class StateController extends BaseController
@@ -17,7 +17,7 @@ class StateController extends BaseController
     /**
      * Display a listing of the resource.
      */
-    public function index(Request $request, StateRepository $stateRepository) :View
+    public function index(Request $request, StateRepository $stateRepository) : View
     {
         if (!hasPermission('can_view_state')) {
             $this->unauthorized();
@@ -46,19 +46,6 @@ class StateController extends BaseController
     }
 
     /**
-     * Show the form for creating a new resource.
-     */
-    public function create(CountryRepository $countryRepository) :View
-    {
-        if (!hasPermission('can_create_state')) {
-            $this->unauthorized();
-        }
-
-        $countries=$countryRepository->pluck('name','id')->toArray();
-        return view('admin.place.state.create',compact('countries'));
-    }
-
-    /**
      * Store a newly created resource in storage.
      */
     public function store(StateRequest $request, StateRepository $stateRepository) : RedirectResponse
@@ -74,9 +61,22 @@ class StateController extends BaseController
             ]);
         } catch (\Exception $e) {
             return redirect()->back()->with('notification', [
-                [ 'type' => 'error', 'message' => 'State could not be created' ]
+                ['type' => 'error', 'message' => 'State could not be created']
             ]);
         }
+    }
+
+    /**
+     * Show the form for creating a new resource.
+     */
+    public function create(CountryRepository $countryRepository) : View
+    {
+        if (!hasPermission('can_create_state')) {
+            $this->unauthorized();
+        }
+
+        $countries = $countryRepository->pluck('name', 'id')->toArray();
+        return view('admin.place.state.create', compact('countries'));
     }
 
     /**
@@ -98,13 +98,13 @@ class StateController extends BaseController
 
         $countries = $countryRepository->pluck('name', 'id')->toArray();
 
-        return view('admin.place.state.edit',compact('state','countries'));
+        return view('admin.place.state.edit', compact('state', 'countries'));
     }
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(StateRequest $request, StateRepository $stateRepository, $state) :RedirectResponse
+    public function update(StateRequest $request, StateRepository $stateRepository, $state) : RedirectResponse
     {
 
         if (!hasPermission('can_update_state')) {
@@ -112,7 +112,7 @@ class StateController extends BaseController
         }
 
         try {
-            $state= $stateRepository->getModel($state);
+            $state = $stateRepository->getModel($state);
             $stateRepository->update($request->validated(), $state);
 
             return redirect()->route('admin.places.states.index')->with([
