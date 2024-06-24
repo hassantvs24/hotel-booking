@@ -25,6 +25,7 @@ class DatabaseSeeder extends Seeder
             FacilitySeeder::class,
             SurroundingSeeder::class,
             PropertyCategorySeeder::class,
+            PropertyRuleSeeder::class,
         ]);
     }
 }

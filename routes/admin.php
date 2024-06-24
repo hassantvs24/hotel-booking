@@ -11,6 +11,7 @@ use App\Http\Controllers\Admin\Place\CityController;
 use App\Http\Controllers\Admin\Place\PlaceController;
 use App\Http\Controllers\Admin\Place\StateController;
 use App\Http\Controllers\Admin\Property\PropertyCategoryController;
+use App\Http\Controllers\Admin\Property\PropertyRuleController;
 use App\Http\Controllers\Admin\Surrounding\SurroundingController;
 use App\Http\Controllers\Admin\Surrounding\SurroundingPlaceController;
 use Illuminate\Support\Facades\Route;
@@ -82,6 +83,8 @@ Route::prefix('admin')->as('admin.')->middleware(['auth'])->group(function () {
     Route::prefix('properties')->as('properties.')->group(function () {
         Route::resource('categories', PropertyCategoryController::class)
             ->parameters(['categories' => 'propertyCategory']);
+        Route::resource('rules', PropertyRuleController::class)
+            ->parameters(['rules' => 'propertyRule']);
     });
 });
 /*----------------- Admin Routes -----------------*/

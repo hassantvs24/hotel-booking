@@ -72,6 +72,54 @@ return [
             ]
         ],
 
+        'PROPERTY' => [
+            [
+                'name'    => 'View Property',
+                'slug'    => 'can_view_property',
+                'subject' => 'property',
+            ],
+            [
+                'name'    => 'Create Property',
+                'slug'    => 'can_create_property',
+                'subject' => 'property',
+            ],
+            [
+                'name'    => 'Update Property',
+                'slug'    => 'can_update_property',
+                'subject' => 'property',
+            ],
+
+            [
+                'name'    => 'Delete Property',
+                'slug'    => 'can_delete_property',
+                'subject' => 'property',
+            ]
+        ],
+
+        'PROPERTY_RULE' => [
+            [
+                'name'    => 'View Property Rule',
+                'slug'    => 'can_view_property_rule',
+                'subject' => 'property_rule',
+            ],
+            [
+                'name'    => 'Create Property Rule',
+                'slug'    => 'can_create_property_rule',
+                'subject' => 'property_rule',
+            ],
+            [
+                'name'    => 'Update Property Rule',
+                'slug'    => 'can_update_property_rule',
+                'subject' => 'property_rule',
+            ],
+
+            [
+                'name'    => 'Delete Property Rule',
+                'slug'    => 'can_delete_property_rule',
+                'subject' => 'property_rule',
+            ]
+        ],
+
         'SURROUNDING' => [
             [
                 'name'    => 'View Surrounding',

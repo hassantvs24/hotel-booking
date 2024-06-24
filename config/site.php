@@ -201,7 +201,7 @@ return [
                         'route' => 'admin.properties.rules.index',
                         'icon'  => 'ni ni-building text-default',
                         'key'   => 'admin/properties/rules',
-                        'permissions' => 'can_view_property_rule',
+                        'permission' => 'can_view_property_rule',
                         'children' => []
                     ],
                     [
