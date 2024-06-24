@@ -2,6 +2,8 @@
 
 namespace Database\Factories;
 
+use App\Models\User;
+use App\Models\UserProfile;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
@@ -40,5 +42,17 @@ class UserFactory extends Factory
         return $this->state(fn (array $attributes) => [
             'email_verified_at' => null,
         ]);
+    }
+
+    /**
+     * Define the model's default state.
+     *
+     * @return UserFactory
+     */
+    public function configure() : static
+    {
+        return $this->afterCreating(function (User $user) {
+            $user->profile()->create(UserProfile::factory()->make()->toArray());
+        });
     }
 }
