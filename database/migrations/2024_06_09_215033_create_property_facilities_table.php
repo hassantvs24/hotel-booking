@@ -13,8 +13,8 @@ return new class extends Migration
     {
         Schema::create('property_facilities', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('facility_subs_id')->constrained()->onDelete('cascade')->onUpdate('No Action');
-            $table->foreignId('properties_id')->constrained()->onDelete('cascade')->onUpdate('No Action');
+            $table->foreignId('facility_sub_id')->constrained()->onDelete('cascade')->onUpdate('No Action');
+            $table->foreignId('property_id')->constrained()->onDelete('cascade')->onUpdate('No Action');
             $table->softDeletes();
             $table->timestamps();
         });
