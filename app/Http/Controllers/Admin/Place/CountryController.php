@@ -3,8 +3,8 @@
 namespace App\Http\Controllers\Admin\Place;
 
 use App\Http\Controllers\BaseController;
-use Illuminate\Http\Request;
 use App\Repositories\Place\CountryRepository;
+use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class CountryController extends BaseController

@@ -17,7 +17,7 @@ class SurroundingPlaceController extends BaseController
     /**
      * Display a listing of the resource.
      */
-    public function index(Request $request, SurroundingPlaceRepository $surroundingPlaceRepository): View
+    public function index(Request $request, SurroundingPlaceRepository $surroundingPlaceRepository) : View
     {
         if (!hasPermission('can_view_surrounding_place')) {
             $this->unauthorized();
@@ -33,7 +33,7 @@ class SurroundingPlaceController extends BaseController
             ]
         );
 
-        $surroundingplaces  = $surroundingPlaceRepository->paginate($query);
+        $surroundingplaces = $surroundingPlaceRepository->paginate($query);
 
         $permissions = [
             'manage' => 'can_view_surrounding_place',
@@ -48,7 +48,7 @@ class SurroundingPlaceController extends BaseController
     /**
      * Show the form for creating a new resource.
      */
-    public function create(PlaceRepository $placeRepository, SurroundingRepository $surroundingRepository): View
+    public function create(PlaceRepository $placeRepository, SurroundingRepository $surroundingRepository) : View
     {
         if (!hasPermission('can_create_surrounding_place')) {
             $this->unauthorized();
@@ -62,8 +62,10 @@ class SurroundingPlaceController extends BaseController
     /**
      * Store a newly created resource in storage.
      */
-    public function store(SurroundingPlaceRequest $request, SurroundingPlaceRepository $surroundingPlaceRepository): RedirectResponse
-    {
+    public function store(
+        SurroundingPlaceRequest $request,
+        SurroundingPlaceRepository $surroundingPlaceRepository
+    ) : RedirectResponse {
         if (!hasPermission('can_create_surrounding_place')) {
             $this->unauthorized();
         }
@@ -93,8 +95,11 @@ class SurroundingPlaceController extends BaseController
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(PlaceRepository $placeRepository, SurroundingRepository $surroundingRepository, SurroundingPlace $surroundingPlace): View
-    {
+    public function edit(
+        PlaceRepository $placeRepository,
+        SurroundingRepository $surroundingRepository,
+        SurroundingPlace $surroundingPlace
+    ) : View {
         if (!hasPermission('can_update_surrounding_place')) {
             $this->unauthorized();
         }
@@ -107,8 +112,11 @@ class SurroundingPlaceController extends BaseController
     /**
      * Update the specified resource in storage.
      */
-    public function update(SurroundingPlaceRequest $request, SurroundingPlaceRepository $surroundingPlaceRepository, $surroundingPlace): RedirectResponse
-    {
+    public function update(
+        SurroundingPlaceRequest $request,
+        SurroundingPlaceRepository $surroundingPlaceRepository,
+        $surroundingPlace
+    ) : RedirectResponse {
         if (!hasPermission('can_update_surrounding_place')) {
             $this->unauthorized();
         }
@@ -131,8 +139,10 @@ class SurroundingPlaceController extends BaseController
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(SurroundingPlaceRepository $surroundingPlaceRepository, $surroundingPlace): RedirectResponse
-    {
+    public function destroy(
+        SurroundingPlaceRepository $surroundingPlaceRepository,
+        $surroundingPlace
+    ) : RedirectResponse {
         if (!hasPermission('can_delete_surrounding_place')) {
             $this->unauthorized();
         }

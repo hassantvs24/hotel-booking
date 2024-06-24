@@ -3,13 +3,13 @@
 namespace App\Http\Controllers\Admin\Place;
 
 use App\Http\Controllers\BaseController;
+use App\Http\Requests\Admin\Place\PlaceRequest;
+use App\Models\Place;
+use App\Repositories\Place\CityRepository;
+use App\Repositories\Place\PlaceRepository;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
-use App\Http\Requests\Admin\Place\PlaceRequest;
-use App\Repositories\Place\CityRepository;
-use App\Repositories\Place\PlaceRepository;
-use App\Models\Place;
 
 class PlaceController extends BaseController
 {
@@ -41,7 +41,7 @@ class PlaceController extends BaseController
             'delete' => 'can_delete_place',
         ];
 
-        return view('admin.place.place.index',compact('places','permissions'));
+        return view('admin.place.place.index', compact('places', 'permissions'));
     }
 
     /**
@@ -53,9 +53,9 @@ class PlaceController extends BaseController
             $this->unauthorized();
         }
 
-        $cities=$cityRepository->pluck('name','id')->toArray();
+        $cities = $cityRepository->pluck('name', 'id')->toArray();
 
-        return view('admin.place.place.create',compact('cities'));
+        return view('admin.place.place.create', compact('cities'));
     }
 
     /**
@@ -67,7 +67,7 @@ class PlaceController extends BaseController
             $this->unauthorized();
         }
 
-         try {
+        try {
 
             $placeRepository->create($request->validated());
 
@@ -76,11 +76,11 @@ class PlaceController extends BaseController
                 'alert-type' => 'success'
             ]);
 
-         } catch (\Exception $e) {
+        } catch (\Exception $e) {
             return redirect()->back()->with('notification', [
-                [ 'type' => 'error', 'message' => 'Place could not be created' ]
+                ['type' => 'error', 'message' => 'Place could not be created']
             ]);
-         }
+        }
     }
 
     /**
@@ -100,15 +100,15 @@ class PlaceController extends BaseController
             $this->unauthorized();
         }
 
-        $cities = $cityRepository->pluck('name','id')->toArray();
+        $cities = $cityRepository->pluck('name', 'id')->toArray();
 
-        return view('admin.place.place.edit',compact('place','cities'));
+        return view('admin.place.place.edit', compact('place', 'cities'));
     }
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(PlaceRequest $request,PlaceRepository $placeRepository, $place) : RedirectResponse
+    public function update(PlaceRequest $request, PlaceRepository $placeRepository, $place) : RedirectResponse
     {
         if (!hasPermission('can_update_place')) {
             $this->unauthorized();
