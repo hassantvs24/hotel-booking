@@ -138,7 +138,7 @@ class PropertyCategoryController extends BaseController
         }
 
         try {
-            
+
             $categoryRepository->delete($propertyCategory);
 
             return redirect()->route('admin.properties.categories.index')->with([

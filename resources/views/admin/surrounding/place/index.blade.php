@@ -25,26 +25,26 @@
                     @endif
                 </x-admin.table-header>
                 <x-admin.table-body>
-                    @forelse($surroundingplaces as $surroundingplace)
+                    @forelse($surroundingPlaces as $surroundingPlace)
                         <x-admin.table-row>
-                            <x-admin.table-cell :value="$surroundingplace->name"/>
-                            <x-admin.table-cell :value="$surroundingplace->lat"/>
-                            <x-admin.table-cell :value="$surroundingplace->long"/>
-                            <x-admin.table-cell class="word-wrap" :value="$surroundingplace->notes"/>
-                            <x-admin.table-cell :value="$surroundingplace->photo"/>
-                            <x-admin.table-cell :value="$surroundingplace->place?->name"/>
-                            <x-admin.table-cell :value="$surroundingplace->surrounding?->name"/>
+                            <x-admin.table-cell :value="$surroundingPlace->name"/>
+                            <x-admin.table-cell :value="$surroundingPlace->lat"/>
+                            <x-admin.table-cell :value="$surroundingPlace->long"/>
+                            <x-admin.table-cell class="word-wrap" :value="$surroundingPlace->notes"/>
+                            <x-admin.table-cell :value="$surroundingPlace->photo"/>
+                            <x-admin.table-cell :value="$surroundingPlace->place?->name"/>
+                            <x-admin.table-cell :value="$surroundingPlace->surrounding?->name"/>
                             @if( hasPermission($permissions['update']) || hasPermission($permissions['delete']) )
                                 <x-admin.table-cell class="text-right">
                                     @hasPermission($permissions['update'])
-                                    <a href="{{ route('admin.surroundings.surrounding-places.edit', $surroundingplace->id) }}"
+                                    <a href="{{ route('admin.surroundings.surrounding-places.edit', $surroundingPlace->id) }}"
                                        class="btn btn-icon btn-xs btn-outline-primary">
                                         <i class="fas fa-edit"></i>
                                     </a>
                                     @endHasPermission
                                     @hasPermission($permissions['delete'])
                                     <x-admin.form
-                                            action="{{ route('admin.surroundings.surrounding-places.destroy', $surroundingplace->id) }}"
+                                            action="{{ route('admin.surroundings.surrounding-places.destroy', $surroundingPlace->id) }}"
                                             method="delete"
                                             class="d-inline"
                                     >
@@ -66,7 +66,7 @@
             </x-admin.table>
         </x-admin.card.card-body>
         <x-admin.card.card-footer>
-            {{ $surroundingplaces->links() }}
+            {{ $surroundingPlaces->links() }}
         </x-admin.card.card-footer>
     </x-admin.card>
 </x-admin.layout>

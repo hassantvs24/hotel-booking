@@ -3,12 +3,12 @@
 namespace App\Http\Controllers\Admin\Surrounding;
 
 use App\Http\Controllers\BaseController;
-use Illuminate\Http\RedirectResponse;
-use App\Repositories\Surrounding\SurroundingPlaceRepository;
 use App\Http\Requests\Admin\Surrounding\SurroundingPlaceRequest;
 use App\Models\SurroundingPlace;
 use App\Repositories\Place\PlaceRepository;
+use App\Repositories\Surrounding\SurroundingPlaceRepository;
 use App\Repositories\Surrounding\SurroundingRepository;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
@@ -33,7 +33,7 @@ class SurroundingPlaceController extends BaseController
             ]
         );
 
-        $surroundingplaces = $surroundingPlaceRepository->paginate($query);
+        $surroundingPlaces = $surroundingPlaceRepository->paginate($query);
 
         $permissions = [
             'manage' => 'can_view_surrounding_place',
@@ -42,7 +42,7 @@ class SurroundingPlaceController extends BaseController
             'delete' => 'can_delete_surrounding_place',
         ];
 
-        return view('admin.surrounding.place.index', compact('surroundingplaces', 'permissions'));
+        return view('admin.surrounding.place.index', compact('surroundingPlaces', 'permissions'));
     }
 
     /**
@@ -61,14 +61,17 @@ class SurroundingPlaceController extends BaseController
 
     /**
      * Store a newly created resource in storage.
+     * @throws \Exception
      */
     public function store(
         SurroundingPlaceRequest $request,
         SurroundingPlaceRepository $surroundingPlaceRepository
     ) : RedirectResponse {
+
         if (!hasPermission('can_create_surrounding_place')) {
             $this->unauthorized();
         }
+
         try {
             $surroundingPlaceRepository->create($request->validated());
 
@@ -78,7 +81,7 @@ class SurroundingPlaceController extends BaseController
             ]);
         } catch (\Exception $e) {
             return redirect()->back()->with([
-                'message'    => 'Something Went Wrong',
+                'message'    => $e->getMessage(),
                 'alert-type' => 'error'
             ]);
         }
