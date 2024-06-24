@@ -16,7 +16,7 @@ class FacilityController extends BaseController
     /**
      * Display a listing of the resource.
      */
-    public function index(Request $request, FacilityRepository $facilityRepository) : View
+    public function index(Request $request, FacilityRepository $facilityRepository): View
     {
         if (!hasPermission('can_view_facility')) {
             $this->unauthorized();
@@ -47,7 +47,7 @@ class FacilityController extends BaseController
     /**
      * Store a newly created resource in storage.
      */
-    public function store(FacilityRequest $request, FacilityRepository $facilityRepository) : RedirectResponse
+    public function store(FacilityRequest $request, FacilityRepository $facilityRepository): RedirectResponse
     {
         if (!hasPermission('can_create_facility')) {
             $this->unauthorized();
@@ -70,12 +70,18 @@ class FacilityController extends BaseController
     /**
      * Show the form for creating a new resource.
      */
-    public function create() : View
+    public function create(): View
     {
         if (!hasPermission('can_create_facility')) {
             $this->unauthorized();
         }
-        return view('admin.facility.facility.create');
+
+        $facilityForItems = [
+            'Property' => 'Property',
+            'Room' => 'Room'
+        ];
+
+        return view('admin.facility.facility.create', compact('facilityForItems'));
     }
 
     /**
@@ -89,13 +95,17 @@ class FacilityController extends BaseController
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(FacilityRepository $facilityRepository, Facility $facility) : View
+    public function edit(FacilityRepository $facilityRepository, Facility $facility): View
     {
         if (!hasPermission('can_update_facility')) {
             $this->unauthorized();
         }
+        $facilityForItems = [
+            'Property' => 'Property',
+            'Room' => 'Room'
+        ];
 
-        return view('admin.facility.facility.edit', compact('facility'));
+        return view('admin.facility.facility.edit', compact('facility', 'facilityForItems'));
     }
 
     /**
@@ -105,7 +115,7 @@ class FacilityController extends BaseController
         FacilityRequest $request,
         FacilityRepository $facilityRepository,
         $facility
-    ) : RedirectResponse {
+    ): RedirectResponse {
         if (!hasPermission('can_update_facility')) {
             $this->unauthorized();
         }
@@ -126,7 +136,7 @@ class FacilityController extends BaseController
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(FacilityRepository $facilityRepository, $facility) : RedirectResponse
+    public function destroy(FacilityRepository $facilityRepository, $facility): RedirectResponse
     {
         if (!hasPermission('can_delete_place')) {
             $this->unauthorized();
@@ -141,7 +151,6 @@ class FacilityController extends BaseController
                 'message'    => 'Facility deleted successfully.',
                 'alert-type' => 'success'
             ]);
-
         } catch (Exception $e) {
             return redirect()->back()->with([
                 'message'    => 'Something went wrong.',

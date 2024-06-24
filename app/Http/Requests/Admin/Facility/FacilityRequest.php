@@ -21,7 +21,7 @@ class FacilityRequest extends FormRequest
      */
     public function rules(): array
     {
-        $modelId = $this->facility?: null;
+        $modelId = $this->facility ?: null;
 
         $uniqueNameRule = ($this->method() === 'PUT' && $modelId !== null)
             ? 'unique:facilities,name,' . $modelId
@@ -30,22 +30,24 @@ class FacilityRequest extends FormRequest
         return [
             'name'      => "required|string|max:255|{$uniqueNameRule}",
             'facility_type'  => 'required',
-            'notes' => 'nullable|string'
+            'notes' => 'nullable|string',
+            'facility_for' => 'required|string'
         ];
     }
 
-        /**
+    /**
      * Get the error messages for the defined validation rules.
      *
      * @return array<string, string>
      */
-    public function messages() : array
+    public function messages(): array
     {
         return [
             'name.required'         => 'The  name is required.',
             'name.unique'           => 'The name has already been taken.',
             'name.string'       => 'The name must be an string.',
             'facility_type.required' => 'Facility type is required',
+            'facility_for.required' => 'Facility is required',
             'notes.string'       => 'The note must be an string.',
         ];
     }
