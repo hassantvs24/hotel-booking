@@ -48,6 +48,30 @@ return [
             ]
         ],
 
+        'PROPERTY_CATEGORY' => [
+            [
+                'name'    => 'View Property Category',
+                'slug'    => 'can_view_property_category',
+                'subject' => 'property_category',
+            ],
+            [
+                'name'    => 'Create Property Category',
+                'slug'    => 'can_create_property_category',
+                'subject' => 'property_category',
+            ],
+            [
+                'name'    => 'Update Property Category',
+                'slug'    => 'can_update_property_category',
+                'subject' => 'property_category',
+            ],
+
+            [
+                'name'    => 'Delete Property Category',
+                'slug'    => 'can_delete_property_category',
+                'subject' => 'property_category',
+            ]
+        ],
+
         'SURROUNDING' => [
             [
                 'name'    => 'View Surrounding',
@@ -326,6 +350,11 @@ return [
             [
                 'name'    => 'View ACL',
                 'slug'    => 'can_view_acl',
+                'subject' => 'misc',
+            ],
+            [
+                'name'    => 'View Properties',
+                'slug'    => 'can_view_properties',
                 'subject' => 'misc',
             ],
             [

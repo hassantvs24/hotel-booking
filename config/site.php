@@ -190,6 +190,31 @@ return [
                 'children'   => []
             ],
             [
+                'name'       => 'Properties',
+                'route'      => null,
+                'icon'       => 'ni ni-building text-primary',
+                'key'        => 'admin/properties*',
+                'permission' => 'can_view_properties',
+                'children'   => [
+                    [
+                        'name'       => 'Property Categories',
+                        'route'      => 'admin.properties.categories.index',
+                        'icon'       => 'ni ni-building text-default',
+                        'key'        => 'admin/properties/property-categories',
+                        'permission' => 'can_view_property_category',
+                        'children'   => []
+                    ],
+                    [
+                        'name'       => 'Properties',
+                        'route'      => null,
+                        'icon'       => 'ni ni-building text-default',
+                        'key'        => 'admin/properties',
+                        'permission' => 'can_view_property',
+                        'children'   => []
+                    ]
+                ]
+            ],
+            [
                 'name'       => 'Facilities',
                 'route'      => null,
                 'icon'       => 'ni ni-building text-primary',
