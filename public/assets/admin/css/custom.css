@@ -54,7 +54,7 @@
     text-decoration: underline overline;
 }
 
-.table> :not(caption)>*>* {
+.table > :not(caption) > * > * {
     padding: 0.5rem 1.5rem !important;
 }
 
@@ -97,4 +97,12 @@
 
 .word-wrap {
     text-wrap: wrap !important;
+}
+
+.form-control.is-select {
+    padding-right: unset;
+    background-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMCA4Ij4KICA8cGF0aCBmaWxsPSIjYWRiNWJkIiBkPSJNMTAgMEw1IDUgMCAwWiIvPgo8L3N2Zz4=");
+    background-repeat: no-repeat;
+    background-position: right 0.75rem center;
+    background-size: 1rem 1rem;
 }
