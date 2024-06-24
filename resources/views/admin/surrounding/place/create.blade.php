@@ -2,9 +2,6 @@
     <x-admin.card>
         <x-admin.card.card-header title="Add New Surrounding Place"/>
         <x-admin.card.card-body>
-            @foreach($errors->all() as $error)
-                <div class="alert alert-danger">{{ $error }}</div>
-            @endforeach
             <x-admin.form action="{{ route('admin.surroundings.surrounding-places.store') }}" method="POST">
                 <div class="row">
                     <div class="col-md-6">
