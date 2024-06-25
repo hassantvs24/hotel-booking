@@ -21,8 +21,8 @@ return new class extends Migration
             $table->integer('room')->default(1);
             $table->string('reference')->nullable();
             $table->string('notes')->comment('Booking notes')->nullable();
-            $table->foreignId('rooms_id')->constrained()->onDelete('cascade')->onUpdate('No Action');
-            $table->foreignId('users_id')->constrained()->onDelete('cascade')->onUpdate('No Action');
+            $table->foreignId('room_id')->constrained()->onDelete('cascade')->onUpdate('No Action');
+            $table->foreignId('user_id')->constrained()->onDelete('cascade')->onUpdate('No Action');
             $table->softDeletes();
             $table->timestamps();
         });

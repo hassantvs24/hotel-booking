@@ -20,8 +20,8 @@ return new class extends Migration
             $table->integer('children')->default(0);
             $table->integer('room')->default(1);
             $table->enum('status', ['Pending', 'Done', 'Timeout'])->default('Pending');
-            $table->foreignId('places_id')->nullable()->constrained()->onDelete('set null')->onUpdate('No Action');
-            $table->foreignId('users_id')->constrained()->onDelete('cascade')->onUpdate('No Action');
+            $table->foreignId('place_id')->nullable()->constrained()->onDelete('set null')->onUpdate('No Action');
+            $table->foreignId('user_id')->constrained()->onDelete('cascade')->onUpdate('No Action');
             $table->softDeletes();
             $table->timestamps();
         });

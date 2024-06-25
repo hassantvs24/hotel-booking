@@ -23,8 +23,8 @@ return new class extends Migration
             $table->string('notes')->nullable();
             $table->enum('offer_from', ['Generale', 'Request'])->default('Generale');
             $table->enum('status', ['Pending', 'Negotiate', 'Canceled', 'Accepted'])->default('Pending');
-            $table->foreignId('rooms_id')->constrained()->onDelete('cascade')->onUpdate('No Action');
-            $table->foreignId('users_id')->constrained()->onDelete('cascade')->onUpdate('No Action');
+            $table->foreignId('room_id')->constrained()->onDelete('cascade')->onUpdate('No Action');
+            $table->foreignId('user_id')->constrained()->onDelete('cascade')->onUpdate('No Action');
             $table->softDeletes();
             $table->timestamps();
         });

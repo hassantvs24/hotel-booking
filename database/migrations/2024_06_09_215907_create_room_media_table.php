@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->string('media_file');
             $table->string('media_type')->nullable();
-            $table->foreignId('rooms_id')->constrained()->onDelete('cascade')->onUpdate('No Action');
+            $table->foreignId('room_id')->constrained()->onDelete('cascade')->onUpdate('No Action');
             $table->softDeletes();
             $table->timestamps();
         });

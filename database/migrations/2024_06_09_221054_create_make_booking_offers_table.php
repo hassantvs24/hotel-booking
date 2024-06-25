@@ -16,8 +16,8 @@ return new class extends Migration
             $table->string('notes')->comment('Offer Notes');
             $table->enum('status', ['Pending', 'Accepted'])->default('Pending');
             $table->double('price')->default(0)->comment('Offer price');
-            $table->foreignId('rooms_id')->constrained()->onDelete('cascade')->onUpdate('No Action');
-            $table->foreignId('booking_requests_id')->constrained()->onDelete('cascade')->onUpdate('No Action');
+            $table->foreignId('room_id')->constrained()->onDelete('cascade')->onUpdate('No Action');
+            $table->foreignId('booking_request_id')->constrained()->onDelete('cascade')->onUpdate('No Action');
             $table->softDeletes();
             $table->timestamps();
         });

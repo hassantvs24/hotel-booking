@@ -17,7 +17,7 @@ return new class extends Migration
             $table->string('notes')->nullable();
             $table->string('contact')->nullable();
             $table->string('email')->nullable();
-            $table->foreignId('properties_id')->constrained()->onDelete('cascade')->onUpdate('No Action');
+            $table->foreignId('property_id')->constrained()->onDelete('cascade')->onUpdate('No Action');
             $table->softDeletes();
             $table->timestamps();
         });

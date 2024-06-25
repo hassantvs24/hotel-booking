@@ -16,8 +16,8 @@ return new class extends Migration
             $table->double('price')->default(0);
             $table->string('note')->nullable();
             $table->boolean('is_activated')->default(0)->nullable('0 means not activate');//Only 1 active price at time for rooms
-            $table->foreignId('price_types_id')->nullable()->constrained()->onDelete('Set Null')->onUpdate('No Action');
-            $table->foreignId('rooms_id')->constrained()->onDelete('cascade')->onUpdate('No Action');
+            $table->foreignId('price_type_id')->nullable()->constrained()->onDelete('Set Null')->onUpdate('No Action');
+            $table->foreignId('room_id')->constrained()->onDelete('cascade')->onUpdate('No Action');
             $table->softDeletes();
             $table->timestamps();
         });

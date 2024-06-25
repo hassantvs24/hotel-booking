@@ -23,9 +23,9 @@ return new class extends Migration
             $table->integer('total_window')->default(0);
             $table->double('base_price')->default(0);
             $table->text('notes')->nullable();
-            $table->foreignId('bed_types_id')->nullable()->constrained()->onDelete('Set Null')->onUpdate('No Action');
-            $table->foreignId('room_types_id')->nullable()->constrained()->onDelete('Set Null')->onUpdate('No Action');
-            $table->foreignId('properties_id')->constrained()->onDelete('cascade')->onUpdate('No Action');
+            $table->foreignId('bed_type_id')->nullable()->constrained()->onDelete('Set Null')->onUpdate('No Action');
+            $table->foreignId('room_type_id')->nullable()->constrained()->onDelete('Set Null')->onUpdate('No Action');
+            $table->foreignId('property_id')->constrained()->onDelete('cascade')->onUpdate('No Action');
             $table->softDeletes();
             $table->timestamps();
         });

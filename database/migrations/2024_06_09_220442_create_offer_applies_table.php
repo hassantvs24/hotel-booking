@@ -16,8 +16,8 @@ return new class extends Migration
             $table->double('owner_price')->nullable();
             $table->double('customer_price')->nullable();
             $table->string('notes')->nullable();
-            $table->foreignId('offers_id')->constrained()->onDelete('cascade')->onUpdate('No Action');
-            $table->foreignId('users_id')->constrained()->onDelete('cascade')->onUpdate('No Action');
+            $table->foreignId('offer_id')->constrained()->onDelete('cascade')->onUpdate('No Action');
+            $table->foreignId('user_id')->constrained()->onDelete('cascade')->onUpdate('No Action');
             $table->softDeletes();
             $table->timestamps();
         });
