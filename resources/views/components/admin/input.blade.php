@@ -1,4 +1,4 @@
-@props(['type' => null, 'value' => null, 'placeholder' => null, 'name' => null, 'id' => null, 'label' => null, 'options' => [], 'multiple' => false])
+@props(['type' => null, 'value' => null, 'placeholder' => null, 'name' => null, 'id' => null, 'label' => null, 'options' => [], 'multiple' => false, 'additionalClasses' => null])
 
 @php
     $id = $id ?: $name;
@@ -26,7 +26,8 @@
             id="{{ $id }}"
             class="form-control @error($name) is-invalid @enderror">{{ $value }}</textarea>
     @elseif($type === 'select')
-        <select name="{{ $name }}" id="{{ $id }}" class="form-control is-select @error($name) is-invalid @enderror" {{ $multiple ? 'multiple' : '' }}>
+        <select name="{{ $name }}" id="{{ $id }}" class="form-control is-select {{ $additionalClasses }} @error($name) is-invalid @enderror" {{ $multiple ? 'multiple' : '' }}>
+            <option value="">Select {{ $label }}</option>
             @foreach($options as $key => $option)
                 <option value="{{ $key }}" {{ $ifSelected($value, $key) }}>{{ $option }}</option>
             @endforeach

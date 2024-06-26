@@ -128,6 +128,10 @@ return [
                 [
                     'src'  => 'plugins/toastr.min.js',
                     'type' => 'local',
+                ],
+                [
+                    'src' => 'customs/custom.js',
+                    'type' => 'local'
                 ]
             ]
         ],
