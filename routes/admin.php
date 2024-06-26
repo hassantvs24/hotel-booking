@@ -12,6 +12,10 @@ use App\Http\Controllers\Admin\Place\PlaceController;
 use App\Http\Controllers\Admin\Place\StateController;
 use App\Http\Controllers\Admin\Property\PropertyCategoryController;
 use App\Http\Controllers\Admin\Property\PropertyRuleController;
+use App\Http\Controllers\Admin\Room\BedTypeController;
+use App\Http\Controllers\Admin\Room\PriceTypeController;
+use App\Http\Controllers\Admin\Room\RoomController;
+use App\Http\Controllers\Admin\Room\RoomTypeController;
 use App\Http\Controllers\Admin\Surrounding\SurroundingController;
 use App\Http\Controllers\Admin\Surrounding\SurroundingPlaceController;
 use Illuminate\Support\Facades\Route;
@@ -85,6 +89,26 @@ Route::prefix('admin')->as('admin.')->middleware(['auth'])->group(function () {
             ->parameters(['categories' => 'propertyCategory']);
         Route::resource('rules', PropertyRuleController::class)
             ->parameters(['rules' => 'propertyRule']);
+    });
+
+    /*-- Room Routes --*/
+    Route::prefix('rooms')->as('rooms.')->group(function () {
+
+        Route::resource('room-types', RoomTypeController::class)
+            ->parameters(['room-types' => 'roomType']);
+        Route::resource('bed-types', BedTypeController::class)
+            ->parameters(['bed-types' => 'bedType']);
+        Route::resource('price-types', PriceTypeController::class)
+            ->parameters(['price-types' => 'priceType']);
+
+        Route::controller(RoomController::class)->group(function () {
+            Route::get('', 'index')->name('index');
+            Route::get('create', 'create')->name('create');
+            Route::post('', 'store')->name('store');
+            Route::get('{room}/edit', 'edit')->name('edit');
+            Route::put('{room}', 'update')->name('update');
+            Route::delete('destroy/{room}', 'destroy')->name('destroy');
+        });
     });
 });
 /*----------------- Admin Routes -----------------*/

@@ -26,6 +26,7 @@ class DatabaseSeeder extends Seeder
             SurroundingSeeder::class,
             PropertyCategorySeeder::class,
             PropertyRuleSeeder::class,
+            RoomElementSeeder::class,
         ]);
     }
 }

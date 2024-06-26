@@ -190,6 +190,47 @@ return [
                 'children'   => []
             ],
             [
+                'name'  => 'Rooms',
+                'route' => null,
+                'icon'  => 'ni ni-building text-primary',
+                'key'   => 'admin/rooms*',
+                'permission' => 'can_view_rooms',
+                'children' => [
+                    [
+                        'name'       => 'Rooms',
+                        'route'      => 'admin.rooms.index',
+                        'icon'       => 'ni ni-building text-default',
+                        'key'        => 'admin/rooms',
+                        'permission' => 'can_view_room',
+                        'children'   => []
+                    ],
+                    [
+                        'name'       => 'Room Types',
+                        'route'      => 'admin.rooms.room-types.index',
+                        'icon'       => 'ni ni-building text-default',
+                        'key'        => 'admin/rooms/room-types',
+                        'permission' => 'can_view_room_type',
+                        'children'   => []
+                    ],
+                    [
+                        'name'       => 'Bed Types',
+                        'route'      => 'admin.rooms.bed-types.index',
+                        'icon'       => 'ni ni-building text-default',
+                        'key'        => 'admin/rooms/bed-types',
+                        'permission' => 'can_view_bed_type',
+                        'children'   => []
+                    ],
+                    [
+                        'name'       => 'Price Types',
+                        'route'      => 'admin.rooms.price-types.index',
+                        'icon'       => 'ni ni-building text-default',
+                        'key'        => 'admin/rooms/price-types',
+                        'permission' => 'can_view_price_type',
+                        'children'   => []
+                    ]
+                ]
+            ],
+            [
                 'name'       => 'Properties',
                 'route'      => null,
                 'icon'       => 'ni ni-building text-primary',
@@ -197,12 +238,12 @@ return [
                 'permission' => 'can_view_properties',
                 'children'   => [
                     [
-                        'name'  => 'Property Rules',
-                        'route' => 'admin.properties.rules.index',
-                        'icon'  => 'ni ni-building text-default',
-                        'key'   => 'admin/properties/rules',
+                        'name'       => 'Property Rules',
+                        'route'      => 'admin.properties.rules.index',
+                        'icon'       => 'ni ni-building text-default',
+                        'key'        => 'admin/properties/rules',
                         'permission' => 'can_view_property_rule',
-                        'children' => []
+                        'children'   => []
                     ],
                     [
                         'name'       => 'Properties',

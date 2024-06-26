@@ -48,6 +48,102 @@ return [
             ]
         ],
 
+        'BED_TYPE' => [
+            [
+                'name'    => 'View Bed Type',
+                'slug'    => 'can_view_bed_type',
+                'subject' => 'bed_type',
+            ],
+            [
+                'name'    => 'Create Bed Type',
+                'slug'    => 'can_create_bed_type',
+                'subject' => 'bed_type',
+            ],
+            [
+                'name'    => 'Update Bed Type',
+                'slug'    => 'can_update_bed_type',
+                'subject' => 'bed_type',
+            ],
+
+            [
+                'name'    => 'Delete Bed Type',
+                'slug'    => 'can_delete_bed_type',
+                'subject' => 'bed_type',
+            ]
+        ],
+
+        'ROOM' => [
+            [
+                'name'    => 'View Room',
+                'slug'    => 'can_view_room',
+                'subject' => 'room',
+            ],
+            [
+                'name'    => 'Create Room',
+                'slug'    => 'can_create_room',
+                'subject' => 'room',
+            ],
+            [
+                'name'    => 'Update Room',
+                'slug'    => 'can_update_room',
+                'subject' => 'room',
+            ],
+
+            [
+                'name'    => 'Delete Room',
+                'slug'    => 'can_delete_room',
+                'subject' => 'room',
+            ]
+        ],
+
+        'ROOM_TYPE' => [
+            [
+                'name'    => 'View Room Type',
+                'slug'    => 'can_view_room_type',
+                'subject' => 'room_type',
+            ],
+            [
+                'name'    => 'Create Room Type',
+                'slug'    => 'can_create_room_type',
+                'subject' => 'room_type',
+            ],
+            [
+                'name'    => 'Update Room Type',
+                'slug'    => 'can_update_room_type',
+                'subject' => 'room_type',
+            ],
+
+            [
+                'name'    => 'Delete Room Type',
+                'slug'    => 'can_delete_room_type',
+                'subject' => 'room_type',
+            ]
+        ],
+
+        'PRICE_TYPE' => [
+            [
+                'name'    => 'View Price Type',
+                'slug'    => 'can_view_price_type',
+                'subject' => 'price_type',
+            ],
+            [
+                'name'    => 'Create Price Type',
+                'slug'    => 'can_create_price_type',
+                'subject' => 'price_type',
+            ],
+            [
+                'name'    => 'Update Price Type',
+                'slug'    => 'can_update_price_type',
+                'subject' => 'price_type',
+            ],
+
+            [
+                'name'    => 'Delete Price Type',
+                'slug'    => 'can_delete_price_type',
+                'subject' => 'price_type',
+            ]
+        ],
+
         'PROPERTY_CATEGORY' => [
             [
                 'name'    => 'View Property Category',
@@ -398,6 +494,11 @@ return [
             [
                 'name'    => 'View ACL',
                 'slug'    => 'can_view_acl',
+                'subject' => 'misc',
+            ],
+            [
+                'name'    => 'View Rooms',
+                'slug'    => 'can_view_rooms',
                 'subject' => 'misc',
             ],
             [
