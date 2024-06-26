@@ -11,7 +11,7 @@ class PriceTypeRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return false;
+        return true;
     }
 
     /**
@@ -21,8 +21,30 @@ class PriceTypeRequest extends FormRequest
      */
     public function rules(): array
     {
+        $modelId = $this->priceTypeRepository ?: null;
+
+        $uniqueNameRule = ($this->method() === 'PUT' && $modelId !== null)
+            ? 'unique:price_types,name,' . $modelId
+            : 'unique:price_types,name';
+
         return [
-            //
+            'name'  => "required|string|max:255|{$uniqueNameRule}"
         ];
     }
+    /**
+     * Get the error messages for the defined validation rules.
+     *
+     * @return array<string, string>
+     */
+
+     public function messages() : array
+     {
+         return [
+             'name.required' => 'The name field is required.',
+             'name.string'   => 'The name field must be a string.',
+             'name.max'      => 'The name field must not exceed 255 characters.',
+             'name.unique'   => 'The name field must be unique.',
+             
+         ];
+     }
 }
