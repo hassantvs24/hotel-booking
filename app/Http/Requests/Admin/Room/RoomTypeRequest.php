@@ -11,7 +11,7 @@ class RoomTypeRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return false;
+        return true; 
     }
 
     /**
@@ -21,8 +21,32 @@ class RoomTypeRequest extends FormRequest
      */
     public function rules(): array
     {
+        $modelId = $this->roomTypeRepository ?: null;
+
+        $uniqueNameRule = ($this->method() === 'PUT' && $modelId !== null)
+            ? 'unique:room_types,name,' . $modelId
+            : 'unique:room_types,name';
+
         return [
-            //
+            'name'  => "required|string|max:255|{$uniqueNameRule}",
+            'notes' => 'nullable|string',
+            'icon'  => 'nullable'
         ];
     }
+    /**
+     * Get the error messages for the defined validation rules.
+     *
+     * @return array<string, string>
+     */
+
+     public function messages() : array
+     {
+         return [
+             'name.required' => 'The name field is required.',
+             'name.string'   => 'The name field must be a string.',
+             'name.max'      => 'The name field must not exceed 255 characters.',
+             'name.unique'   => 'The name field must be unique.',
+             'notes.string'  => 'The notes field must be a string.',
+         ];
+     }
 }

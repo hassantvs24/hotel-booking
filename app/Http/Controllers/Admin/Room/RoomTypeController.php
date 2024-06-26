@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin\Room;
 
 use App\Http\Controllers\BaseController;
+use App\Http\Requests\Admin\Room\RoomTypeRequest;
 use App\Repositories\Room\RoomTypeRepository;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -18,8 +19,26 @@ class RoomTypeController extends BaseController
         if (!hasPermission('can_view_room_type')) {
             $this->unauthorized();
         }
+        $query = array_merge(
+            $request->only(['search', 'filters', 'order_by', 'order', 'per_page', 'page']),
+            [
+                'with'     => [],
+                'where'    => [],
+                'order_by' => 'id',
+                'order'    => 'DESC',
+            ]
+        );
 
-        return view('admin.room.room-type.index');
+        $roomTypes= $typeRepository->paginate($query);
+
+        $permissions = [
+            'manage' => 'can_view_room_type',
+            'create' => 'can_create_room_type',
+            'update' => 'can_update_room_type',
+            'delete' => 'can_delete_room_type',
+        ];
+
+        return view('admin.room.room-type.index',compact('roomTypes', 'permissions'));
     }
 
     /**
@@ -37,13 +56,26 @@ class RoomTypeController extends BaseController
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request) : RedirectResponse
+    public function store(RoomTypeRequest $request,RoomTypeRepository $roomTypeRepository) : RedirectResponse
     {
         if (!hasPermission('can_create_room_type')) {
             $this->unauthorized();
         }
 
-        //
+        try {
+            $roomTypeRepository->create($request->validated());
+
+            return redirect()->route('admin.rooms.room-types.index')->with([
+                'message'    => 'Room Type created successfully.',
+                'alert-type' => 'success'
+            ]);
+
+        } catch (\Exception $e) {
+            return redirect()->back()->with([
+                'message'    => 'Something went wrong.',
+                'alert-type' => 'error'
+            ]);
+        }
     }
 
     /**
@@ -57,36 +89,67 @@ class RoomTypeController extends BaseController
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(string $id) : View
+    public function edit(RoomTypeRepository $roomRepository, $roomType) : View 
     {
-        if (!hasPermission('can_edit_room_type')) {
+        if (!hasPermission('can_update_room_type')) {
             $this->unauthorized();
         }
 
-        return view('admin.room.room-type.edit');
+        $roomType = $roomRepository->getModel($roomType);
+
+        return view('admin.room.room-type.edit', compact('roomType'));
     }
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, string $id) : RedirectResponse
+    public function update(RoomTypeRequest $request,RoomTypeRepository $roomRepository,$roomType) : RedirectResponse
     {
-        if (!hasPermission('can_edit_room_type')) {
+        if (!hasPermission('can_update_room_type')) {
             $this->unauthorized();
         }
 
-        //
+        try {
+
+            $roomType = $roomRepository->getModel($roomType);
+            $roomRepository->update($request->validated(), $roomType);
+
+            return redirect()->route('admin.rooms.room-types.index')->with([
+                'message'    => 'Room Type updated successfully.',
+                'alert-type' => 'success'
+            ]);
+
+        } catch (\Exception $e) {
+            return redirect()->back()->with([
+                'message'    => 'Something went wrong.',
+                'alert-type' => 'error'
+            ]);
+        }
     }
 
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(string $id) : RedirectResponse
+    public function destroy(RoomTypeRepository $roomRepository,$roomType) : RedirectResponse
     {
         if (!hasPermission('can_delete_room_type')) {
             $this->unauthorized();
         }
 
-        //
+        try {
+
+            $roomRepository->delete($roomType);
+
+            return redirect()->route('admin.rooms.room-types.index')->with([
+                'message'    => 'Room Type deleted successfully.',
+                'alert-type' => 'success'
+            ]);
+
+        } catch (\Exception $e) {
+            return redirect()->back()->with([
+                'message'    => 'Something went wrong.',
+                'alert-type' => 'error'
+            ]);
+        }
     }
 }

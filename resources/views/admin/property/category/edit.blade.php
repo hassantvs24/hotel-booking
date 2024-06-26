@@ -7,7 +7,7 @@
                     <div class="col-md-6">
                         <x-admin.input
                             type="text"
-                            name="name"
+                            name="name" 
                             id="name"
                             label="Name"
                             value="{{ $category->name }}"

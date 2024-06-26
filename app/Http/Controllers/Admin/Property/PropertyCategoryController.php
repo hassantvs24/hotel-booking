@@ -9,7 +9,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
-class PropertyCategoryController extends BaseController
+class PropertyCategoryController extends BaseController 
 {
     /**
      * Display a listing of the resource.
@@ -49,8 +49,8 @@ class PropertyCategoryController extends BaseController
     {
         if (!hasPermission('can_create_property_category')) {
             $this->unauthorized();
-        }
-
+        } 
+    
         return view('admin.property.category.create');
     }
 
