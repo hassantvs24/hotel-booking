@@ -17,7 +17,7 @@
                     <x-admin.table-head value="Date"/>
                     <x-admin.table-head value="Name"/>
                     @if (hasPermission($permissions['update']) || hasPermission($permissions['delete']))
-                        <x-admin.table-head value="Actions"/>
+                        <x-admin.table-head class="text-right" value="Actions"/>
                     @endif
                 </x-admin.table-header>
                 <x-admin.table-body> 
@@ -26,7 +26,7 @@
                             <x-admin.table-cell :value="format_date($priceType->created_at)"/>
                             <x-admin.table-cell :value="$priceType->name"/>
                             @if (hasPermission($permissions['update']) || hasPermission($permissions['delete']))
-                                <x-admin.table-cell>
+                                <x-admin.table-cell class="text-right">
                                     @hasPermission($permissions['update'])
                                     <a href="{{ route('admin.rooms.price-types.edit', $priceType->id) }}"
                                        class="btn btn-icon btn-xs btn-outline-primary">
