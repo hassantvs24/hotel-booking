@@ -56,7 +56,7 @@ class RoomTypeController extends BaseController
     /**
      * Store a newly created resource in storage.
      */
-    public function store(RoomTypeRequest $request,RoomTypeRepository $roomTypeRepository) : RedirectResponse
+    public function store(RoomTypeRequest $request, RoomTypeRepository $roomTypeRepository) : RedirectResponse
     {
         if (!hasPermission('can_create_room_type')) {
             $this->unauthorized();
@@ -103,7 +103,7 @@ class RoomTypeController extends BaseController
     /**
      * Update the specified resource in storage.
      */
-    public function update(RoomTypeRequest $request,RoomTypeRepository $roomRepository,$roomType) : RedirectResponse
+    public function update(RoomTypeRequest $request, RoomTypeRepository $roomRepository, $roomType) : RedirectResponse
     {
         if (!hasPermission('can_update_room_type')) {
             $this->unauthorized();
@@ -130,7 +130,7 @@ class RoomTypeController extends BaseController
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(RoomTypeRepository $roomRepository,$roomType) : RedirectResponse
+    public function destroy(RoomTypeRepository $roomRepository, $roomType) : RedirectResponse
     {
         if (!hasPermission('can_delete_room_type')) {
             $this->unauthorized();

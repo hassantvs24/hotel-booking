@@ -58,7 +58,7 @@ class PriceTypeController extends BaseController
     /**
      * Store a newly created resource in storage.
      */
-    public function store( PriceTypeRequest $request,PriceTypeRepository $priceTypeRepository) : RedirectResponse
+    public function store( PriceTypeRequest $request, PriceTypeRepository $priceTypeRepository ) : RedirectResponse
     {
         if (!hasPermission('can_create_price_type')) {
             $this->unauthorized();
@@ -96,6 +96,7 @@ class PriceTypeController extends BaseController
         if (!hasPermission('can_update_price_type')) {
             $this->unauthorized();
         }
+
         $priceType = $priceTypeRepository->getModel($priceType);
 
         return view('admin.room.price-type.edit' , compact('priceType'));
@@ -104,7 +105,7 @@ class PriceTypeController extends BaseController
     /**
      * Update the specified resource in storage.
      */
-    public function update(PriceTypeRequest $request, PriceTypeRepository $priceTypeRepository,$priceType) : RedirectResponse
+    public function update(PriceTypeRequest $request, PriceTypeRepository $priceTypeRepository, $priceType) : RedirectResponse
     {
         if (!hasPermission('can_update_price_type')) {
             $this->unauthorized();
@@ -131,7 +132,7 @@ class PriceTypeController extends BaseController
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(PriceTypeRepository $priceTypeRepository,$priceType) : RedirectResponse
+    public function destroy(PriceTypeRepository $priceTypeRepository, $priceType) : RedirectResponse
     {
         if (!hasPermission('can_delete_price_type')) {
             $this->unauthorized();

@@ -21,14 +21,14 @@
                     @endif
                 </x-admin.table-header>
                 <x-admin.table-body> 
-                    @forelse($priceTypes as $priceType)
+                    @forelse( $priceTypes as $priceType )
                         <x-admin.table-row>
                             <x-admin.table-cell :value="format_date($priceType->created_at)"/>
                             <x-admin.table-cell :value="$priceType->name"/>
                             @if (hasPermission($permissions['update']) || hasPermission($permissions['delete']))
                                 <x-admin.table-cell>
                                     @hasPermission($permissions['update'])
-                                    <a href="{{ route('admin.rooms.price-types.edit', $priceType->id)}}"
+                                    <a href="{{ route('admin.rooms.price-types.edit', $priceType->id) }}"
                                        class="btn btn-icon btn-xs btn-outline-primary">
                                         <i class="fas fa-edit"></i>
                                     </a>

@@ -10,7 +10,7 @@
                             name="name"
                             id="name"
                             label="Name"
-                            value="{{$roomType->name}}"
+                            value="{{ $roomType->name }}"
                         />
                     </div>
                     <div class="col-md-6">
@@ -19,7 +19,7 @@
                             name="icon"
                             id="icon"
                             label="Icon"
-                            value="{{$roomType->icon}}"
+                            value="{{ $roomType->icon }}"
                         />
                     </div>
                 </div>
@@ -30,7 +30,7 @@
                             name="notes"
                             id="notes"
                             label="Note"
-                            value="{{$roomType->notes}}"
+                            value="{{ $roomType->notes }}"
                         />
                     </div>
                 </div>

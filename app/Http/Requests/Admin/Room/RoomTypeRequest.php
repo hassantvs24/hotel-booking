@@ -9,9 +9,9 @@ class RoomTypeRequest extends FormRequest
     /**
      * Determine if the user is authorized to make this request.
      */
-    public function authorize(): bool
+    public function authorize() : bool
     {
-        return true; 
+        return true;
     }
 
     /**
@@ -19,9 +19,9 @@ class RoomTypeRequest extends FormRequest
      *
      * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
      */
-    public function rules(): array
+    public function rules() : array
     {
-        $modelId = $this->roomTypeRepository ?: null;
+        $modelId = $this->roomType ?: null;
 
         $uniqueNameRule = ($this->method() === 'PUT' && $modelId !== null)
             ? 'unique:room_types,name,' . $modelId
@@ -33,20 +33,21 @@ class RoomTypeRequest extends FormRequest
             'icon'  => 'nullable'
         ];
     }
+
     /**
      * Get the error messages for the defined validation rules.
      *
      * @return array<string, string>
      */
 
-     public function messages() : array
-     {
-         return [
-             'name.required' => 'The name field is required.',
-             'name.string'   => 'The name field must be a string.',
-             'name.max'      => 'The name field must not exceed 255 characters.',
-             'name.unique'   => 'The name field must be unique.',
-             'notes.string'  => 'The notes field must be a string.',
-         ];
-     }
+    public function messages() : array
+    {
+        return [
+            'name.required' => 'The name field is required.',
+            'name.string'   => 'The name field must be a string.',
+            'name.max'      => 'The name field must not exceed 255 characters.',
+            'name.unique'   => 'The name field must be unique.',
+            'notes.string'  => 'The notes field must be a string.',
+        ];
+    }
 }

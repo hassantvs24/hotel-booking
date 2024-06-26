@@ -1,4 +1,4 @@
-<x-admin.layout title="Room-Type">
+<x-admin.layout title="Room Type">
     <x-admin.card>
         <x-admin.card.card-header title="Room-Type" class="d-flex align-content-center">
             @hasPermission($permissions['create'])
@@ -28,8 +28,10 @@
                             <x-admin.table-cell :value="format_date($roomType->created_at)"/>
                             <x-admin.table-cell :value="$roomType->name"/>
                             <x-admin.table-cell/> 
-                            <x-admin.table-cell class="word-wrap"
-                                                :value="\Illuminate\Support\Str::limit($roomType->notes, 50)"/>
+                            <x-admin.table-cell
+                                class="word-wrap"
+                                :value="\Illuminate\Support\Str::limit($roomType->notes, 50)"
+                            />
                             @if (hasPermission($permissions['update']) || hasPermission($permissions['delete']))
                                 <x-admin.table-cell>
                                     @hasPermission($permissions['update'])
