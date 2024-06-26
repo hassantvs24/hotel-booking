@@ -33,6 +33,7 @@
                             id="country_id"
                             label="Country"
                             :options="$countries"
+                            additional-classes="searchable"
                         />
                     </div>
                 </div>
