@@ -57,6 +57,7 @@
                             label="State"
                             :options="$states"
                             :value="$city->state_id"
+                            additional-classes="searchable"
                         />
                     </div>
                 </div>

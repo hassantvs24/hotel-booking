@@ -26,7 +26,7 @@
             id="{{ $id }}"
             class="form-control @error($name) is-invalid @enderror">{{ $value }}</textarea>
     @elseif($type === 'select')
-        <select name="{{ $name }}" id="{{ $id }}" class="form-control is-select {{ $additionalClasses }} @error($name) is-invalid @enderror" {{ $multiple ? 'multiple' : '' }}>
+        <select name="{{ $name }}" id="{{ $id }}" class="form-control is-select serchable-select {{ $additionalClasses }} @error($name) is-invalid @enderror" {{ $multiple ? 'multiple' : '' }}>
             <option value="">Select {{ $label }}</option>
             @foreach($options as $key => $option)
                 <option value="{{ $key }}" {{ $ifSelected($value, $key) }}>{{ $option }}</option>

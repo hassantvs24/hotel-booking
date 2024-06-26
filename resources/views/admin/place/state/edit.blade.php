@@ -34,6 +34,7 @@
                             label="Country"
                             :options="$countries"
                             :value="$state->country_id"
+                            additional-classes="searchable"
                         />
                     </div>
                 </div>

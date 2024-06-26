@@ -102,6 +102,7 @@
                             label="City"
                             :options="$cities"
                             :value="$place->city_id"
+                            additional-classes="searchable"
                         />
                     </div>
                     <div class="col-6">

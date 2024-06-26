@@ -106,3 +106,15 @@
     background-position: right 0.75rem center;
     background-size: 1rem 1rem;
 }
+.select2-container .select2-selection--single {
+    height: 40px !important;
+    border: 1px solid #d2d6da !important;
+    border-radius: 0.5rem !important;
+}
+.select2-container--default .select2-selection--single .select2-selection__rendered {
+    /* color: #adb5bd !important; */
+    line-height: 36px !important;
+}
+.select2-container--default .select2-selection--single .select2-selection__arrow {
+    top: 6px !important;
+}
