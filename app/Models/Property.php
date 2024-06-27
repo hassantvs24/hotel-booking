@@ -2,30 +2,21 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Database\Eloquent\Relations\MorphOne;
 
 class Property extends Model
 {
-    use HasFactory;
+    /*----------------------------------------
+     * Relationships
+     ----------------------------------------*/
+    public function primaryImage() : MorphOne
+    {
+        return $this->morphOne(Media::class, 'media');
+    }
 
-    protected $fillable = [
-        'name',
-        'lat',
-        'long',
-        'photo',
-        'address',
-        'zip_code',
-        'total_room',
-        'currency',
-        'property_class',
-        'rating',
-        'google_review',
-        'seo_title',
-        'seo_meta',
-        'status',
-        'property_categories_id',
-        'places_id',
-        'users_id'
-    ];
+    public function images() : MorphMany
+    {
+        return $this->morphMany(Media::class, 'media');
+    }
 }

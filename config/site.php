@@ -434,5 +434,30 @@ return [
                 'children' => [],
             ]
         ]
-    ]
+    ],
+
+    'allowedMediaType' => ['image', 'video', 'pdf'],
+
+    'allowedFileExtensionToUpload' => [
+        'image' => ['jpeg', 'jpg', 'png', 'svg'],
+        'video' => ['mp4'],
+        'pdf' => ['pdf'],
+    ],
+
+    'allowedMediaRole' => [
+        'other',
+        'profile_image',
+        'city_image',
+        'place_image',
+        'facility_icon',
+        'surrounding_icon',
+        'property_icon',
+        'property_image',
+        'room_icon',
+        'room_image',
+        'bed_icon',
+        'bed_image',
+        'gallery_image',
+        'primary_image',
+    ],
 ];

@@ -2,26 +2,21 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Database\Eloquent\Relations\MorphOne;
 
 class Room extends Model
 {
-    use HasFactory;
+    /*----------------------------------------
+     * Relationships
+     ----------------------------------------*/
+    public function primaryImage() : MorphOne
+    {
+        return $this->morphOne(Media::class, 'media');
+    }
 
-    protected $fillable = [
-        'name',
-        'photo',
-        'room_number',
-        'room_size',
-        'guest_capacity',
-        'extra_bed',
-        'total_balcony',
-        'total_window',
-        'base_price',
-        'notes',
-        'bed_types_id',
-        'room_types_id',
-        'properties_id'
-    ];
+    public function images() : MorphMany
+    {
+        return $this->morphMany(Media::class, 'media');
+    }
 }
