@@ -16,8 +16,8 @@
 <div {{ $attributes->merge(['class' => 'form-group']) }}>
 
     @if($label)
-        @if (!$type=='toggle')
-        <label for="{{ $id }}">{{ $label }}</label>
+        @if($type != 'toggle')
+          <label for="{{ $id }}">{{ $label }}</label>
         @endif
     @endif
 
