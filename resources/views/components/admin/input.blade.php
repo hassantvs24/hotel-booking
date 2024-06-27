@@ -16,7 +16,9 @@
 <div {{ $attributes->merge(['class' => 'form-group']) }}>
 
     @if($label)
+        @if (!$type=='toggle')
         <label for="{{ $id }}">{{ $label }}</label>
+        @endif
     @endif
 
     @if($type === 'textarea')
@@ -32,6 +34,12 @@
                 <option value="{{ $key }}" {{ $ifSelected($value, $key) }}>{{ $option }}</option>
             @endforeach
         </select>
+
+    @elseif ($type === 'toggle')
+    <div class="form-check form-switch">
+        <input class="form-check-input" type="checkbox" id="{{ $id }}" @if ($value) checked @endif>
+        <label class="form-check-label" for="{{ $id }}">{{ $label }}</label>
+      </div>
     @else
         <input
             type="{{ $type }}"
