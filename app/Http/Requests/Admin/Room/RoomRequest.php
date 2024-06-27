@@ -34,7 +34,7 @@ class RoomRequest extends FormRequest
             'room_number' => 'nullable|integer',
             'room_size' => 'nullable|integer',
             'guest_capacity' => 'nullable|integer',
-            'extra_bed' => 'nullable',
+            'extra_bed' => 'nullable|boolean',
             'total_balcony' => 'required|integer',
             'total_window' => 'required',
             'base_price' => 'required|integer',
@@ -71,7 +71,7 @@ class RoomRequest extends FormRequest
             'bed_type_id.exists' => 'The selected bed type ID is invalid.',
             'room_type_id.integer' => 'The room type ID must be an integer.',
             'room_type_id.exists' => 'The selected room type ID is invalid.',
-            // 'property_id.required' => 'The property ID field is required.',
+            'property_id.required' => 'The property ID field is required.',
             'property_id.integer' => 'The property ID must be an integer.',
             'property_id.exists' => 'The selected property ID is invalid.',
         ];

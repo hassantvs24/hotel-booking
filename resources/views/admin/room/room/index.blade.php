@@ -24,6 +24,7 @@
                     <x-admin.table-head value="Total Balcony"/>
                     <x-admin.table-head value="Total Window"/>
                     <x-admin.table-head value="Base Price"/>
+                    <x-admin.table-head value="Note"/>
                     <x-admin.table-head value="Bed Type"/>
                     <x-admin.table-head value="Room Type"/>
                     <x-admin.table-head value="Property"/>
@@ -40,14 +41,15 @@
                             <x-admin.table-cell :value="$room->room_number"/>
                             <x-admin.table-cell :value="$room->room_size"/>
                             <x-admin.table-cell :value="$room->guest_capacity"/>
-                            <x-admin.table-cell :value="$room->extra_bed"/>
+                                <x-admin.table-cell  :value="$room->extra_bed == 1 ? 'Yes' : 'No'"/>
+                            
                             <x-admin.table-cell :value="$room->total_balcony"/>
                             <x-admin.table-cell :value="$room->total_window"/>
                             <x-admin.table-cell :value="$room->base_price"/>
-                            <x-admin.table-cell :value="$room->notes"/>
-                            <x-admin.table-cell :value="$room->roomtype?->bed_type_id"/>
-                            <x-admin.table-cell :value="$room->roomtype?->room_type_id"/>
-                            <x-admin.table-cell :value="$room->property?->property_id"/>
+                            <x-admin.table-cell class="word-wrap" :value="$room->notes"/>
+                            <x-admin.table-cell :value="$room->bedType?->name"/>
+                            <x-admin.table-cell :value="$room->roomType?->name"/>
+                            <x-admin.table-cell :value="$room->property?->name"/>
                             @if (hasPermission($permissions['update']) || hasPermission($permissions['delete']))
                                 <x-admin.table-cell class="text-right">
                                     @hasPermission($permissions['update'])

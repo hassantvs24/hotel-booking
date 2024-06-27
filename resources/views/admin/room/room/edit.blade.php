@@ -66,7 +66,7 @@
                 <div class="row">
                     <div class="col-md-6">
                         <x-admin.input
-                        type="text"
+                        type="number"
                         name="total_window"
                         id="total_window"
                         label="Total Window"
@@ -134,19 +134,19 @@
                         id="extra_bed"
                         label="Extra Bed"
                         value="{{$room->extra_bed}}"
-                    />    
+                    />  
                     </div>
                 </div>
 
                 <div class="mt-3 row">
                     <div class="col-md-6">
-                        <a href="{{ route('admin.rooms.price-types.index') }}" class="btn btn-danger btn-sm">
+                        <a href="{{ route('admin.rooms.index') }}" class="btn btn-danger btn-sm">
                             Back To List
                         </a>
                     </div>
                     <div class="col-md-6 text-right">
                         <x-admin.button variant="primary" type="submit" size="sm">
-                            Add Room type
+                           Update Room
                         </x-admin.button>
                     </div>
                 </div>

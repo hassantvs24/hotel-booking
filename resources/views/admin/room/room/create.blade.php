@@ -66,7 +66,7 @@
                 <div class="row">
                     <div class="col-md-6">
                         <x-admin.input
-                        type="text"
+                        type="number"
                         name="total_window"
                         id="total_window"
                         label="Total Window"

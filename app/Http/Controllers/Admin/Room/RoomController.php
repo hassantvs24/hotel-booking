@@ -68,19 +68,19 @@ class RoomController extends BaseController
         if (!hasPermission('can_create_room')) {
             $this->unauthorized();
         }
-        // try {
-        $roomRepository->create($request->validated());
+        try {
+            $roomRepository->create($request->validated());
 
-        return redirect()->route('admin.rooms.index')->with([
-            'message'    => 'Room created successfully.',
-            'alert-type' => 'success'
-        ]);
-        // } catch (\Exception $e) {
-        return redirect()->back()->with([
-            'message'    => 'Something went wrong.',
-            'alert-type' => 'error'
-        ]);
-        // }
+            return redirect()->route('admin.rooms.index')->with([
+                'message'    => 'Room created successfully.',
+                'alert-type' => 'success'
+            ]);
+        } catch (\Exception $e) {
+            return redirect()->back()->with([
+                'message'    => 'Something went wrong.',
+                'alert-type' => 'error'
+            ]);
+        }
     }
 
     /**
@@ -99,6 +99,9 @@ class RoomController extends BaseController
         if (!hasPermission('can_update_room')) {
             $this->unauthorized();
         }
+        $bedtypes = $bedTypeRepository->pluck('name', 'id')->toArray();
+        $roomtypes = $roomTypeRepository->pluck('name', 'id')->toArray();
+        $properties = $propertyRepository->pluck('name', 'id')->toArray();
 
         return view('admin.room.room.edit', compact('room', 'bedtypes', 'roomtypes', 'properties'));
     }
