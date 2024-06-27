@@ -11,7 +11,7 @@ class CreateMediaTable extends Migration
      *
      * @return void
      */
-    public function up() : void
+    public function up(): void
     {
         $allowedMediaType = config('site.allowedMediaType');
         $allowedMediaRole = config('site.allowedMediaRole');
@@ -37,7 +37,7 @@ class CreateMediaTable extends Migration
      *
      * @return void
      */
-    public function down() : void
+    public function down(): void
     {
         Schema::dropIfExists('media');
     }
