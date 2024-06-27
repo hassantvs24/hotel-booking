@@ -27,12 +27,12 @@ class Room extends Model
         return $this->belongsTo(Property::class);
     }
 
-    public function roomtype(): BelongsTo
+    public function roomType(): BelongsTo
     {
         return $this->belongsTo(RoomType::class);
     }
 
-    public function bedtype(): BelongsTo
+    public function bedType(): BelongsTo
     {
         return $this->belongsTo(BedType::class);
     }

@@ -4,12 +4,11 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration
-{
+return new class extends Migration {
     /**
      * Run the migrations.
      */
-    public function up(): void
+    public function up() : void
     {
         Schema::create('properties', function (Blueprint $table) {
             $table->id();
@@ -25,7 +24,16 @@ return new class extends Migration
             $table->string('google_review')->nullable();//Google review link
             $table->string('seo_title')->nullable();
             $table->string('seo_meta')->nullable();
-            $table->enum('property_class', ['7 Stars', '6 Stars', '5 Stars', '4 Stars', '3 Stars', '2 Stars', '1 Star', 'Unrated'])->default('Unrated');
+            $table->enum('property_class', [
+                '7 Stars',
+                '6 Stars',
+                '5 Stars',
+                '4 Stars',
+                '3 Stars',
+                '2 Stars',
+                '1 Star',
+                'Unrated'
+            ])->default('Unrated');
             $table->enum('status', ['Pending', 'Published', 'Unpublished'])->default('Pending');
             $table->foreignId('property_category_id')->nullable()->constrained()->onDelete('set null')->onUpdate('No Action');
             $table->foreignId('place_id')->nullable()->constrained()->onDelete('set null')->onUpdate('No Action');
@@ -38,7 +46,7 @@ return new class extends Migration
     /**
      * Reverse the migrations.
      */
-    public function down(): void
+    public function down() : void
     {
         Schema::dropIfExists('properties');
     }
