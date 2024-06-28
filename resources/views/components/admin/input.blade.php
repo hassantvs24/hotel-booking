@@ -1,4 +1,14 @@
-@props(['type' => null, 'value' => null, 'placeholder' => null, 'name' => null, 'id' => null, 'label' => null, 'options' => [], 'multiple' => false, 'additionalClasses' => null])
+@props([
+    'type' => null,
+    'value' => null,
+    'placeholder' => null,
+    'name' => null,
+    'id' => null,
+    'label' => null,
+    'options' => [],
+    'multiple' => false,
+    'additionalClasses' => null
+])
 
 @php
     $id = $id ?: $name;
@@ -17,18 +27,19 @@
 
     @if($label)
         @if($type != 'toggle')
-          <label for="{{ $id }}">{{ $label }}</label>
+            <label for="{{ $id }}">{{ $label }}</label>
         @endif
     @endif
 
     @if($type === 'textarea')
         <textarea
-            placeholder="{{ $placeholder }}"
-            name="{{ $name }}"
-            id="{{ $id }}"
-            class="form-control @error($name) is-invalid @enderror">{{ $value }}</textarea>
+                placeholder="{{ $placeholder }}"
+                name="{{ $name }}"
+                id="{{ $id }}"
+                class="form-control @error($name) is-invalid @enderror">{{ $value }}</textarea>
     @elseif($type === 'select')
-        <select name="{{ $name }}" id="{{ $id }}" class="form-control is-select serchable-select {{ $additionalClasses }} @error($name) is-invalid @enderror" {{ $multiple ? 'multiple' : '' }}>
+        <select name="{{ $name }}" id="{{ $id }}"
+                class="form-control is-select {{ $additionalClasses }} @error($name) is-invalid @enderror" {{ $multiple ? 'multiple' : '' }}>
             <option value="">Select {{ $label }}</option>
             @foreach($options as $key => $option)
                 <option value="{{ $key }}" {{ $ifSelected($value, $key) }}>{{ $option }}</option>
@@ -36,10 +47,10 @@
         </select>
 
     @elseif ($type === 'toggle')
-    <div class="form-check form-switch">
-        <input class="form-check-input" type="checkbox" id="{{ $id }}" @if ($value) checked @endif>
-        <label class="form-check-label" for="{{ $id }}">{{ $label }}</label>
-      </div>
+        <div class="form-check form-switch">
+            <input class="form-check-input" type="checkbox" id="{{ $id }}" @if ($value) checked @endif>
+            <label class="form-check-label" for="{{ $id }}">{{ $label }}</label>
+        </div>
     @else
         <input
             type="{{ $type }}"
@@ -52,6 +63,6 @@
     @endif
 
     @error($name)
-        <div class="text-danger">{{ $message }}</div>
+    <div class="text-danger">{{ $message }}</div>
     @enderror
 </div>
