@@ -2,12 +2,12 @@
 
 @php
     $typeClasses = [
-        'success' => 'badge-success',
-        'info'    => 'badge-info',
-        'warning' => 'badge-warning',
-        'danger'  => 'badge-danger',
-        'primary' => 'badge-primary',
-        'secondary' => 'badge-secondary',
+        'success'       => 'badge-success',
+        'info'          => 'badge-info',
+        'warning'       => 'badge-warning',
+        'danger'        => 'badge-danger',
+        'primary'       => 'badge-primary',
+        'secondary'     => 'badge-secondary',
     ][$type ?: 'success'];
 
     $sizeClasses = [

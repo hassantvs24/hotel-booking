@@ -18,7 +18,6 @@
                     <x-admin.table-head value="Name"/>
                     <x-admin.table-head value="Latitude"/>
                     <x-admin.table-head value="Longitude"/>
-                    <x-admin.table-head value="Photo"/>
                     <x-admin.table-head value="Address"/>
                     <x-admin.table-head value="Zip Code"/>
                     <x-admin.table-head value="Total Room"/>
@@ -27,12 +26,12 @@
                     <x-admin.table-head value="Google Review"/>
                     <x-admin.table-head value="Seo Title"/>
                     <x-admin.table-head value="Seo Meta"/>
-                    <x-admin.table-head value="Property Standered"/>
-                    <x-admin.table-head value="Status"/>
+                    <x-admin.table-head value="Property Standard"/>
                     <x-admin.table-head value="Property Category"/>
                     <x-admin.table-head value="Place"/>
                     <x-admin.table-head value="User"/>
-                    @if( hasPermission($permissions['update']) || hasPermission($permissions['delete']) )
+                    <x-admin.table-head value="Status"/>
+                @if( hasPermission($permissions['update']) || hasPermission($permissions['delete']) )
                         <x-admin.table-head class="text-right" value="Actions"/>
                     @endif
                 </x-admin.table-header>
@@ -43,21 +42,34 @@
                             <x-admin.table-cell :value="$property->name"/>
                             <x-admin.table-cell :value="$property->lat"/>
                             <x-admin.table-cell :value="$property->long"/>
-                            <x-admin.table-cell :value="$property->photo"/>
-                            <x-admin.table-cell :value="$property->address"/>
+                            <x-admin.table-cell
+                                class="word-wrap"
+                                :value="$property->address"
+                            />
                             <x-admin.table-cell :value="$property->zip_code"/>
                             <x-admin.table-cell :value="$property->total_room"/>
                             <x-admin.table-cell :value="$property->currency"/>
                             <x-admin.table-cell :value="$property->rating"/>
-                            <x-admin.table-cell :value="$property->google_review"/>
-                            <x-admin.table-cell :value="$property->seo_title"/>
-                            <x-admin.table-cell :value="$property->seo_meta"/>
+                            <x-admin.table-cell
+                                class="word-wrap"
+                                :value="$property->google_review"
+                            />
+                            <x-admin.table-cell
+                                class="word-wrap"
+                                :value="$property->seo_title"
+                            />
+                            <x-admin.table-cell
+                                class="word-wrap"
+                                :value="$property->seo_meta"
+                            />
                             <x-admin.table-cell :value="$property->property_class"/>
-                            <x-admin.table-cell :value="$property->status"/>
                             <x-admin.table-cell :value="$property->propertyCategory?->name"/>
                             <x-admin.table-cell :value="$property->place?->name"/>
                             <x-admin.table-cell :value="$property->user?->name"/>
-                            @if( hasPermission($permissions['update']) || hasPermission($permissions['delete']) )
+                            <x-admin.table-cell>
+                                <x-admin.status :value="$property->status"/>
+                            </x-admin.table-cell>
+                        @if( hasPermission($permissions['update']) || hasPermission($permissions['delete']) )
                                 <x-admin.table-cell class="text-right">
                                     @hasPermission($permissions['update'])
                                     <a href="{{ route('admin.properties.edit', $property->id) }}"

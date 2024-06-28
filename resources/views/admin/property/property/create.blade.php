@@ -4,7 +4,7 @@
         <x-admin.card.card-body>
             <x-admin.form action="{{ route('admin.properties.store') }}" method="POST">
                 <div class="row">
-                    <div class="col-md-6">
+                    <div class="col-md-12">
                         <x-admin.input
                             type="text"
                             name="name"
@@ -14,18 +14,18 @@
                             value="{{ old('name') }}"
                         />
                     </div>
-                    <div class="col-md-6">
-                        <x-admin.input
-                        type="number"
-                        name="lat"
-                        id="lat"
-                        placeholder="Latitude"
-                        label="Latitude"
-                        value="{{ old('lat') }}"
-                    />
-                    </div>
                 </div>
                 <div class="row">
+                    <div class="col-md-6">
+                        <x-admin.input
+                            type="number"
+                            name="lat"
+                            id="lat"
+                            placeholder="Latitude"
+                            label="Latitude"
+                            value="{{ old('lat') }}"
+                        />
+                    </div>
                     <div class="col-md-6">
                         <x-admin.input
                             type="number"
@@ -36,17 +36,6 @@
                             value="{{ old('long') }}"
                         />
                     </div>
-                    <div class="col-md-6">
-                        <x-admin.input
-                            type="file"
-                            name="photo"
-                            id="photo"
-                            placeholder="photo"
-                            label="Photo"
-                            value="{{ old('photo') }}"
-                        />
-                    </div>
-
                 </div>
                 <div class="row">
                     <div class="col-md-6">
@@ -181,7 +170,7 @@
                     </div>
                 </div>
                 <div class="row">
-                    <div class="col-12">
+                    <div class="col-md-6">
                         <x-admin.input
                             type="select"
                             name="user_id"
@@ -189,6 +178,16 @@
                             label="User"
                             :options="$users"
                             additional-classes="searchable"
+                        />
+                    </div>
+                    <div class="col-md-6">
+                        <x-admin.input
+                            type="file"
+                            name="photo"
+                            id="photo"
+                            placeholder="photo"
+                            label="Photo"
+                            value="{{ old('photo') }}"
                         />
                     </div>
                 </div>
