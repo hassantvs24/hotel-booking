@@ -10,6 +10,7 @@ use App\Repositories\Place\PlaceRepository;
 use App\Repositories\Property\PropertyCategoryRepository;
 use App\Repositories\Property\PropertyRepository;
 use App\Repositories\User\UserRepository;
+use App\Traits\MediaMan;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -17,10 +18,11 @@ use Illuminate\Http\Request;
 
 class PropertyController extends BaseController
 {
+    use MediaMan;
     /**
      * Display a listing of the resource.
      */
-    public function index(Request $request, PropertyRepository $propertyRepository)
+    public function index(Request $request, PropertyRepository $propertyRepository) : View
     {
         if (!hasPermission('can_view_property')) {
             $this->unauthorized();
@@ -67,6 +69,7 @@ class PropertyController extends BaseController
             '6 Stars' => '6 Stars',
             '7 Stars' => '7 Stars',
         ];
+
         $status = [
             'Pending' => 'Pending',
             'Published' => 'Published',
@@ -83,14 +86,19 @@ class PropertyController extends BaseController
     /**
      * Store a newly created resource in storage.
      */
-    public function store(PropertyRequest $request, PropertyRepository $propertyRepository)
+    public function store(PropertyRequest $request, PropertyRepository $propertyRepository) : RedirectResponse
     {
         if (!hasPermission('can_create_property')) {
             $this->unauthorized();
         }
 
         try {
-            $propertyRepository->create($request->validated());
+            $property = $propertyRepository->create($request->validated());
+
+            if ($request->hasFile('photo')) {
+                $image = $this->storeFile($request->file('photo'), 'properties');
+                $property->primaryImage()->create([ ...$image, 'media_role' => 'property_image' ]);
+            }
 
             return redirect()->route('admin.properties.index')->with([
                 'message'    => 'Property created successfully.',
@@ -152,8 +160,20 @@ class PropertyController extends BaseController
             $this->unauthorized();
         }
         try {
+
             $property = $propertyRepository->getModel($property);
             $propertyRepository->update($request->validated(), $property);
+
+            if ($request->hasFile('photo')) {
+
+                if ($property->primaryImage) {
+                    $this->deleteFile($property->primaryImage->name, 'properties');
+                    $property->primaryImage()->delete();
+                }
+
+                $image = $this->storeFile($request->file('photo'), 'properties');
+                $property->primaryImage()->create([ ...$image, 'media_role' => 'property_image' ]);
+            }
 
             return redirect()->route('admin.properties.index')->with([
                 'message'    => 'Property updated successfully.',

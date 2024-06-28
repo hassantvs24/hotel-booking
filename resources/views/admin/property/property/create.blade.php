@@ -2,7 +2,7 @@
     <x-admin.card>
         <x-admin.card.card-header title="Add New Property"/>
         <x-admin.card.card-body>
-            <x-admin.form action="{{ route('admin.properties.store') }}" method="POST">
+            <x-admin.form action="{{ route('admin.properties.store') }}" method="POST" enctype="multipart/form-data">
                 <div class="row">
                     <div class="col-md-12">
                         <x-admin.input

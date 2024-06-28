@@ -15,6 +15,7 @@
             <x-admin.table>
                 <x-admin.table-header>
                     <x-admin.table-head value="Date"/>
+                    <x-admin.table-head value="Primary Image"/>
                     <x-admin.table-head value="Name"/>
                     <x-admin.table-head value="Latitude"/>
                     <x-admin.table-head value="Longitude"/>
@@ -37,8 +38,14 @@
                 </x-admin.table-header>
                 <x-admin.table-body>
                     @forelse($properties as $property)
+                        @php
+                        $imageSrc = $property->primaryImage ? $property->primaryImage->url : 'https://placehold.co/600x400';
+                        @endphp
                         <x-admin.table-row>
                             <x-admin.table-cell :value="format_date($property->created_at)"/>
+                            <x-admin.table-cell>
+                                <img width="50" height="50" src="{{ $imageSrc }}" alt="{{ $property->name }}">
+                            </x-admin.table-cell>
                             <x-admin.table-cell :value="$property->name"/>
                             <x-admin.table-cell :value="$property->lat"/>
                             <x-admin.table-cell :value="$property->long"/>

@@ -2,7 +2,11 @@
     <x-admin.card>
         <x-admin.card.card-header title="Update Property"/>
         <x-admin.card.card-body>
-            <x-admin.form action="{{ route('admin.properties.update', $property->id) }}" method="PUT">
+            <x-admin.form
+                action="{{ route('admin.properties.update', $property->id) }}"
+                method="PUT"
+                enctype="multipart/form-data"
+            >
                 <div class="row">
                     <div class="col-md-12">
                         <x-admin.input
@@ -192,7 +196,6 @@
                             id="photo"
                             placeholder="photo"
                             label="Photo"
-                            value="{{ $property->photo }}"
                         />
                     </div>
                 </div>
