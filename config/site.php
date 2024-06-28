@@ -251,7 +251,7 @@ return [
                     ],
                     [
                         'name'       => 'Properties',
-                        'route'      => null,
+                        'route'      => 'admin.properties.index',
                         'icon'       => 'ni ni-building text-default',
                         'key'        => 'admin/properties',
                         'permission' => 'can_view_property',

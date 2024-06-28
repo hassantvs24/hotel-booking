@@ -11,6 +11,7 @@ use App\Http\Controllers\Admin\Place\CityController;
 use App\Http\Controllers\Admin\Place\PlaceController;
 use App\Http\Controllers\Admin\Place\StateController;
 use App\Http\Controllers\Admin\Property\PropertyCategoryController;
+use App\Http\Controllers\Admin\Property\PropertyController;
 use App\Http\Controllers\Admin\Property\PropertyRuleController;
 use App\Http\Controllers\Admin\Room\BedTypeController;
 use App\Http\Controllers\Admin\Room\PriceTypeController;
@@ -64,8 +65,8 @@ Route::prefix('admin')->as('admin.')->middleware(['auth'])->group(function () {
             Route::delete('destroy/{facility}', 'destroy')->name('destroy');
         });
 
-        Route::resource('sub-facilities',
-            SubFacilityController::class)->parameters(['sub-facilities' => 'subFacility']);
+        Route::resource('sub-facilities', SubFacilityController::class)
+            ->parameters(['sub-facilities' => 'subFacility']);
     });
 
     /*-- Surrounding Routes --*/
@@ -89,6 +90,15 @@ Route::prefix('admin')->as('admin.')->middleware(['auth'])->group(function () {
             ->parameters(['categories' => 'propertyCategory']);
         Route::resource('rules', PropertyRuleController::class)
             ->parameters(['rules' => 'propertyRule']);
+
+        Route::controller(PropertyController::class)->group(function () {
+            Route::get('', 'index')->name('index');
+            Route::get('create', 'create')->name('create');
+            Route::post('', 'store')->name('store');
+            Route::get('{property}/edit', 'edit')->name('edit');
+            Route::put('{property}', 'update')->name('update');
+            Route::delete('destroy/{property}', 'destroy')->name('destroy');
+        });
     });
 
     /*-- Room Routes --*/
