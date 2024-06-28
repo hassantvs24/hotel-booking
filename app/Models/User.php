@@ -4,6 +4,7 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -51,7 +52,7 @@ class User extends Authenticatable
     }
 
 
-    public function hasPermission($permission) : bool
+    public function hasPermission($permission): bool
     {
         return $this->permissions()->where('slug', $permission)
             ->orWhere('name', $permission)->exists() ||
@@ -65,8 +66,13 @@ class User extends Authenticatable
     Relations
     ----------------------------------------*/
 
-    public function profile() : HasOne
+    public function profile(): HasOne
     {
         return $this->hasOne(UserProfile::class);
+    }
+
+    public function properties(): HasMany
+    {
+        return $this->hasMany(Property::class);
     }
 }
