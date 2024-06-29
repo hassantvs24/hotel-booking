@@ -138,7 +138,7 @@ class RoomController extends BaseController
             $this->unauthorized();
         }
         try {
-            $room = $roomRepository->getModel($room);
+            $room = $roomRepository->getModel($room); 
             $roomRepository->delete($room->id);
             return redirect()->route('admin.rooms.index')->with([
                 'message'    => 'Room deleted successfully.',
