@@ -128,7 +128,7 @@ class RoomController extends BaseController
             if ($request->hasFile('photo')) {
 
                 if ($rooms->primaryImage) {
-                    $this->deleteFile($rooms->primaryImage->name, 'properties');
+                    $this->deleteFile($rooms->primaryImage->name, 'rooms');
                     $rooms->primaryImage()->delete();
                 }
 
