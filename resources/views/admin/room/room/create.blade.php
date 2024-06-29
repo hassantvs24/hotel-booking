@@ -2,24 +2,15 @@
     <x-admin.card>
         <x-admin.card.card-header title="Add New Price Type"/>
         <x-admin.card.card-body>
-            <x-admin.form action="{{ route('admin.rooms.store') }}" method="POST">
+            <x-admin.form action="{{ route('admin.rooms.store') }}" method="POST"  enctype="multipart/form-data">
                 <div class="row">
-                    <div class="col-md-6">
+                    <div class="col-md-12">
                         <x-admin.input
                         type="text"
                         name="name"
                         id="name"
                         label="Name"
                         value="{{ old('name') }}"
-                    />    
-                    </div>
-                    <div class="col-md-6">
-                        <x-admin.input
-                        type="file"
-                        name="photo"
-                        id="photo"
-                        label="Photo"
-                        value="{{ old('photo') }}"
                     />    
                     </div>
                 </div>
@@ -124,7 +115,15 @@
                     </div>
                 </div>
                 <div class="row">
-                    <div class="col-md-12">
+                    <div class="col-md-6">
+                        <x-admin.input
+                        type="file"
+                        name="photo"
+                        id="photo"
+                        label="Photo"
+                    />    
+                    </div>
+                    <div class="col-md-6 mt-4">
                         <x-admin.input
                         type="toggle"
                         name="extra_bed"
