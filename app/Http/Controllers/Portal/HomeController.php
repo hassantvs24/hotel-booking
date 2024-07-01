@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Portal;
 
 use App\Http\Controllers\BaseController;
+use App\Http\Resources\RoomResource;
+use App\Models\Room;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
@@ -10,6 +12,7 @@ class HomeController extends BaseController
 {
     public function index() : View
     {
+        $rooms = RoomResource::collection(Room::all());
         return view('portal.home.index');
     }
 
