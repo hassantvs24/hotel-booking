@@ -144,6 +144,78 @@ return [
             ]
         ],
 
+        'OFFER' => [
+            [
+                'name'    => 'View Offer',
+                'slug'    => 'can_view_offer',
+                'subject' => 'offer',
+            ],
+            [
+                'name'    => 'Create Offer',
+                'slug'    => 'can_create_offer',
+                'subject' => 'offer',
+            ],
+            [
+                'name'    => 'Update Offer',
+                'slug'    => 'can_update_offer',
+                'subject' => 'offer',
+            ],
+
+            [
+                'name'    => 'Delete Offer',
+                'slug'    => 'can_delete_offer',
+                'subject' => 'offer',
+            ]
+        ],
+
+        'REVIEW_CATEGORY' => [
+            [
+                'name'    => 'View Review Category',
+                'slug'    => 'can_view_review_category',
+                'subject' => 'review_category',
+            ],
+            [
+                'name'    => 'Create Review Category',
+                'slug'    => 'can_create_review_category',
+                'subject' => 'review_category',
+            ],
+            [
+                'name'    => 'Update Review Category',
+                'slug'    => 'can_update_review_category',
+                'subject' => 'review_category',
+            ],
+
+            [
+                'name'    => 'Delete Review Category',
+                'slug'    => 'can_delete_review_category',
+                'subject' => 'review_category',
+            ]
+        ],
+
+        'REVIEW' => [
+            [
+                'name'    => 'View Review',
+                'slug'    => 'can_view_review',
+                'subject' => 'review',
+            ],
+            [
+                'name'    => 'Create Review',
+                'slug'    => 'can_create_review',
+                'subject' => 'review',
+            ],
+            [
+                'name'    => 'Update Review',
+                'slug'    => 'can_update_review',
+                'subject' => 'review',
+            ],
+
+            [
+                'name'    => 'Delete Review',
+                'slug'    => 'can_delete_review',
+                'subject' => 'review',
+            ]
+        ],
+
         'PROPERTY_CATEGORY' => [
             [
                 'name'    => 'View Property Category',
@@ -526,6 +598,16 @@ return [
                 'slug'    => 'can_view_settings',
                 'subject' => 'misc',
             ],
+            [
+                'name'    => 'View Reviews',
+                'slug'    => 'can_view_reviews',
+                'subject' => 'misc',
+            ],
+            [
+                'name'    => 'View Offers',
+                'slug'    => 'can_view_offers',
+                'subject' => 'misc',
+            ]
         ],
 
     ],
