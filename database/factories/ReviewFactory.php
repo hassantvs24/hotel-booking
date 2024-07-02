@@ -2,6 +2,8 @@
 
 namespace Database\Factories;
 
+use App\Models\Property;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -14,10 +16,12 @@ class ReviewFactory extends Factory
      *
      * @return array<string, mixed>
      */
-    public function definition(): array
+    public function definition() : array
     {
         return [
-            //
+            'rating'      => $this->faker->numberBetween(1, 5),
+            'user_id'     => $this->faker->randomElement(User::all()->pluck('id')),
+            'property_id' => $this->faker->randomElement(Property::all()->pluck('id')),
         ];
     }
 }

@@ -14,10 +14,19 @@ class ReviewCategoryFactory extends Factory
      *
      * @return array<string, mixed>
      */
-    public function definition(): array
+    public function definition() : array
     {
         return [
-            //
+            'name'  => $this->faker->word(),
+            'notes' => $this->faker->text(),
+            'icon'  => $this->faker->imageUrl,
         ];
+    }
+
+    public function configure() : static
+    {
+        return $this->afterCreating(function (\App\Models\ReviewCategory $reviewCategory) {
+            $reviewCategory->reviews()->saveMany(\App\Models\Review::factory()->count(3)->make());
+        });
     }
 }
