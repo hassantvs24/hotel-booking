@@ -13,6 +13,8 @@ use App\Http\Controllers\Admin\Place\StateController;
 use App\Http\Controllers\Admin\Property\PropertyCategoryController;
 use App\Http\Controllers\Admin\Property\PropertyController;
 use App\Http\Controllers\Admin\Property\PropertyRuleController;
+use App\Http\Controllers\Admin\Review\ReviewCategoryController;
+use App\Http\Controllers\Admin\Review\ReviewController;
 use App\Http\Controllers\Admin\Room\BedTypeController;
 use App\Http\Controllers\Admin\Room\PriceTypeController;
 use App\Http\Controllers\Admin\Room\RoomController;
@@ -118,6 +120,20 @@ Route::prefix('admin')->as('admin.')->middleware(['auth'])->group(function () {
             Route::get('{room}/edit', 'edit')->name('edit');
             Route::put('{room}', 'update')->name('update');
             Route::delete('destroy/{room}', 'destroy')->name('destroy');
+        });
+    });
+
+    /*-- Review Routes --*/
+    Route::prefix('reviews')->as('reviews.')->group(function () {
+        Route::resource('categories', ReviewCategoryController::class)
+            ->parameters(['categories' => 'reviewCategory']);
+        Route::controller(ReviewController::class)->group(function () {
+            Route::get('', 'index')->name('index');
+            Route::get('create', 'create')->name('create');
+            Route::post('', 'store')->name('store');
+            Route::get('{review}/edit', 'edit')->name('edit');
+            Route::put('{review}', 'update')->name('update');
+            Route::delete('destroy/{review}', 'destroy')->name('destroy');
         });
     });
 });
