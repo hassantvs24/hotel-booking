@@ -2,17 +2,22 @@
 
 namespace App\Http\Controllers\Admin\Review;
 
-use App\Http\Controllers\Controller;
+use App\Http\Controllers\BaseController;
+use Illuminate\Contracts\View\View;
 use Illuminate\Http\Request;
 
-class ReviewCategoryController extends Controller
+class ReviewCategoryController extends BaseController
 {
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(): View
     {
-        //
+        if (!hasPermission('can_view_review_category')) {
+            $this->unauthorized();
+        }
+
+        return view('admin.review.category.index');
     }
 
     /**

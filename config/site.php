@@ -268,6 +268,32 @@ return [
                 ]
             ],
             [
+                'name'       => 'Reviews',
+                'route'      => null,
+                'icon'       => 'ni ni-building text-primary',
+                'key'        => 'admin/reviews*',
+                'permission' => 'can_view_review',
+                'children'   => [
+                    [
+                        'name'       => 'Reviews',
+                        'route'      => 'admin.reviews.index',
+                        'icon'       => 'ni ni-building text-default',
+                        'key'        => 'admin/reviews',
+                        'permission' => 'can_view_review',
+                        'children'   => []
+                    ],
+                    [
+                        'name'       => 'Review Categories',
+                        'route'      => 'admin.reviews.categories.index',
+                        'icon'       => 'ni ni-building text-default',
+                        'key'        => 'admin/reviews/review-categories',
+                        'permission' => 'can_view_review_category',
+                        'children'   => []
+                    ]
+                ]
+
+            ],
+            [
                 'name'       => 'Facilities',
                 'route'      => null,
                 'icon'       => 'ni ni-building text-primary',
