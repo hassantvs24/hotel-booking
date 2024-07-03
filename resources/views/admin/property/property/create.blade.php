@@ -196,7 +196,7 @@
                         <a href="{{ route('admin.properties.index') }}" class="btn btn-danger btn-sm">Back To List</a>
                     </div>
                     <div class="text-right col-md-6">
-                        <x-admin.button variant="primary" type="submit" size="sm">Add Place</x-admin.button>
+                        <x-admin.button variant="primary" type="submit" size="sm">Add Property</x-admin.button>
                     </div>
                 </div>
             </x-admin.form>

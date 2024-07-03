@@ -9,12 +9,14 @@ use App\Repositories\Property\PropertyRepository;
 use App\Repositories\Room\BedTypeRepository;
 use App\Repositories\Room\RoomRepository;
 use App\Repositories\Room\RoomTypeRepository;
+use App\Traits\MediaMan;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class RoomController extends BaseController
 {
+    use MediaMan;
     /**
      * Display a listing of the resource.
      */
@@ -69,7 +71,12 @@ class RoomController extends BaseController
             $this->unauthorized();
         }
         try {
-            $roomRepository->create($request->validated());
+            $room = $roomRepository->create($request->validated());
+
+            if ($request->hasFile('photo')) {
+                $image = $this->storeFile($request->file('photo'), 'rooms');
+                $room->primaryImage()->create([...$image, 'media_role' => 'room_image']);
+            }
 
             return redirect()->route('admin.rooms.index')->with([
                 'message'    => 'Room created successfully.',
@@ -116,7 +123,18 @@ class RoomController extends BaseController
         }
         try {
             $room = $roomRepository->getModel($room);
-            $roomRepository->update($request->validated(), $room);
+            $rooms = $roomRepository->update($request->validated(), $room);
+
+            if ($request->hasFile('photo')) {
+
+                if ($rooms->primaryImage) {
+                    $this->deleteFile($rooms->primaryImage->name, 'rooms');
+                    $rooms->primaryImage()->delete();
+                }
+
+                $image = $this->storeFile($request->file('photo'), 'rooms');
+                $rooms->primaryImage()->create([...$image, 'media_role' => 'room_image']);
+            }
             return redirect()->route('admin.rooms.index')->with([
                 'message'    => 'Room updated successfully.',
                 'alert-type' => 'success'

@@ -15,8 +15,8 @@
             <x-admin.table>
                 <x-admin.table-header>
                     <x-admin.table-head value="Date"/>
-                    <x-admin.table-head value="Name"/>
                     <x-admin.table-head value="Photo"/>
+                    <x-admin.table-head value="Name"/>
                     <x-admin.table-head value="Room Number"/>
                     <x-admin.table-head value="Room Size"/>
                     <x-admin.table-head value="Guest Capacity"/>
@@ -34,15 +34,19 @@
                 </x-admin.table-header>
                 <x-admin.table-body> 
                     @forelse( $rooms as $room )
+                        @php
+                        $imageSrc = $room->primaryImage ? $room->primaryImage->url : 'https://placehold.co/600x400';
+                        @endphp
                         <x-admin.table-row>
                             <x-admin.table-cell :value="format_date($room->created_at)"/>
+                            <x-admin.table-cell>
+                                <img width="50" height="50" src="{{ $imageSrc }}" alt="{{ $room->name }}">
+                            </x-admin.table-cell>
                             <x-admin.table-cell :value="$room->name"/>
-                            <x-admin.table-cell :value="$room->photo"/>
                             <x-admin.table-cell :value="$room->room_number"/>
                             <x-admin.table-cell :value="$room->room_size"/>
                             <x-admin.table-cell :value="$room->guest_capacity"/>
                                 <x-admin.table-cell  :value="$room->extra_bed == 1 ? 'Yes' : 'No'"/>
-                            
                             <x-admin.table-cell :value="$room->total_balcony"/>
                             <x-admin.table-cell :value="$room->total_window"/>
                             <x-admin.table-cell :value="$room->base_price"/>
