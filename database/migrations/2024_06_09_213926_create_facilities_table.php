@@ -4,20 +4,21 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration
-{
+return new class extends Migration {
     /**
      * Run the migrations.
      */
-    public function up(): void
+    public function up() : void
     {
-        Schema::create('facilities', function (Blueprint $table) {
+        $allowedFacilityFor = config('site_configs.allowed_facility_for', ['Room', 'Property']);
+
+        Schema::create('facilities', function (Blueprint $table) use ($allowedFacilityFor) {
             $table->id();
             $table->string('name');
             $table->string('icon')->nullable();
             $table->string('notes')->nullable();
             $table->string('facility_type')->comment('Add if applicable. Example: Property, Place, Room etc')->nullable();
-            $table->enum('facility_for', ['Property', 'Room'])->default('Property');
+            $table->enum('facility_for', $allowedFacilityFor)->default('Property');
             $table->softDeletes();
             $table->timestamps();
         });
@@ -26,7 +27,7 @@ return new class extends Migration
     /**
      * Reverse the migrations.
      */
-    public function down(): void
+    public function down() : void
     {
         Schema::dropIfExists('facilities');
     }

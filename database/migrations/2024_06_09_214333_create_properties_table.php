@@ -10,7 +10,10 @@ return new class extends Migration {
      */
     public function up() : void
     {
-        Schema::create('properties', function (Blueprint $table) {
+        $allowedPropertyClass = config('site_configs.allowed_property_class');
+        $allowedPropertyStatus = config('site_configs.allowed_property_status');
+
+        Schema::create('properties', function (Blueprint $table) use ($allowedPropertyClass, $allowedPropertyStatus) {
             $table->id();
             $table->string('name');
             $table->decimal('lat');
@@ -24,20 +27,28 @@ return new class extends Migration {
             $table->string('google_review')->nullable();//Google review link
             $table->string('seo_title')->nullable();
             $table->string('seo_meta')->nullable();
-            $table->enum('property_class', [
-                '7 Stars',
-                '6 Stars',
-                '5 Stars',
-                '4 Stars',
-                '3 Stars',
-                '2 Stars',
-                '1 Star',
-                'Unrated'
-            ])->default('Unrated');
-            $table->enum('status', ['Pending', 'Published', 'Unpublished'])->default('Pending');
-            $table->foreignId('property_category_id')->nullable()->constrained()->onDelete('set null')->onUpdate('No Action');
-            $table->foreignId('place_id')->nullable()->constrained()->onDelete('set null')->onUpdate('No Action');
-            $table->foreignId('user_id')->constrained()->onDelete('cascade')->onUpdate('No Action');
+            $table->enum('property_class', $allowedPropertyClass)
+                ->default('Unrated');
+            $table->enum('status', $allowedPropertyStatus)
+                ->default('Pending');
+
+            $table->foreignId('property_category_id')
+                ->nullable()
+                ->constrained()
+                ->onDelete('set null')
+                ->onUpdate('No Action');
+
+            $table->foreignId('place_id')
+                ->nullable()
+                ->constrained()
+                ->onDelete('set null')
+                ->onUpdate('No Action');
+
+            $table->foreignId('user_id')
+                ->constrained()
+                ->onDelete('cascade')
+                ->onUpdate('No Action');
+
             $table->softDeletes();
             $table->timestamps();
         });

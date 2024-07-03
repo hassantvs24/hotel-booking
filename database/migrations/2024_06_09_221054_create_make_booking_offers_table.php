@@ -11,13 +11,23 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('make_booking_offers', function (Blueprint $table) {
+        $allowedStatus = config('site_configs.allowed_booking_offer_status');
+
+        Schema::create('make_booking_offers', function (Blueprint $table) use ($allowedStatus) {
             $table->id();
             $table->string('notes')->comment('Offer Notes');
-            $table->enum('status', ['Pending', 'Accepted'])->default('Pending');
-            $table->double('price')->default(0)->comment('Offer price');
-            $table->foreignId('room_id')->constrained()->onDelete('cascade')->onUpdate('No Action');
-            $table->foreignId('booking_request_id')->constrained()->onDelete('cascade')->onUpdate('No Action');
+            $table->enum('status', $allowedStatus)->default('Pending');
+            $table->integer('price')->default(0)->comment('Offer price');
+
+            $table->foreignId('room_id')
+                ->constrained()->onDelete('cascade')
+                ->onUpdate('No Action');
+
+            $table->foreignId('booking_request_id')
+                ->constrained()
+                ->onDelete('cascade')
+                ->onUpdate('No Action');
+
             $table->softDeletes();
             $table->timestamps();
         });

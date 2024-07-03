@@ -10,20 +10,32 @@ return new class extends Migration {
      */
     public function up() : void
     {
-        Schema::create('offers', function (Blueprint $table) {
+        $allowedOfferFor = config('site_configs.allowed_offer_for');
+        $allowedOfferStatus = config('site_configs.allowed_offer_status');
+
+        Schema::create('offers', function (Blueprint $table) use ($allowedOfferFor, $allowedOfferStatus) {
             $table->id();
             $table->date('checkin');
             $table->date('checkout');
             $table->integer('adult')->default(1);
             $table->integer('children')->default(0);
             $table->integer('room')->default(1);
-            $table->double('price')->default(0)->comment('Offer price');
-            $table->double('final_price')->default(0);
+            $table->integer('price')->default(0)->comment('Offer price');
+            $table->integer('final_price')->default(0);
             $table->string('notes')->nullable();
-            $table->enum('offer_from', ['Generale', 'Request'])->default('Generale');
-            $table->enum('status', ['Pending', 'Negotiate', 'Canceled', 'Accepted'])->default('Pending');
-            $table->foreignId('room_id')->constrained()->onDelete('cascade')->onUpdate('No Action');
-            $table->foreignId('user_id')->constrained()->onDelete('cascade')->onUpdate('No Action');
+            $table->enum('offer_from', $allowedOfferFor)->default('General');
+            $table->enum('status', $allowedOfferStatus)->default('Pending');
+
+            $table->foreignId('room_id')
+                ->constrained()
+                ->onDelete('cascade')
+                ->onUpdate('No Action');
+
+            $table->foreignId('user_id')
+                ->constrained()
+                ->onDelete('cascade')
+                ->onUpdate('No Action');
+
             $table->softDeletes();
             $table->timestamps();
         });
