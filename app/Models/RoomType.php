@@ -28,7 +28,7 @@ class RoomType extends Model
      ----------------------------------------*/
     public function getIconUrlAttribute() : string
     {
-        $iconUrl = asset('default/default_icon.svg');
+        $iconUrl = asset('assets/default/default_icon.svg');
 
         if ($this->icon()->exists()) {
             $iconUrl = $this->relations['icon']->url;

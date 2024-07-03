@@ -58,20 +58,20 @@ class RoomTypeController extends BaseController
     /**
      * Store a newly created resource in storage.
      */
-    public function store(RoomTypeRequest $request, RoomTypeRepository $roomTypeRepository) : RedirectResponse
+    public function store(RoomTypeRequest $request, RoomTypeRepository $typeRepository) : RedirectResponse
     {
         if (!hasPermission('can_create_room_type')) {
             $this->unauthorized();
         }
 
         try {
-            $romeType = $roomTypeRepository->create(
+            $roomType = $typeRepository->create(
                 $request->only(['name', 'notes'])
             );
 
             if ($request->hasFile('icon')) {
                 $image = $this->storeFile($request->file('icon'), 'room_types');
-                $romeType->icon()->create([
+                $roomType->icon()->create([
                     ...$image,
                     'media_role' => 'room_icon'
                 ]);
@@ -101,13 +101,13 @@ class RoomTypeController extends BaseController
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(RoomTypeRepository $roomRepository, $roomType) : View 
+    public function edit(RoomTypeRepository $typeRepository, $roomType) : View
     {
         if (!hasPermission('can_update_room_type')) {
             $this->unauthorized();
         }
 
-        $roomType = $roomRepository->getModel($roomType);
+        $roomType = $typeRepository->getModel($roomType);
 
         return view('admin.room.room-type.edit', compact('roomType'));
     }
@@ -115,7 +115,7 @@ class RoomTypeController extends BaseController
     /**
      * Update the specified resource in storage.
      */
-    public function update(RoomTypeRequest $request, RoomTypeRepository $roomRepository, $roomType) : RedirectResponse
+    public function update(RoomTypeRequest $request, RoomTypeRepository $typeRepository, $roomType) : RedirectResponse
     {
         if (!hasPermission('can_update_room_type')) {
             $this->unauthorized();
@@ -123,8 +123,25 @@ class RoomTypeController extends BaseController
 
         try {
 
-            $roomType = $roomRepository->getModel($roomType);
-            $roomRepository->update($request->validated(), $roomType);
+            $roomType = $typeRepository->getModel($roomType);
+            $typeRepository->update(
+                $request->only(['name', 'notes']),
+                $roomType
+            );
+
+            if ($request->hasFile('icon')) {
+
+                if ($roomType->icon()->exists()) {
+                    $this->deleteFile($roomType->icon->name, 'room_types');
+                    $roomType->icon()->delete();
+                }
+
+                $image = $this->storeFile($request->file('icon'), 'room_types');
+                $roomType->icon()->create([
+                    ...$image,
+                    'media_role' => 'room_icon'
+                ]);
+            }
 
             return redirect()->route('admin.rooms.room-types.index')->with([
                 'message'    => 'Room Type updated successfully.',
@@ -142,15 +159,21 @@ class RoomTypeController extends BaseController
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(RoomTypeRepository $roomRepository, $roomType) : RedirectResponse
+    public function destroy(RoomTypeRepository $typeRepository, $roomType) : RedirectResponse
     {
         if (!hasPermission('can_delete_room_type')) {
             $this->unauthorized();
         }
 
         try {
+            $roomType = $typeRepository->getModel($roomType);
 
-            $roomRepository->delete($roomType);
+            if ($roomType->icon()->exists()) {
+                $this->deleteFile($roomType->icon->name, 'room_types');
+                $roomType->icon()->delete();
+            }
+
+            $typeRepository->delete($roomType->id);
 
             return redirect()->route('admin.rooms.room-types.index')->with([
                 'message'    => 'Room Type deleted successfully.',
