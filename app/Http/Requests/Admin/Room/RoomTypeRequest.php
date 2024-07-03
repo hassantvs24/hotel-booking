@@ -30,7 +30,7 @@ class RoomTypeRequest extends FormRequest
         return [
             'name'  => "required|string|max:255|{$uniqueNameRule}",
             'notes' => 'nullable|string',
-            'icon'  => 'nullable'
+            'icon'  => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
         ];
     }
 

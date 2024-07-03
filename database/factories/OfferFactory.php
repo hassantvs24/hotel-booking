@@ -27,7 +27,7 @@ class OfferFactory extends Factory
             'price'       => $this->faker->randomFloat(),
             'final_price' => $this->faker->randomFloat(),
             'notes'       => $this->faker->text(),
-            'offer_from'  => $this->faker->randomElement(['Generale', 'Request']),
+            'offer_from'  => $this->faker->randomElement(['General', 'Request']),
             'status'      => $this->faker->randomElement(['Pending', 'Negotiate', 'Canceled', 'Accepted']),
             'room_id'     => $this->faker->randomElement(Room::all()->pluck('id')),
             'user_id'     => $this->faker->randomElement(User::all()->pluck('id')),

@@ -19,7 +19,6 @@ class RoomTypeFactory extends Factory
         return [
             'name'  => $this->faker->word,
             'notes' => $this->faker->sentence,
-            'icon'  => $this->faker->imageUrl,
         ];
     }
 }

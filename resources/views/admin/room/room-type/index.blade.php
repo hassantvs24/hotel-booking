@@ -14,9 +14,8 @@
         <x-admin.card.card-body class="px-0 pt-0 pb-2 table-responsive">
             <x-admin.table>
                 <x-admin.table-header>
-                    <x-admin.table-head value="Date"/>
+                    <x-admin.table-head/>
                     <x-admin.table-head value="Name"/>
-                    <x-admin.table-head value="Icon"/>
                     <x-admin.table-head value="Notes"/>
                     @if (hasPermission($permissions['update']) || hasPermission($permissions['delete']))
                         <x-admin.table-head value="Actions"/>
@@ -25,9 +24,10 @@
                 <x-admin.table-body>
                     @forelse($roomTypes as $roomType)
                         <x-admin.table-row>
-                            <x-admin.table-cell :value="format_date($roomType->created_at)"/>
+                            <x-admin.table-cell>
+                                <img width="30" height="30" src="{{ $roomType->icon_url }}" alt="{{$roomType->name}}">
+                            </x-admin.table-cell>
                             <x-admin.table-cell :value="$roomType->name"/>
-                            <x-admin.table-cell/> 
                             <x-admin.table-cell
                                 class="word-wrap"
                                 :value="\Illuminate\Support\Str::limit($roomType->notes, 50)"

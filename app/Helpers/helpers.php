@@ -40,3 +40,10 @@ if(!function_exists('truncate_Words')){
     }
 }
 
+if(!function_exists('getStoragePath')){
+    function getStoragePath($path) : string
+    {
+        return url('storage/' . $path);
+    }
+}
+

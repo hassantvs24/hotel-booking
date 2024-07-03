@@ -283,10 +283,10 @@ return [
                         'children'   => []
                     ],
                     [
-                        'name'       => 'Review Categories',
+                        'name'       => 'Categories',
                         'route'      => 'admin.reviews.categories.index',
                         'icon'       => 'ni ni-building text-default',
-                        'key'        => 'admin/reviews/review-categories',
+                        'key'        => 'admin/reviews/categories',
                         'permission' => 'can_view_review_category',
                         'children'   => []
                     ]

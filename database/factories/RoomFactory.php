@@ -21,7 +21,6 @@ class RoomFactory extends Factory
     {
         return [
             'name'           => $this->faker->word,
-            'photo'          => $this->faker->imageUrl(),
             'room_number'    => $this->faker->numberBetween(1, 1000),
             'room_size'      => $this->faker->numberBetween(20, 100),
             'guest_capacity' => $this->faker->numberBetween(1, 5),

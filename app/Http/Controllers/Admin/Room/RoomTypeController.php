@@ -5,12 +5,14 @@ namespace App\Http\Controllers\Admin\Room;
 use App\Http\Controllers\BaseController;
 use App\Http\Requests\Admin\Room\RoomTypeRequest;
 use App\Repositories\Room\RoomTypeRepository;
+use App\Traits\MediaMan;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class RoomTypeController extends BaseController
 {
+    use MediaMan;
     /**
      * Display a listing of the resource.
      */
@@ -63,7 +65,17 @@ class RoomTypeController extends BaseController
         }
 
         try {
-            $roomTypeRepository->create($request->validated());
+            $romeType = $roomTypeRepository->create(
+                $request->only(['name', 'notes'])
+            );
+
+            if ($request->hasFile('icon')) {
+                $image = $this->storeFile($request->file('icon'), 'room_types');
+                $romeType->icon()->create([
+                    ...$image,
+                    'media_role' => 'room_icon'
+                ]);
+            }
 
             return redirect()->route('admin.rooms.room-types.index')->with([
                 'message'    => 'Room Type created successfully.',
