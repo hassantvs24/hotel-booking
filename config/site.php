@@ -485,5 +485,6 @@ return [
         'bed_image',
         'gallery_image',
         'primary_image',
+        'review_icon'
     ],
 ];
