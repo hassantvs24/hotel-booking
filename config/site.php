@@ -196,7 +196,7 @@ return [
             [
                 'name'  => 'Rooms',
                 'route' => null,
-                'icon'  => 'ni ni-building text-primary',
+                'icon'  => 'fa fa-bed text-primary',
                 'key'   => 'admin/rooms*',
                 'permission' => 'can_view_rooms',
                 'children' => [
@@ -270,7 +270,7 @@ return [
             [
                 'name'       => 'Reviews',
                 'route'      => null,
-                'icon'       => 'ni ni-building text-primary',
+                'icon'       => 'fa fa-star text-primary',
                 'key'        => 'admin/reviews*',
                 'permission' => 'can_view_review',
                 'children'   => [
@@ -296,7 +296,7 @@ return [
             [
                 'name'       => 'Facilities',
                 'route'      => null,
-                'icon'       => 'ni ni-building text-primary',
+                'icon'       => 'ni ni-support-16 text-primary',
                 'key'        => 'admin/facilities*',
                 'permission' => 'can_view_facilities',
                 'children'   => [
