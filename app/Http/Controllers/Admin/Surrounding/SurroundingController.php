@@ -7,15 +7,17 @@ use Illuminate\Http\RedirectResponse;
 use App\Repositories\Surrounding\SurroundingRepository;
 use App\Http\Requests\Admin\Surrounding\SurroundingRequest;
 use App\Models\Surrounding;
+use App\Traits\MediaMan;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class SurroundingController extends BaseController
 {
+    use MediaMan;
     /**
      * Display a listing of the resource.
      */
-    public function index(Request $request, SurroundingRepository $surroundingRepository) : View
+    public function index(Request $request, SurroundingRepository $surroundingRepository): View
     {
         if (!hasPermission('can_view_surrounding')) {
             $this->unauthorized();
@@ -46,7 +48,7 @@ class SurroundingController extends BaseController
     /**
      * Show the form for creating a new resource.
      */
-    public function create() : View
+    public function create(): View
     {
         if (!hasPermission('can_create_surrounding')) {
             $this->unauthorized();
@@ -57,13 +59,21 @@ class SurroundingController extends BaseController
     /**
      * Store a newly created resource in storage.
      */
-    public function store(SurroundingRequest $request, SurroundingRepository $surroundingRepository) : RedirectResponse
+    public function store(SurroundingRequest $request, SurroundingRepository $surroundingRepository): RedirectResponse
     {
         if (!hasPermission('can_create_surrounding')) {
             $this->unauthorized();
         }
         try {
-            $surroundingRepository->create($request->validated());
+            $surrounding = $surroundingRepository->create($request->only('name', 'notes'));
+
+            if ($request->hasFile('icon')) {
+                $image = $this->storeFile($request->file('icon'), 'surrounding_icons');
+                $surrounding->icon()->create([
+                    ...$image,
+                    'media_role' => 'surrounding_icon'
+                ]);
+            }
 
             return redirect()->route('admin.surroundings.index')->with([
                 'message'    => 'Surrounding created successfully.',
@@ -88,7 +98,7 @@ class SurroundingController extends BaseController
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(Surrounding $surrounding) : View
+    public function edit(Surrounding $surrounding): View
     {
         if (!hasPermission('can_update_surrounding')) {
             $this->unauthorized();
@@ -104,13 +114,27 @@ class SurroundingController extends BaseController
         SurroundingRequest $request,
         SurroundingRepository $surroundingRepository,
         $surrounding
-    ) : RedirectResponse {
+    ): RedirectResponse {
         if (!hasPermission('can_update_surrounding')) {
             $this->unauthorized();
         }
         try {
             $surrounding = $surroundingRepository->getModel($surrounding);
-            $surroundingRepository->update($request->validated(), $surrounding);
+            $surroundingRepository->update($request->only('name', 'notes'), $surrounding);
+
+            if ($request->hasFile('icon')) {
+
+                if ($surrounding->icon()->exists()) {
+                    $this->deleteFile($surrounding->icon->name, 'surrounding_icons');
+                    $surrounding->icon()->delete();
+                }
+
+                $image = $this->storeFile($request->file('icon'), 'surrounding_icons');
+                $surrounding->icon()->create([
+                    ...$image,
+                    'media_role' => 'surrounding_icon'
+                ]);
+            }
             return redirect()->route('admin.surroundings.index')->with([
                 'message'    => 'Surrounding updated successfully.',
                 'alert-type' => 'success'
@@ -121,13 +145,12 @@ class SurroundingController extends BaseController
                 'alert-type' => 'error'
             ]);
         }
-
     }
 
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(SurroundingRepository $surroundingRepository, $surrounding) : RedirectResponse
+    public function destroy(SurroundingRepository $surroundingRepository, $surrounding): RedirectResponse
     {
         if (!hasPermission('can_delete_surrounding')) {
             $this->unauthorized();
@@ -136,13 +159,18 @@ class SurroundingController extends BaseController
         try {
 
             $surrounding = $surroundingRepository->getModel($surrounding);
+
+            if ($surrounding->icon()->exists()) {
+                $this->deleteFile($surrounding->icon->name, 'surrounding_icons');
+                $surrounding->icon()->delete();
+            }
+
             $surroundingRepository->delete($surrounding->id);
 
             return redirect()->route('admin.surroundings.index')->with([
                 'message'    => 'Surrounding deleted successfully.',
                 'alert-type' => 'success'
             ]);
-
         } catch (\Exception $e) {
             return redirect()->back()->with([
                 'message'    => 'Something went wrong.',
