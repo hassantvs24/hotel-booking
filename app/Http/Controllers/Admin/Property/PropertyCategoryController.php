@@ -5,12 +5,15 @@ namespace App\Http\Controllers\Admin\Property;
 use App\Http\Controllers\BaseController;
 use App\Http\Requests\Admin\Property\PropertyCategoryRequest;
 use App\Repositories\Property\PropertyCategoryRepository;
+use App\Traits\MediaMan;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
-class PropertyCategoryController extends BaseController 
+class PropertyCategoryController extends BaseController
 {
+    use MediaMan;
+
     /**
      * Display a listing of the resource.
      */
@@ -49,22 +52,36 @@ class PropertyCategoryController extends BaseController
     {
         if (!hasPermission('can_create_property_category')) {
             $this->unauthorized();
-        } 
-    
+        }
+
         return view('admin.property.category.create');
     }
 
     /**
      * Store a newly created resource in storage.
      */
-    public function store(PropertyCategoryRequest $request, PropertyCategoryRepository $categoryRepository) : RedirectResponse
-    {
+    public function store(
+        PropertyCategoryRequest $request,
+        PropertyCategoryRepository $categoryRepository
+    ) : RedirectResponse {
         if (!hasPermission('can_create_property_category')) {
             $this->unauthorized();
         }
 
         try {
-            $categoryRepository->create($request->validated());
+            $category = $categoryRepository->create($request->only(['name', 'notes']));
+
+            if ($request->hasFile('icon')) {
+
+                $image = $this->storeFile(
+                    $request->file('icon'),
+                    'property_categories'
+                );
+                $category->icon()->create([
+                    ...$image,
+                    'media_role' => 'property_icon'
+                ]);
+            }
 
             return redirect()->route('admin.properties.categories.index')->with([
                 'message'    => 'Property Category created successfully.',
@@ -104,28 +121,51 @@ class PropertyCategoryController extends BaseController
     /**
      * Update the specified resource in storage.
      */
-    public function update(PropertyCategoryRequest $request, PropertyCategoryRepository $categoryRepository, $propertyCategory) : RedirectResponse
-    {
+    public function update(
+        PropertyCategoryRequest $request,
+        PropertyCategoryRepository $categoryRepository,
+        $propertyCategory
+    ) : RedirectResponse {
         if (!hasPermission('can_update_property_category')) {
             $this->unauthorized();
         }
 
-        try {
+//        try {
 
             $propertyCategory = $categoryRepository->getModel($propertyCategory);
-            $categoryRepository->update($request->validated(), $propertyCategory);
+            $categoryRepository->update(
+                $request->only(['name', 'notes']),
+                $propertyCategory
+            );
+
+            if ($request->hasFile('icon')) {
+
+                if ($propertyCategory->icon()->exists()) {
+                    $this->deleteFile($propertyCategory->icon->name, 'property_icon');
+                    $propertyCategory->icon()->delete();
+                }
+
+                $image = $this->storeFile(
+                    $request->file('icon'),
+                    'property_categories'
+                );
+                $propertyCategory->icon()->create([
+                    ...$image,
+                    'media_role' => 'property_icon'
+                ]);
+            }
 
             return redirect()->route('admin.properties.categories.index')->with([
                 'message'    => 'Property Category updated successfully.',
                 'alert-type' => 'success'
             ]);
 
-        } catch (\Exception $e) {
-            return redirect()->back()->with([
-                'message'    => 'Something went wrong.',
-                'alert-type' => 'error'
-            ]);
-        }
+//        } catch (\Exception $e) {
+//            return redirect()->back()->with([
+//                'message'    => 'Something went wrong.',
+//                'alert-type' => 'error'
+//            ]);
+//        }
     }
 
     /**
@@ -139,7 +179,14 @@ class PropertyCategoryController extends BaseController
 
         try {
 
-            $categoryRepository->delete($propertyCategory);
+            $model = $categoryRepository->getModel($propertyCategory);
+
+            if ($model->icon()->exists()) {
+                $this->deleteFile($model->icon->name, 'property_icon');
+                $model->icon()->delete();
+            }
+
+            $categoryRepository->delete($model->id);
 
             return redirect()->route('admin.properties.categories.index')->with([
                 'message'    => 'Property Category deleted successfully.',

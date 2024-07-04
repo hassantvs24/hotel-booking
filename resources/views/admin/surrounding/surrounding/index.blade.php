@@ -25,7 +25,12 @@
                     @forelse($surroundings as $surrounding)
                         <x-admin.table-row>
                             <x-admin.table-cell>
-                                <img width="30" height="30" src="{{$surrounding->icon_url}}" alt="{{$surrounding->name}}">
+                                <img
+                                    width="30"
+                                    height="30"
+                                    src="{{ $surrounding->icon_url }}"
+                                    alt="{{ $surrounding->name }}"
+                                >
                             </x-admin.table-cell>
                             <x-admin.table-cell :value="$surrounding->name" />
                             <x-admin.table-cell class="word-wrap" :value="\Illuminate\Support\Str::limit($surrounding->notes, 50)" />

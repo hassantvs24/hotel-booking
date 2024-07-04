@@ -100,7 +100,7 @@ class ReviewCategoryController extends BaseController
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(ReviewCategoryRepository $reviewCategoryRepository, $reviewCategory)
+    public function edit(ReviewCategoryRepository $reviewCategoryRepository, $reviewCategory) : View
     {
         if (!hasPermission('can_update_review_category')) {
             $this->unauthorized();
@@ -114,7 +114,7 @@ class ReviewCategoryController extends BaseController
     /**
      * Update the specified resource in storage.
      */
-    public function update(ReviewCategoryRequest $request, ReviewCategoryRepository $reviewCategoryRepository, $reviewCategory)
+    public function update(ReviewCategoryRequest $request, ReviewCategoryRepository $reviewCategoryRepository, $reviewCategory) : RedirectResponse
     {
         if (!hasPermission('can_update_review_category')) {
             $this->unauthorized();

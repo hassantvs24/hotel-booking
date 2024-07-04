@@ -30,7 +30,7 @@ class PropertyCategoryRequest extends FormRequest
         return [
             'name'  => "required|string|max:255|{$uniqueNameRule}",
             'notes' => 'nullable|string',
-            'icon'  => 'nullable'
+            'icon'  => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
         ];
     }
 
@@ -48,6 +48,9 @@ class PropertyCategoryRequest extends FormRequest
             'name.max'      => 'The name field must not exceed 255 characters.',
             'name.unique'   => 'The name field must be unique.',
             'notes.string'  => 'The notes field must be a string.',
+            'icon.image'    => 'The icon field must be an image.',
+            'icon.mimes'    => 'The icon field must be a file of type: jpeg, png, jpg, gif, svg.',
+            'icon.max'      => 'The icon field may not be greater than 2048 kilobytes.',
         ];
     }
 }
