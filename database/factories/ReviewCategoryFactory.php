@@ -19,7 +19,6 @@ class ReviewCategoryFactory extends Factory
         return [
             'name'  => $this->faker->word(),
             'notes' => $this->faker->text(),
-            'icon'  => $this->faker->imageUrl,
         ];
     }
 
