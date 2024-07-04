@@ -3,12 +3,13 @@
 namespace App\Http\Controllers\Admin\Review;
 
 use App\Http\Controllers\BaseController;
-use App\Http\Requests\admin\Review\ReviewRequest;
+use App\Http\Requests\Admin\Review\ReviewRequest;
 use App\Models\Review;
 use App\Repositories\Property\PropertyRepository;
 use App\Repositories\Review\ReviewCategoryRepository;
 use App\Repositories\Review\ReviewRepositroy;
 use Illuminate\Contracts\View\View;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -17,7 +18,7 @@ class ReviewController extends BaseController
     /**
      * Display a listing of the resource.
      */
-    public function index(Request $request, ReviewRepositroy $reviewRepositroy): View
+    public function index(Request $request, ReviewRepositroy $reviewRepository) : View
     {
         if (!hasPermission('can_view_review')) {
             $this->unauthorized();
@@ -33,7 +34,7 @@ class ReviewController extends BaseController
             ]
         );
 
-        $reviews = $reviewRepositroy->paginate($query);
+        $reviews = $reviewRepository->paginate($query);
 
         $permissions = [
             'manage' => 'can_view_review',
@@ -48,8 +49,10 @@ class ReviewController extends BaseController
     /**
      * Show the form for creating a new resource.
      */
-    public function create(ReviewCategoryRepository $reviewCategoryRepository, PropertyRepository $propertyRepository)
-    {
+    public function create(
+        ReviewCategoryRepository $reviewCategoryRepository,
+        PropertyRepository $propertyRepository
+    ) : View {
         if (!hasPermission('can_create_review')) {
             $this->unauthorized();
         }
@@ -62,13 +65,16 @@ class ReviewController extends BaseController
     /**
      * Store a newly created resource in storage.
      */
-    public function store(ReviewRequest $request, ReviewRepositroy $reviewRepositroy)
+    public function store(ReviewRequest $request, ReviewRepositroy $reviewRepository) : RedirectResponse
     {
         if (!hasPermission('can_create_review')) {
             $this->unauthorized();
         }
         try {
-            $reviewRepositroy->create(array_merge($request->validated(), ['user_id' => Auth::user()->id]));
+            $reviewRepository->create(array_merge(
+                $request->validated(),
+                ['user_id' => Auth::user()->id]
+            ));
 
             return redirect()->route('admin.reviews.index')->with([
                 'message'    => 'Reviews created successfully.',
@@ -93,8 +99,11 @@ class ReviewController extends BaseController
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(ReviewCategoryRepository $reviewCategoryRepository, PropertyRepository $propertyRepository, Review $review)
-    {
+    public function edit(
+        ReviewCategoryRepository $reviewCategoryRepository,
+        PropertyRepository $propertyRepository,
+        Review $review
+    ) : View {
         if (!hasPermission('can_update_review')) {
             $this->unauthorized();
         }
@@ -108,7 +117,7 @@ class ReviewController extends BaseController
     /**
      * Update the specified resource in storage.
      */
-    public function update(ReviewRequest $request, ReviewRepositroy $reviewRepository, $review)
+    public function update(ReviewRequest $request, ReviewRepositroy $reviewRepository, $review) : RedirectResponse
     {
         if (!hasPermission('can_update_review')) {
             $this->unauthorized();
@@ -116,7 +125,10 @@ class ReviewController extends BaseController
 
         try {
             $review = $reviewRepository->getModel($review);
-            $reviewRepository->update(array_merge($request->validated(), ['user_id' => Auth::user()->id]), $review);
+            $reviewRepository->update(array_merge(
+                $request->validated(),
+                ['user_id' => Auth::user()->id]
+            ), $review);
 
             return redirect()->route('admin.reviews.index')->with([
                 'message'    => 'Review updated successfully.',
@@ -134,7 +146,7 @@ class ReviewController extends BaseController
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(ReviewRepositroy $reviewRepository, $review)
+    public function destroy(ReviewRepositroy $reviewRepository, $review) : RedirectResponse
     {
         if (!hasPermission('can_delete_review')) {
             $this->unauthorized();
