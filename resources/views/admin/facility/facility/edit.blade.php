@@ -2,9 +2,9 @@
     <x-admin.card>
         <x-admin.card.card-header title="Update Facility"/>
         <x-admin.card.card-body>
-            <x-admin.form action="{{ route('admin.facilities.update',$facility->id) }}" method="PUT">
+            <x-admin.form action="{{ route('admin.facilities.update',$facility->id) }}" method="PUT" enctype="multipart/form-data">
                 <div class="row">
-                    <div class="col-md-6">
+                    <div class="col-md-12">
                         <x-admin.input
                             type="text"
                             name="name"
@@ -13,13 +13,15 @@
                             value="{{$facility->name}}"
                         />
                     </div>
-                    <div class="col-md-6">
+                </div>
+                <div class="row">
+                    <div class="col-md-12">
                         <x-admin.input
-                            type="icon"
-                            name="icon"
-                            id="icon"
-                            label="Icon"
-                            value="{{$facility->icon}}"
+                            type="textarea"
+                            name="notes"
+                            id="notes"
+                            label="Note"
+                            value="{{$facility->notes}}"
                         />
                     </div>
                 </div>
@@ -44,15 +46,18 @@
                         />
                     </div>
                 </div>
+
                 <div class="row">
-                    <div class="col-md-12">
+                    <div class="col-md-6">
                         <x-admin.input
-                            type="textarea"
-                            name="notes"
-                            id="notes"
-                            label="Note"
-                            value="{{$facility->notes}}"
+                            type="file"
+                            name="icon"
+                            id="icon"
+                            label="Icon"
                         />
+                    </div>
+                    <div class="col-md-12">
+                        <img width="50" height="50" src="{{$facility->icon_url}}" id="preview_icon" alt=""/>
                     </div>
                 </div>
                 <div class="mt-3 row">
@@ -66,4 +71,17 @@
             </x-admin.form>
         </x-admin.card.card-body>
     </x-admin.card>
+    @push('scripts')
+    <script>
+        $(document).ready(function () {
+            $('#icon').on('change', function () {
+                let reader = new FileReader();
+                reader.onload = (e) => {
+                    $('#preview_icon').attr('src', e.target.result);
+                }
+                reader.readAsDataURL(this.files[0]);
+            });
+        });
+    </script>
+@endpush
 </x-admin.layout>

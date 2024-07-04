@@ -14,23 +14,27 @@
         <x-admin.card.card-body class="px-0 pt-0 pb-2">
             <x-admin.table>
                 <x-admin.table-header>
-                    <x-admin.table-head value="Date"/>
+                    <x-admin.table-head />
                     <x-admin.table-head value="Name"/>
-                    <x-admin.table-head value="Icon"/>
                     <x-admin.table-head value="Facility"/>
+                    <x-admin.table-head value="Date"/>
                     @if( hasPermission($permissions['update']) || hasPermission($permissions['delete']) )
-                        <x-admin.table-head value="Actions"/>
+                        <x-admin.table-head class="text-right" value="Actions"/>
                     @endif
                 </x-admin.table-header>
                 <x-admin.table-body>
                     @forelse($subFacilities as $subfacility)
                         <x-admin.table-row>
-                            <x-admin.table-cell :value="format_date($subfacility->created_at)"/>
+                            <x-admin.table-cell>
+                                <img width="30"height="30" src="{{ $subfacility->icon_url }}"alt="{{ $subfacility->name }}">
+                            </x-admin.table-cell>
                             <x-admin.table-cell :value="$subfacility->name"/>
-                            <x-admin.table-cell />
-                            <x-admin.table-cell :value="$subfacility->facility?->name"/>
+                            <x-admin.table-cell class="word-wrap">
+                                    <x-admin.badge class="mr-2" type="primary" :text="$subfacility->facility?->name"/>
+                            </x-admin.table.cell>
+                            <x-admin.table-cell :value="format_date($subfacility->created_at)"/>
                             @if( hasPermission($permissions['update']) || hasPermission($permissions['delete']) )
-                                <x-admin.table-cell>
+                                <x-admin.table-cell class="text-right">
                                     @hasPermission($permissions['update'])
                                         <a href="{{ route('admin.facilities.sub-facilities.edit', $subfacility->id) }}"
                                            class="btn btn-icon btn-xs btn-outline-primary">

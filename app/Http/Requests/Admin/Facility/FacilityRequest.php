@@ -31,7 +31,8 @@ class FacilityRequest extends FormRequest
             'name'      => "required|string|max:255|{$uniqueNameRule}",
             'facility_type'  => 'required',
             'notes' => 'nullable|string',
-            'facility_for' => 'required|string'
+            'facility_for' => 'required|string',
+            'icon'  => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
         ];
     }
 

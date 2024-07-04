@@ -21,7 +21,7 @@ class SubFacilityRequest extends FormRequest
      */
     public function rules(): array
     {
-        $modelId = $this-> subFacility?: null;
+        $modelId = $this->subFacility ?: null;
 
         $uniqueNameRule = ($this->method() === 'PUT' && $modelId !== null)
             ? 'unique: facility_subs,name,' . $modelId
@@ -30,15 +30,16 @@ class SubFacilityRequest extends FormRequest
         return [
             'name'      => "required|string|max:255",
             'facility_id' => 'required',
+            'icon'  => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
         ];
     }
 
-        /**
+    /**
      * Get the error messages for the defined validation rules.
      *
      * @return array<string, string>
      */
-    public function messages() : array
+    public function messages(): array
     {
         return [
             'name.required'         => 'The  name is required.',

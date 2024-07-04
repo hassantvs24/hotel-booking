@@ -14,12 +14,12 @@
         <x-admin.card.card-body class="px-0 pt-0 pb-2 table-responsive">
             <x-admin.table>
                 <x-admin.table-header>
-                    <x-admin.table-head value="Date"/>
+                    <x-admin.table-head />
                     <x-admin.table-head value="Name"/>
-                    <x-admin.table-head value="Icon"/>
                     <x-admin.table-head value="Notes"/>
                     <x-admin.table-head value="Facility Type"/>
                     <x-admin.table-head value="Facility For"/>
+                    <x-admin.table-head value="Date"/>
                     @if( hasPermission($permissions['update']) || hasPermission($permissions['delete']) )
                         <x-admin.table-head value="Actions"/>
                     @endif
@@ -27,15 +27,21 @@
                 <x-admin.table-body>
                     @forelse($facilities as $facility)
                         <x-admin.table-row>
-                            <x-admin.table-cell :value="format_date($facility->created_at)"/>
+                            <x-admin.table-cell>
+                                <img
+                                width="30"
+                                height="30"
+                                src="{{ $facility->icon_url }}"
+                                alt="{{ $facility->name }}"
+                            >
+                            </x-admin.table-cell>
                             <x-admin.table-cell :value="$facility->name"/>
-                            <x-admin.table-cell />
                             <x-admin.table-cell :value="$facility->notes"/>
                             <x-admin.table-cell :value="$facility->facility_type"/>
                             <x-admin.table-cell class="word-wrap">
                                 <x-admin.badge class="mr-2" type="primary" :text="$facility->facility_for"/>
                             </x-admin.table-cell>
-                            {{-- <x-admin.table-cell :value="$facility->"/> --}}
+                            <x-admin.table-cell :value="format_date($facility->created_at)"/>
                             @if( hasPermission($permissions['update']) || hasPermission($permissions['delete']) )
                                 <x-admin.table-cell>
                                     @hasPermission($permissions['update'])

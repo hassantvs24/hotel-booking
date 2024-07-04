@@ -2,9 +2,9 @@
     <x-admin.card>
         <x-admin.card.card-header title="Add New Facility"/>
         <x-admin.card.card-body>
-            <x-admin.form action="{{ route('admin.facilities.store') }}" method="POST">
+            <x-admin.form action="{{ route('admin.facilities.store') }}" method="POST" enctype="multipart/form-data">
                 <div class="row">
-                    <div class="col-md-6">
+                    <div class="col-md-12">
                         <x-admin.input
                             type="text"
                             name="name"
@@ -13,15 +13,19 @@
                             value="{{ old('name') }}"
                         />
                     </div>
-                    <div class="col-md-6">
+                </div>
+                <div class="row">
+                    <div class="col-md-12">
                         <x-admin.input
-                            type="icon"
-                            name="icon"
-                            id="icon"
-                            label="Icon"
-                            value="{{ old('icon') }}"
+                            type="textarea"
+                            row="1"
+                            name="notes"
+                            id="notes"
+                            label="Note"
+                            value="{{ old('notes') }}"
                         />
                     </div>
+
                 </div>
                 <div class="row">
                     <div class="col-md-6">
@@ -42,18 +46,19 @@
                         />
                     </div>
                 </div>
+
                 <div class="row">
-                    <div class="col-md-12">
+                    <div class="col-md-6">
                         <x-admin.input
-                            type="textarea"
-                            row="1"
-                            name="notes"
-                            id="notes"
-                            label="Note"
-                            value="{{ old('notes') }}"
+                            type="file"
+                            name="icon"
+                            id="icon"
+                            label="Icon"
                         />
                     </div>
-
+                    <div class="col-md-12">
+                        <img width="50" height="50" src="" id="preview_icon" alt=""/>
+                    </div>
                 </div>
                 <div class="mt-3 row">
                     <div class="col-md-6">
@@ -66,4 +71,17 @@
             </x-admin.form>
         </x-admin.card.card-body>
     </x-admin.card>
+    @push('scripts')
+    <script>
+        $(document).ready(function () {
+            $('#icon').on('change', function () {
+                let reader = new FileReader();
+                reader.onload = (e) => {
+                    $('#preview_icon').attr('src', e.target.result);
+                }
+                reader.readAsDataURL(this.files[0]);
+            });
+        });
+    </script>
+@endpush
 </x-admin.layout>

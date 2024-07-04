@@ -2,7 +2,7 @@
     <x-admin.card>
         <x-admin.card.card-header title="Update Facility"/>
         <x-admin.card.card-body>
-            <x-admin.form action="{{ route('admin.facilities.sub-facilities.update',$subFacility->id) }}" method="PUT">
+            <x-admin.form action="{{ route('admin.facilities.sub-facilities.update',$subFacility->id) }}" method="PUT" enctype="multipart/form-data">
                 <div class="row">
                     <div class="col-md-6">
                         <x-admin.input
@@ -15,17 +15,6 @@
                     </div>
                     <div class="col-md-6">
                         <x-admin.input
-                            type="icon"
-                            name="icon"
-                            id="icon"
-                            label="Icon"
-                            value="{{$subFacility->icon}}"
-                        />
-                    </div>
-                </div>
-                <div class="row">
-                    <div class="col-md-12">
-                        <x-admin.input
                         type="select"
                         name="facility_id"
                         id="facility_id"
@@ -33,6 +22,19 @@
                         :options="$facilities"
                         :value="$subFacility->facility_id"
                         />
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6">
+                        <x-admin.input
+                            type="file"
+                            name="icon"
+                            id="icon"
+                            label="Icon"
+                        />
+                    </div>
+                    <div class="col-md-12">
+                        <img width="50" height="50" src="{{$subFacility->icon_url}}" id="preview_icon" alt=""/>
                     </div>
                 </div>
                 <div class="mt-3 row">
@@ -46,4 +48,17 @@
             </x-admin.form>
         </x-admin.card.card-body>
     </x-admin.card>
+    @push('scripts')
+    <script>
+        $(document).ready(function () {
+            $('#icon').on('change', function () {
+                let reader = new FileReader();
+                reader.onload = (e) => {
+                    $('#preview_icon').attr('src', e.target.result);
+                }
+                reader.readAsDataURL(this.files[0]);
+            });
+        });
+    </script>
+@endpush
 </x-admin.layout>

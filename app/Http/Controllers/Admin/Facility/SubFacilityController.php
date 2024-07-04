@@ -7,6 +7,7 @@ use App\Http\Requests\Admin\Facility\SubFacilityRequest;
 use App\Models\FacilitySub;
 use App\Repositories\Facility\FacilityRepository;
 use App\Repositories\Facility\SubFacilityRepository;
+use App\Traits\MediaMan;
 use Exception;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -14,10 +15,11 @@ use Illuminate\View\View;
 
 class SubFacilityController extends BaseController
 {
+    use MediaMan;
     /**
      * Display a listing of the resource.
      */
-    public function index(Request $request, SubFacilityRepository $subFacilityRepository) : View
+    public function index(Request $request, SubFacilityRepository $subFacilityRepository): View
     {
         if (!hasPermission('can_view_sub_facility')) {
             $this->unauthorized();
@@ -48,14 +50,22 @@ class SubFacilityController extends BaseController
     /**
      * Store a newly created resource in storage.
      */
-    public function store(SubFacilityRequest $request, SubFacilityRepository $subFacilityRepository) : RedirectResponse
+    public function store(SubFacilityRequest $request, SubFacilityRepository $subFacilityRepository): RedirectResponse
     {
         if (!hasPermission('can_create_facility')) {
             $this->unauthorized();
         }
 
         try {
-            $subFacilityRepository->create($request->validated());
+            $subFacility = $subFacilityRepository->create($request->only('name', 'facility_id'));
+
+            if ($request->hasFile('icon')) {
+                $image = $this->storeFile($request->file('icon'), 'facility_icons');
+                $subFacility->icon()->create([
+                    ...$image,
+                    'media_role' => 'facility_icon'
+                ]);
+            }
 
             return redirect()->route('admin.facilities.sub-facilities.index')->with([
                 'message'    => 'Sub facility created successfully.',
@@ -72,7 +82,7 @@ class SubFacilityController extends BaseController
     /**
      * Show the form for creating a new resource.
      */
-    public function create(FacilityRepository $facilityRepository) : View
+    public function create(FacilityRepository $facilityRepository): View
     {
         if (!hasPermission('can_create_sub_facility')) {
             $this->unauthorized();
@@ -94,7 +104,7 @@ class SubFacilityController extends BaseController
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(FacilityRepository $facilityRepository, FacilitySub $subFacility) : View
+    public function edit(FacilityRepository $facilityRepository, FacilitySub $subFacility): View
     {
         if (!hasPermission('can_update_sub_facility')) {
             $this->unauthorized();
@@ -112,14 +122,28 @@ class SubFacilityController extends BaseController
         SubFacilityRequest $request,
         SubFacilityRepository $subFacilityRepository,
         $subFacility
-    ) : RedirectResponse {
+    ): RedirectResponse {
         if (!hasPermission('can_update_sub_facility')) {
             $this->unauthorized();
         }
 
         try {
             $subFacility = $subFacilityRepository->getModel($subFacility);
-            $subFacilityRepository->update($request->validated(), $subFacility);
+            $subFacilityRepository->update($request->only('name', 'facility_id'), $subFacility);
+
+            if ($request->hasFile('icon')) {
+
+                if ($subFacility->icon()->exists()) {
+                    $this->deleteFile($subFacility->icon->name, 'facility_icons');
+                    $subFacility->icon()->delete();
+                }
+
+                $image = $this->storeFile($request->file('icon'), 'facility_icons');
+                $subFacility->icon()->create([
+                    ...$image,
+                    'media_role' => 'facility_icon'
+                ]);
+            }
 
             return redirect()->route('admin.facilities.sub-facilities.index')->with([
                 'message'    => 'Sub Facility updated successfully.',
@@ -133,7 +157,7 @@ class SubFacilityController extends BaseController
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(SubFacilityRepository $subFacilityRepository, $subFacility) : RedirectResponse
+    public function destroy(SubFacilityRepository $subFacilityRepository, $subFacility): RedirectResponse
     {
         if (!hasPermission('can_delete_place')) {
             $this->unauthorized();
@@ -142,13 +166,18 @@ class SubFacilityController extends BaseController
         try {
 
             $subFacility = $subFacilityRepository->getModel($subFacility);
+
+            if ($subFacility->icon()->exists()) {
+                $this->deleteFile($subFacility->icon->name, 'facility_icons');
+                $subFacility->icon()->delete();
+            }
+
             $subFacilityRepository->delete($subFacility->id);
 
             return redirect()->route('admin.facilities.sub-facilities.index')->with([
                 'message'    => 'Sub Facility deleted successfully.',
                 'alert-type' => 'success'
             ]);
-
         } catch (Exception $e) {
             return redirect()->back()->with([
                 'message'    => 'Something went wrong.',
@@ -157,4 +186,3 @@ class SubFacilityController extends BaseController
         }
     }
 }
-

@@ -6,6 +6,7 @@ use App\Http\Controllers\BaseController;
 use App\Http\Requests\Admin\Facility\FacilityRequest;
 use App\Models\Facility;
 use App\Repositories\Facility\FacilityRepository;
+use App\Traits\MediaMan;
 use Exception;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -13,6 +14,7 @@ use Illuminate\View\View;
 
 class FacilityController extends BaseController
 {
+    use MediaMan;
     /**
      * Display a listing of the resource.
      */
@@ -53,7 +55,15 @@ class FacilityController extends BaseController
             $this->unauthorized();
         }
         try {
-            $facilityRepository->create($request->validated());
+            $facilities = $facilityRepository->create($request->only(['name', 'notes', 'facility_type', 'facility_for']));
+
+            if ($request->hasFile('icon')) {
+                $image = $this->storeFile($request->file('icon'), 'facility_icons');
+                $facilities->icon()->create([
+                    ...$image,
+                    'media_role' => 'facility_icon'
+                ]);
+            }
 
             return redirect()->route('admin.facilities.index')->with([
                 'message'    => 'Facility created successfully.',
@@ -122,7 +132,21 @@ class FacilityController extends BaseController
 
         try {
             $facility = $facilityRepository->getModel($facility);
-            $facilityRepository->update($request->validated(), $facility);
+            $facilityRepository->update($request->only(['name', 'notes', 'facility_type', 'facility_for']), $facility);
+
+            if ($request->hasFile('icon')) {
+
+                if ($facility->icon()->exists()) {
+                    $this->deleteFile($facility->icon->name, 'facility_icons');
+                    $facility->icon()->delete();
+                }
+
+                $image = $this->storeFile($request->file('icon'), 'facility_icons');
+                $facility->icon()->create([
+                    ...$image,
+                    'media_role' => 'facility_icon'
+                ]);
+            }
 
             return redirect()->route('admin.facilities.index')->with([
                 'message'    => 'Facility updated successfully.',
@@ -145,6 +169,12 @@ class FacilityController extends BaseController
         try {
 
             $facility = $facilityRepository->getModel($facility);
+
+            if ($facility->icon()->exists()) {
+                $this->deleteFile($facility->icon->name, 'facility_icons');
+                $facility->icon()->delete();
+            }
+
             $facilityRepository->delete($facility->id);
 
             return redirect()->route('admin.facilities.index')->with([

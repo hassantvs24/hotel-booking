@@ -14,7 +14,6 @@ return new class extends Migration
         Schema::create('facility_subs', function (Blueprint $table) {
             $table->id();
             $table->string('name');
-            $table->string('icon')->nullable();
             $table->foreignId('facility_id')->constrained()->onDelete('cascade')->onUpdate('No Action');
             $table->softDeletes();
             $table->timestamps();
