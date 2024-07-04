@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin\Review;
 use App\Http\Controllers\BaseController;
 use App\Http\Requests\admin\Review\ReviewCategoryRequest;
 use App\Repositories\Review\ReviewCategoryRepository;
+use App\Traits\MediaMan;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -12,10 +13,12 @@ use Namshi\JOSE\Signer\OpenSSL\RSA;
 
 class ReviewCategoryController extends BaseController
 {
+
+    use MediaMan;
     /**
      * Display a listing of the resource.
      */
-    public function index(Request $request,ReviewCategoryRepository $reviewCategory): View
+    public function index(Request $request, ReviewCategoryRepository $reviewCategory): View
     {
         if (!hasPermission('can_view_review_category')) {
             $this->unauthorized();
@@ -30,7 +33,7 @@ class ReviewCategoryController extends BaseController
             ]
         );
 
-        $reviewCategories= $reviewCategory->paginate($query);
+        $reviewCategories = $reviewCategory->paginate($query);
 
         $permissions = [
             'manage' => 'can_view_review_category',
@@ -38,7 +41,7 @@ class ReviewCategoryController extends BaseController
             'update' => 'can_update_review_category',
             'delete' => 'can_delete_review_category',
         ];
-        
+
 
         return view('admin.review.category.index', compact('reviewCategories', 'permissions'));
     }
@@ -58,20 +61,27 @@ class ReviewCategoryController extends BaseController
     /**
      * Store a newly created resource in storage.
      */
-    public function store(ReviewCategoryRequest $request, ReviewCategoryRepository $reviewRepository) :RedirectResponse
+    public function store(ReviewCategoryRequest $request, ReviewCategoryRepository $reviewCategoryRepository): RedirectResponse
     {
         if (!hasPermission('can_create_review_category')) {
             $this->unauthorized();
         }
 
         try {
-            $reviewRepository->create($request->validated());
+            $reviewCategories = $reviewCategoryRepository->create($request->only(['name', 'notes']));
+
+            if ($request->hasFile('icon')) {
+                $image = $this->storeFile($request->file('icon'), 'review_icons');
+                $reviewCategories->icon()->create([
+                    ...$image,
+                    'media_role' => 'review_icon'
+                ]);
+            }
 
             return redirect()->route('admin.reviews.categories.index')->with([
                 'message'    => 'Review Category created successfully.',
                 'alert-type' => 'success'
             ]);
-
         } catch (\Exception $e) {
             return redirect()->back()->with([
                 'message'    => 'Something went wrong.',
@@ -105,7 +115,7 @@ class ReviewCategoryController extends BaseController
     /**
      * Update the specified resource in storage.
      */
-    public function update(ReviewCategoryRequest $request,ReviewCategoryRepository $reviewCategoryRepository,$reviewCategory)
+    public function update(ReviewCategoryRequest $request, ReviewCategoryRepository $reviewCategoryRepository, $reviewCategory)
     {
         if (!hasPermission('can_update_review_category')) {
             $this->unauthorized();
@@ -114,13 +124,26 @@ class ReviewCategoryController extends BaseController
         try {
 
             $reviewCategory = $reviewCategoryRepository->getModel($reviewCategory);
-            $reviewCategoryRepository->update($request->validated(), $reviewCategory);
+            $reviewCategories = $reviewCategoryRepository->update($request->only(['name', 'notes']), $reviewCategory);
+
+            if ($request->hasFile('icon')) {
+
+                if ($reviewCategories->icon()->exists()) {
+                    $this->deleteFile($reviewCategories->icon->name, 'review_icons');
+                    $reviewCategories->icon()->delete();
+                }
+
+                $image = $this->storeFile($request->file('icon'), 'review_icons');
+                $reviewCategories->icon()->create([
+                    ...$image,
+                    'media_role' => 'review_icon'
+                ]);
+            }
 
             return redirect()->route('admin.reviews.categories.index')->with([
                 'message'    => 'Review Category updated successfully.',
                 'alert-type' => 'success'
             ]);
-
         } catch (\Exception $e) {
             return redirect()->back()->with([
                 'message'    => 'Something went wrong.',
@@ -139,14 +162,19 @@ class ReviewCategoryController extends BaseController
         }
 
         try {
+            $reviewCategory = $reviewCategoryRepository->getModel($reviewCategory);
 
-            $reviewCategoryRepository->delete($reviewCategory);
+            if ($reviewCategory->icon()->exists()) {
+                $this->deleteFile($reviewCategory->icon->name, 'review_icons');
+                $reviewCategory->icon()->delete();
+            }
+
+            $reviewCategoryRepository->delete($reviewCategory->id);
 
             return redirect()->route('admin.reviews.categories.index')->with([
                 'message'    => 'Reviews Category deleted successfully.',
                 'alert-type' => 'success'
             ]);
-
         } catch (\Exception $e) {
             return redirect()->back()->with([
                 'message'    => 'Something went wrong.',

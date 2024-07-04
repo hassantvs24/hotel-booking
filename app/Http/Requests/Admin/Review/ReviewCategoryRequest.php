@@ -30,23 +30,23 @@ class ReviewCategoryRequest extends FormRequest
         return [
             'name'  => "required|string|max:255|{$uniqueNameRule}",
             'notes' => 'nullable|string',
-            'icon'  => 'nullable'
+            'icon'  => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
         ];
     }
-      /**
+    /**
      * Get the error messages for the defined validation rules.
      *
      * @return array<string, string>
      */
 
-     public function messages() : array
-     {
-         return [
-             'name.required' => 'The name field is required.',
-             'name.string'   => 'The name field must be a string.',
-             'name.max'      => 'The name field must not exceed 255 characters.',
-             'name.unique'   => 'The name field must be unique.',
-             'notes.string'  => 'The notes field must be a string.',
-         ];
-     }
+    public function messages(): array
+    {
+        return [
+            'name.required' => 'The name field is required.',
+            'name.string'   => 'The name field must be a string.',
+            'name.max'      => 'The name field must not exceed 255 characters.',
+            'name.unique'   => 'The name field must be unique.',
+            'notes.string'  => 'The notes field must be a string.',
+        ];
+    }
 }
