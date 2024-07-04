@@ -1,6 +1,6 @@
-<x-admin.layout title="Add Price Type">
+<x-admin.layout title="Add New Room">
     <x-admin.card>
-        <x-admin.card.card-header title="Add New Price Type"/>
+        <x-admin.card.card-header title="Add New Room"/>
         <x-admin.card.card-body>
             <x-admin.form action="{{ route('admin.rooms.store') }}" method="POST"  enctype="multipart/form-data">
                 <div class="row">
@@ -136,13 +136,13 @@
 
                 <div class="mt-3 row">
                     <div class="col-md-6">
-                        <a href="{{ route('admin.rooms.price-types.index') }}" class="btn btn-danger btn-sm">
+                        <a href="{{ route('admin.rooms.index') }}" class="btn btn-danger btn-sm">
                             Back To List
                         </a>
                     </div>
                     <div class="col-md-6 text-right">
                         <x-admin.button variant="primary" type="submit" size="sm">
-                            Add Room type
+                            Add Room
                         </x-admin.button>
                     </div>
                 </div>
