@@ -9,7 +9,7 @@ class SurroundingPlaceRequest extends FormRequest
     /**
      * Determine if the user is authorized to make this request.
      */
-    public function authorize() : bool
+    public function authorize(): bool
     {
         return true;
     }
@@ -19,7 +19,7 @@ class SurroundingPlaceRequest extends FormRequest
      *
      * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
      */
-    public function rules() : array
+    public function rules(): array
     {
         $modelId = $this->surroundingPlace ?: null;
 
@@ -32,7 +32,7 @@ class SurroundingPlaceRequest extends FormRequest
             'lat'            => 'required|numeric',
             'long'           => 'required|numeric',
             'notes'          => 'nullable|string',
-            'photo'          => 'nullable',
+            'photo'          => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
             'place_id'       => 'required|integer|exists:places,id',
             'surrounding_id' => 'required|integer|exists:surroundings,id',
         ];
@@ -43,7 +43,7 @@ class SurroundingPlaceRequest extends FormRequest
      *
      * @return array<string, string>
      */
-    public function messages() : array
+    public function messages(): array
     {
         return [
             'name.required'           => 'The  name is required.',

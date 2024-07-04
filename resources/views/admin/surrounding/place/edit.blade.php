@@ -2,10 +2,10 @@
     <x-admin.card>
         <x-admin.card.card-header title="Update Surrounding Place"/>
         <x-admin.card.card-body>
-            <x-admin.form action="{{ route('admin.surroundings.surrounding-places.update',$surroundingPlace->id) }}"
-                          method="PUT">
+            <x-admin.form action="{{ route('admin.surroundings.surrounding-places.update',$surroundingPlace->id) }}" 
+                method="PUT" enctype="multipart/form-data">
                 <div class="row">
-                    <div class="col-md-6">
+                    <div class="col-md-12">
                         <x-admin.input
                             type="text"
                             name="name"
@@ -15,6 +15,20 @@
                             value="{{$surroundingPlace->name}}"
                         />
                     </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-12">
+                        <x-admin.input
+                            type="textarea"
+                            name="notes"
+                            id="notes"
+                            placeholder="Note"
+                            label="Note"
+                            value="{{$surroundingPlace->notes}}"
+                        />
+                    </div>
+                </div>
+                <div class="row">
                     <div class="col-md-6">
                         <x-admin.input
                             type="number"
@@ -25,8 +39,6 @@
                             value="{{$surroundingPlace->lat}}"
                         />
                     </div>
-                </div>
-                <div class="row">
                     <div class="col-md-6">
                         <x-admin.input
                             type="number"
@@ -35,16 +47,6 @@
                             placeholder="Longitude"
                             label="Longitude"
                             value="{{$surroundingPlace->long}}"
-                        />
-                    </div>
-                    <div class="col-md-6">
-                        <x-admin.input
-                            type="text"
-                            name="notes"
-                            id="notes"
-                            placeholder="Note"
-                            label="Note"
-                            value="{{$surroundingPlace->notes}}"
                         />
                     </div>
                 </div>
@@ -80,6 +82,9 @@
                                 value="{{$surroundingPlace->photo}}"
                         />
                     </div>
+                    <div class="col-md-12">
+                        <img width="50" height="50" src="{{$surroundingPlace->icon_url}}" id="preview_icon" alt=""/>
+                    </div>
                 </div>
 
                 <div class="mt-3 row">
@@ -95,4 +100,17 @@
             </x-admin.form>
         </x-admin.card.card-body>
     </x-admin.card>
+    @push('scripts')
+    <script>
+        $(document).ready(function () {
+            $('#photo').on('change', function () {
+                let reader = new FileReader();
+                reader.onload = (e) => {
+                    $('#preview_icon').attr('src', e.target.result);
+                }
+                reader.readAsDataURL(this.files[0]);
+            });
+        });
+    </script>
+@endpush
 </x-admin.layout>

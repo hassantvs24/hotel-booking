@@ -13,11 +13,11 @@
         <x-admin.card.card-body class="px-0 pt-0 pb-2">
             <x-admin.table>
                 <x-admin.table-header>
+                    <x-admin.table-head />
                     <x-admin.table-head value="Name"/>
                     <x-admin.table-head value="Latitude"/>
                     <x-admin.table-head value="Longitude"/>
                     <x-admin.table-head value="Note"/>
-                    <x-admin.table-head value="photo"/>
                     <x-admin.table-head value="Place"/>
                     <x-admin.table-head value="Surrounding"/>
                     @if( hasPermission($permissions['update']) || hasPermission($permissions['delete']) )
@@ -27,11 +27,13 @@
                 <x-admin.table-body>
                     @forelse($surroundingPlaces as $surroundingPlace)
                         <x-admin.table-row>
+                            <x-admin.table-cell>
+                                <img width="30" height="30" src="{{$surroundingPlace->icon_url}}" alt="{{$surroundingPlace->name}}">
+                            </x-admin.table-cell>
                             <x-admin.table-cell :value="$surroundingPlace->name"/>
                             <x-admin.table-cell :value="$surroundingPlace->lat"/>
                             <x-admin.table-cell :value="$surroundingPlace->long"/>
                             <x-admin.table-cell class="word-wrap" :value="$surroundingPlace->notes"/>
-                            <x-admin.table-cell :value="$surroundingPlace->photo"/>
                             <x-admin.table-cell :value="$surroundingPlace->place?->name"/>
                             <x-admin.table-cell :value="$surroundingPlace->surrounding?->name"/>
                             @if( hasPermission($permissions['update']) || hasPermission($permissions['delete']) )
