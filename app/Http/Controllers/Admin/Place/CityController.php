@@ -7,12 +7,15 @@ use App\Http\Requests\Admin\Place\CityRequest;
 use App\Models\City;
 use App\Repositories\Place\CityRepository;
 use App\Repositories\Place\StateRepository;
+use App\Traits\MediaMan;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class CityController extends BaseController
 {
+    use MediaMan;
+
     /**
      * Display a listing of the resource.
      */
@@ -68,7 +71,17 @@ class CityController extends BaseController
         }
 
         try {
-            $cityRepository->create($request->validated());
+            $city = $cityRepository->create(
+                $request->except(['photo'])
+            );
+
+            if ($request->hasFile('photo')) {
+                $photo = $this->storeFile($request->file('photo'), 'cities');
+                $city->photo()->create([
+                    ...$photo,
+                    'media_role' => 'place_image'
+                ]);
+            }
 
             return redirect()->route('admin.places.cities.index')->with([
                 'message'    => 'City added successfully.',
@@ -113,20 +126,34 @@ class CityController extends BaseController
             $this->unauthorized();
         }
 
-        try {
-            $city = $cityRepository->getModel($city);
-            $cityRepository->update($request->validated(), $city);
+//        try {
+        $model = $cityRepository->getModel($city);
+        $city = $cityRepository->update($request->except(['photo']), $model);
 
-            return redirect()->route('admin.places.cities.index')->with([
-                'message'    => 'City updated successfully.',
-                'alert-type' => 'success'
-            ]);
-        } catch (\Exception $e) {
-            return redirect()->back()->with([
-                'message'    => 'Something went wrong.',
-                'alert-type' => 'error'
+        if ($request->hasFile('photo')) {
+
+            if ($model->photo()->exists()) {
+                $this->deleteFile($model?->photo?->name, 'cities');
+                $model->photo()->delete();
+            }
+
+            $photo = $this->storeFile($request->file('photo'), 'cities');
+            $model->photo()->create([
+                ...$photo,
+                'media_role' => 'place_image'
             ]);
         }
+
+        return redirect()->route('admin.places.cities.index')->with([
+            'message'    => 'City updated successfully.',
+            'alert-type' => 'success'
+        ]);
+//        } catch (\Exception $e) {
+//            return redirect()->back()->with([
+//                'message'    => 'Something went wrong.',
+//                'alert-type' => 'error'
+//            ]);
+//        }
     }
 
     /**

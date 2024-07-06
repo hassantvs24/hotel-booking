@@ -28,11 +28,12 @@ class CityRequest extends FormRequest
             : 'unique:cities,name';
 
         return [
-            'name'      => "required|string|max:255|{$uniqueNameRule}",
-            'zip_code'  => 'required|string|max:255',
+            'name'     => "required|string|max:255|{$uniqueNameRule}",
+            'zip_code' => 'required|string|max:255',
             'state_id' => 'required|integer|exists:states,id',
-            'lat'       => 'required|numeric',
-            'long'      => 'required|numeric',
+            'lat'      => 'required|numeric',
+            'long'     => 'required|numeric',
+            'photo'    => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
         ];
     }
 
