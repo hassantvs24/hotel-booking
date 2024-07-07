@@ -17,7 +17,6 @@ return new class extends Migration
             $table->string('zip_code')->nullable();
             $table->decimal('lat')->nullable();
             $table->decimal('long')->nullable();
-            $table->string('photo')->nullable();
             $table->foreignId('state_id')->constrained()->onDelete('cascade')->onUpdate('No Action');
             $table->softDeletes();
             $table->timestamps();

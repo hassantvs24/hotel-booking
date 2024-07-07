@@ -133,7 +133,7 @@ class CityController extends BaseController
         if ($request->hasFile('photo')) {
 
             if ($model->photo()->exists()) {
-                $this->deleteFile($model?->photo?->name, 'cities');
+                $this->deleteFile($model->photo->name, 'cities');
                 $model->photo()->delete();
             }
 
