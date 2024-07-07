@@ -126,34 +126,34 @@ class CityController extends BaseController
             $this->unauthorized();
         }
 
-//        try {
-        $model = $cityRepository->getModel($city);
-        $city = $cityRepository->update($request->except(['photo']), $model);
+        try {
+            $model = $cityRepository->getModel($city);
+            $city = $cityRepository->update($request->except(['photo']), $model);
 
-        if ($request->hasFile('photo')) {
+            if ($request->hasFile('photo')) {
 
-            if ($model->photo()->exists()) {
-                $this->deleteFile($model->photo->name, 'cities');
-                $model->photo()->delete();
+                if ($model->photo()->exists()) {
+                    $this->deleteFile($model->photo->name, 'cities');
+                    $model->photo()->delete();
+                }
+
+                $photo = $this->storeFile($request->file('photo'), 'cities');
+                $model->photo()->create([
+                    ...$photo,
+                    'media_role' => 'place_image'
+                ]);
             }
 
-            $photo = $this->storeFile($request->file('photo'), 'cities');
-            $model->photo()->create([
-                ...$photo,
-                'media_role' => 'place_image'
+            return redirect()->route('admin.places.cities.index')->with([
+                'message'    => 'City updated successfully.',
+                'alert-type' => 'success'
+            ]);
+        } catch (\Exception $e) {
+            return redirect()->back()->with([
+                'message'    => 'Something went wrong.',
+                'alert-type' => 'error'
             ]);
         }
-
-        return redirect()->route('admin.places.cities.index')->with([
-            'message'    => 'City updated successfully.',
-            'alert-type' => 'success'
-        ]);
-//        } catch (\Exception $e) {
-//            return redirect()->back()->with([
-//                'message'    => 'Something went wrong.',
-//                'alert-type' => 'error'
-//            ]);
-//        }
     }
 
     /**
@@ -167,6 +167,12 @@ class CityController extends BaseController
 
         try {
             $city = $cityRepository->getModel($city);
+
+            if ($city->photo()->exists()) {
+                $this->deleteFile($city->photo->name, 'cities');
+                $city->photo()->delete();
+            }
+
             $cityRepository->delete($city->id);
 
             return redirect()->route('admin.places.cities.index')->with([
