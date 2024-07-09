@@ -7,7 +7,6 @@ use App\Models\Place;
 use App\Models\Property;
 use App\Models\PropertyCategory;
 use App\Models\PropertyRule;
-use App\Models\PropertyRulesSetup;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -65,6 +64,7 @@ class PropertyFactory extends Factory
     public function configure() : static
     {
         return $this->afterCreating(function (Property $property) {
+
             $property->facilities()->create([
                 'facility_sub_id' => FacilitySub::all()->random()->id,
             ]);
@@ -74,6 +74,7 @@ class PropertyFactory extends Factory
                 'is_active'        => $this->faker->boolean,
                 'property_rule_id' => $this->faker->randomElement(PropertyRule::all())->id,
             ]);
+
         });
     }
 }
