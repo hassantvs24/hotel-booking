@@ -145,7 +145,7 @@ class PropertyController extends BaseController
     public function edit(
         PropertyCategoryRepository $propertyCategoryRepository,
         PlaceRepository $placeRepository,
-        UserRepository $userRepository,
+        SubFacilityRepository $subFacilityRepository,
         Property $property
     ) : view {
         if (!hasPermission('can_update_property')) {
@@ -169,10 +169,10 @@ class PropertyController extends BaseController
 
         $propertyCategories = $propertyCategoryRepository->pluck('name', 'id')->toArray();
         $places = $placeRepository->pluck('name', 'id')->toArray();
-        $users = $userRepository->pluck('name', 'id')->toArray();
+        $facilities = $subFacilityRepository->pluck('name', 'id')->toArray();
 
         return view('admin.property.property.edit',
-            compact('propertyClasses', 'status', 'propertyCategories', 'places', 'users', 'property'));
+            compact('propertyClasses', 'status', 'propertyCategories', 'places', 'facilities', 'property'));
     }
 
     /**
@@ -186,10 +186,14 @@ class PropertyController extends BaseController
         if (!hasPermission('can_update_property')) {
             $this->unauthorized();
         }
-        try {
+//        try {
 
             $property = $propertyRepository->getModel($property);
-            $propertyRepository->update($request->except(['photo']),$property);
+            $propertyRepository->update($request->except(['photo', 'property_facilities']),$property);
+
+            if (is_array($request->input('property_facilities'))) {
+                $property->facilities()->sync($request->input('property_facilities'));
+            }
 
             if ($request->hasFile('photo')) {
 
@@ -206,12 +210,12 @@ class PropertyController extends BaseController
                 'message'    => 'Property updated successfully.',
                 'alert-type' => 'success'
             ]);
-        } catch (\Exception $e) {
-            return redirect()->back()->with([
-                'message'    => 'Something went wrong.',
-                'alert-type' => 'error'
-            ]);
-        }
+//        } catch (\Exception $e) {
+//            return redirect()->back()->with([
+//                'message'    => 'Something went wrong.',
+//                'alert-type' => 'error'
+//            ]);
+//        }
     }
 
     /**

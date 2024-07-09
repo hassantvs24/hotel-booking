@@ -180,6 +180,17 @@
                 <div class="row">
                     <div class="col-md-12">
                         <x-admin.input
+                            type="select"
+                            name="property_facilities[]"
+                            id="property_facilities"
+                            label="Set Property Facilities"
+                            multiple
+                            :options="$facilities"
+                            :value="$property->facilities->pluck('id')->toArray()"
+                        />
+                    </div>
+                    <div class="col-md-12">
+                        <x-admin.input
                             type="file"
                             name="photo"
                             id="photo"
@@ -188,7 +199,7 @@
                         />
                     </div>
                     <div class="col-md-12">
-                        <img width="50" height="50" src="" id="preview_icon" alt=""/>
+                        <img width="50" height="50" src="{{ $property->primaryImage->url }}" id="preview_icon" alt=""/>
                     </div>
                 </div>
                 <div class="mt-3 row">
@@ -212,6 +223,12 @@
                 }
                 reader.readAsDataURL(this.files[0]);
             });
+        });
+    </script>
+
+    <script>
+        $(document).ready(function () {
+            $('#property_facilities').select2();
         });
     </script>
 @endpush

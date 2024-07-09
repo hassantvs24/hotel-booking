@@ -64,9 +64,8 @@ class PropertyFactory extends Factory
     {
         return $this->afterCreating(function (Property $property) {
 
-            $property->facilities()->create([
-                'facility_sub_id' => FacilitySub::all()->random()->id,
-            ]);
+            $property->facilities()->attach(
+                FacilitySub::all()->random(rand(1, 5))->pluck('id')->toArray());
 
             $property->rules()->create([
                 'rule_description' => $this->faker->sentence,
