@@ -178,24 +178,13 @@
                     </div>
                 </div>
                 <div class="row">
-                    <div class="col-md-6">
-                        <x-admin.input
-                            type="select"
-                            name="user_id"
-                            id="user_id"
-                            label="User"
-                            :options="$users"
-                            :value="$property->user_id"
-                            additional-classes="searchable"
-                        />
-                    </div>
-                    <div class="col-md-6">
+                    <div class="col-md-12">
                         <x-admin.input
                             type="file"
                             name="photo"
                             id="photo"
                             placeholder="photo"
-                            label="Photo"
+                            label="Primary Image"
                         />
                     </div>
                 </div>

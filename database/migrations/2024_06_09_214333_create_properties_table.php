@@ -18,7 +18,6 @@ return new class extends Migration {
             $table->string('name');
             $table->decimal('lat');
             $table->decimal('long');
-            $table->string('photo')->nullable();
             $table->string('address')->nullable();
             $table->string('zip_code')->nullable();
             $table->string('total_room')->nullable();

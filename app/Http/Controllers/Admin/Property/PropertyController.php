@@ -4,8 +4,8 @@ namespace App\Http\Controllers\Admin\Property;
 
 use App\Http\Controllers\BaseController;
 use App\Http\Requests\Admin\Property\PropertyRequest;
-use App\Models\Place;
 use App\Models\Property;
+use App\Repositories\Facility\SubFacilityRepository;
 use App\Repositories\Place\PlaceRepository;
 use App\Repositories\Property\PropertyCategoryRepository;
 use App\Repositories\Property\PropertyRepository;
@@ -14,11 +14,13 @@ use App\Traits\MediaMan;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 
 class PropertyController extends BaseController
 {
     use MediaMan;
+
     /**
      * Display a listing of the resource.
      */
@@ -53,15 +55,18 @@ class PropertyController extends BaseController
     /**
      * Show the form for creating a new resource.
      */
-    public function create(PropertyCategoryRepository $propertyCategoryRepository, PlaceRepository $placeRepository, UserRepository $userRepository): View
-    {
+    public function create(
+        PropertyCategoryRepository $propertyCategoryRepository,
+        PlaceRepository $placeRepository,
+        SubFacilityRepository $subFacilityRepository
+    ) : View {
         if (!hasPermission('can_create_property')) {
             $this->unauthorized();
         }
 
         $propertyClasses = [
             'Unrated' => 'Unrated',
-            '1 Star' => '1 Star',
+            '1 Star'  => '1 Star',
             '2 Stars' => '2 Stars',
             '3 Stars' => '3 Stars',
             '4 Stars' => '4 Stars',
@@ -71,16 +76,17 @@ class PropertyController extends BaseController
         ];
 
         $status = [
-            'Pending' => 'Pending',
-            'Published' => 'Published',
+            'Pending'     => 'Pending',
+            'Published'   => 'Published',
             'Unpublished' => 'Unpublished'
         ];
 
         $propertyCategories = $propertyCategoryRepository->pluck('name', 'id')->toArray();
         $places = $placeRepository->pluck('name', 'id')->toArray();
-        $users = $userRepository->pluck('name', 'id')->toArray();
+        $facilities = $subFacilityRepository->pluck('name', 'id')->toArray();
 
-        return view('admin.property.property.create', compact('propertyClasses', 'status', 'propertyCategories', 'places', 'users'));
+        return view('admin.property.property.create',
+            compact('propertyClasses', 'status', 'propertyCategories', 'places', 'facilities'));
     }
 
     /**
@@ -92,19 +98,32 @@ class PropertyController extends BaseController
             $this->unauthorized();
         }
 
+        DB::beginTransaction();
         try {
-            $property = $propertyRepository->create($request->validated());
+            $property = $propertyRepository->create(
+                array_merge(
+                    $request->except(['photo', 'property_facilities']),
+                    ['user_id' => auth()->id()]
+                )
+            );
+
+            if (is_array($request->input('property_facilities'))) {
+                $property->facilities()->attach($request->input('property_facilities'));
+            }
 
             if ($request->hasFile('photo')) {
                 $image = $this->storeFile($request->file('photo'), 'properties');
-                $property->primaryImage()->create([ ...$image, 'media_role' => 'property_image' ]);
+                $property->primaryImage()->create([...$image, 'media_role' => 'property_image']);
             }
+
+            DB::commit();
 
             return redirect()->route('admin.properties.index')->with([
                 'message'    => 'Property created successfully.',
                 'alert-type' => 'success'
             ]);
         } catch (\Exception $e) {
+            DB::rollBack();
             return redirect()->back()->with([
                 'message'    => 'Something went wrong.',
                 'alert-type' => 'error'
@@ -123,14 +142,18 @@ class PropertyController extends BaseController
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(PropertyCategoryRepository $propertyCategoryRepository, PlaceRepository $placeRepository, UserRepository $userRepository, Property $property): view
-    {
+    public function edit(
+        PropertyCategoryRepository $propertyCategoryRepository,
+        PlaceRepository $placeRepository,
+        UserRepository $userRepository,
+        Property $property
+    ) : view {
         if (!hasPermission('can_update_property')) {
             $this->unauthorized();
         }
         $propertyClasses = [
             'Unrated' => 'Unrated',
-            '1 Star' => '1 Star',
+            '1 Star'  => '1 Star',
             '2 Stars' => '2 Stars',
             '3 Stars' => '3 Stars',
             '4 Stars' => '4 Stars',
@@ -139,8 +162,8 @@ class PropertyController extends BaseController
             '7 Stars' => '7 Stars',
         ];
         $status = [
-            'Pending' => 'Pending',
-            'Published' => 'Published',
+            'Pending'     => 'Pending',
+            'Published'   => 'Published',
             'Unpublished' => 'Unpublished'
         ];
 
@@ -148,21 +171,25 @@ class PropertyController extends BaseController
         $places = $placeRepository->pluck('name', 'id')->toArray();
         $users = $userRepository->pluck('name', 'id')->toArray();
 
-        return view('admin.property.property.edit', compact('propertyClasses', 'status', 'propertyCategories', 'places', 'users', 'property'));
+        return view('admin.property.property.edit',
+            compact('propertyClasses', 'status', 'propertyCategories', 'places', 'users', 'property'));
     }
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(PropertyRequest $request, PropertyRepository $propertyRepository, $property): RedirectResponse
-    {
+    public function update(
+        PropertyRequest $request,
+        PropertyRepository $propertyRepository,
+        $property
+    ) : RedirectResponse {
         if (!hasPermission('can_update_property')) {
             $this->unauthorized();
         }
         try {
 
             $property = $propertyRepository->getModel($property);
-            $propertyRepository->update($request->validated(), $property);
+            $propertyRepository->update($request->except(['photo']),$property);
 
             if ($request->hasFile('photo')) {
 
@@ -172,7 +199,7 @@ class PropertyController extends BaseController
                 }
 
                 $image = $this->storeFile($request->file('photo'), 'properties');
-                $property->primaryImage()->create([ ...$image, 'media_role' => 'property_image' ]);
+                $property->primaryImage()->create([...$image, 'media_role' => 'property_image']);
             }
 
             return redirect()->route('admin.properties.index')->with([
@@ -190,7 +217,7 @@ class PropertyController extends BaseController
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(PropertyRepository $propertyRepository, $property): RedirectResponse
+    public function destroy(PropertyRepository $propertyRepository, $property) : RedirectResponse
     {
         if (!hasPermission('can_delete_property')) {
             $this->unauthorized();

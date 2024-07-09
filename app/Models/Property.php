@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\MorphOne;
@@ -47,9 +48,9 @@ class Property extends Model
         return $this->hasMany(Review::class);
     }
 
-    public function facilities() : HasMany
+    public function facilities() : BelongsToMany
     {
-        return $this->hasMany(PropertyFacility::class);
+        return $this->belongsToMany(FacilitySub::class, 'property_facilities')->withTimestamps();
     }
 
     public function rules() : HasMany

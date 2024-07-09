@@ -133,7 +133,7 @@
                             type="select"
                             name="property_class"
                             id="property_class"
-                            label="Property Standered"
+                            label="Property Standard"
                             :options="$propertyClasses"
                         />
                     </div>
@@ -170,23 +170,23 @@
                     </div>
                 </div>
                 <div class="row">
-                    <div class="col-md-6">
+                    <div class="col-md-12">
                         <x-admin.input
                             type="select"
-                            name="user_id"
-                            id="user_id"
-                            label="User"
-                            :options="$users"
-                            additional-classes="searchable"
+                            name="property_facilities[]"
+                            id="property_facilities"
+                            label="Set Property Facilities"
+                            multiple
+                            :options="$facilities"
                         />
                     </div>
-                    <div class="col-md-6">
+                    <div class="col-md-12">
                         <x-admin.input
                             type="file"
                             name="photo"
                             id="photo"
-                            placeholder="photo"
-                            label="Photo"
+                            placeholder="Primary Image"
+                            label="Primary Image"
                             value="{{ old('photo') }}"
                         />
                     </div>
@@ -202,4 +202,12 @@
             </x-admin.form>
         </x-admin.card.card-body>
     </x-admin.card>
+
+    @push('scripts')
+        <script>
+            $(document).ready(function () {
+                $('#property_facilities').select2();
+            });
+        </script>
+    @endpush
 </x-admin.layout>

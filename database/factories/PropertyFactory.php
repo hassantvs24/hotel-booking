@@ -26,7 +26,6 @@ class PropertyFactory extends Factory
             'name'                 => $this->faker->company,
             'lat'                  => $this->faker->latitude,
             'long'                 => $this->faker->longitude,
-            'photo'                => $this->faker->imageUrl(),
             'address'              => $this->faker->address,
             'zip_code'             => $this->faker->postcode,
             'total_room'           => $this->faker->numberBetween(1, 100),
