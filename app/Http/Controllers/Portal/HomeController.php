@@ -10,45 +10,46 @@ use Illuminate\View\View;
 
 class HomeController extends BaseController
 {
-    public function index() : View
+    public function index(): View
     {
-        $rooms = RoomResource::collection(Room::all());
-        return view('portal.home.index');
+        // $rooms = RoomResource::collection(Room::all());
+        $rooms = Room::with('property.place')->paginate(9);
+        return view('portal.home.index', compact('rooms'));
     }
 
-    public function nonRequested() : View
+    public function nonRequested(): View
     {
         return view('portal.non-requested.non-requested');
     }
 
-    public function payment() : View
+    public function payment(): View
     {
         return view('portal.payment.payment');
     }
 
-    public function propertyAdd() : View
+    public function propertyAdd(): View
     {
         return view('portal.property-add.property-add');
     }
 
-    public function requestedWaiting() : View
+    public function requestedWaiting(): View
     {
         return view('portal.requested-waiting.requested-waiting');
     }
 
-    public function requested() : View
+    public function requested(): View
     {
         return view('portal.requested.requested');
     }
 
 
-    public function singleHotelnonRequested() : View
+    public function singleHotelnonRequested(): View
     {
         return view('portal.single-hotel-non-requested.layout');
     }
 
 
-    public function singleHotel() : View
+    public function singleHotel(): View
     {
         return view('portal.single-hotel-page.layout');
     }

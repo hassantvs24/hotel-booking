@@ -2,14 +2,17 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\MorphOne;
 
-
 class Room extends Model
 {
+    protected $with = ['primaryImage'];
+    protected $appends = ['image_url'];
+
     /*----------------------------------------
      * Relationships
      ----------------------------------------*/
@@ -41,5 +44,19 @@ class Room extends Model
     public function extraFacilities(): BelongsToMany
     {
         return $this->belongsToMany(RoomExtraFacility::class);
+    }
+
+    /*----------------------------------------
+     * Accessors
+     ----------------------------------------*/
+    public function getImageUrlAttribute(): string
+    {
+
+        $imageUrl = asset('assets/default/default_property.png');
+        if ($this->primaryImage()->exists()) {
+            $imageUrl = $this->relations['primaryImage']->url;
+        }
+
+        return $imageUrl;
     }
 }

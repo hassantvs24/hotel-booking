@@ -317,11 +317,13 @@
             </div>
          </div>
          <div class="row">
+            @forelse ($rooms as $room)
             <div class="col-md-6 col-lg-4">
                <div class="single-room">
-                  <div class="room-image" style="background-image:url('{{asset('assets/portal/img/rooms/room1.png')}}')"></div>
+                  <a href="{{ url('/room/details/' . $room->id) }}">
+                  <div class="room-image"  style="background-image:url('{{ getStoragePath($room->image_url) }}')"></div>
                   <div class="room-content">
-                     <h4>Leonardo Hotel Barcelona Gran Via <span>Cox’s Bazar, Chittagong</span></h4>
+                     <h4>{{$room->name}}<span>{{$room->property->place->name}}</span></h4>
                      <div class="room-feature d-flex justify-content-between align-items-center">
                         <div class="room-icon">
                            <img src="{{asset('assets/portal/img/icons/icon-home-welcome-drink.png')}}" alt="">
@@ -336,176 +338,14 @@
                         </div>
                      </div>
                   </div>
+               </a>
                </div>
             </div>
-            <div class="col-md-6 col-lg-4">
-               <div class="single-room">
-                  <div class="room-image" style="background-image:url('{{asset('assets/portal/img/rooms/room2.png')}}"></div>
-                  <div class="room-content">
-                     <h4>Leonardo Hotel Barcelona Gran Via <span>Cox’s Bazar, Chittagong</span></h4>
-                     <div class="room-feature d-flex justify-content-between align-items-center">
-                        <div class="room-icon">
-                           <img src="{{asset('assets/portal/img/icons/icon-home-welcome-drink.png')}}" alt="">
-                           <img src="{{asset('assets/portal/img/icons/icon-home-air-condiitoner.png')}}" alt="">
-                           <img src="{{asset('assets/portal/img/icons/icon-home-tea.png')}}" alt="">
-                           <img src="{{asset('assets/portal/img/icons/icon-home-swimming.png')}}" alt="">
-                           <img src="{{asset('assets/portal/img/icons/icon-home-wifi.png')}}" alt="">
-                           <img src="{{asset('assets/portal/img/icons/icon-home-breakfast.png')}}" alt="">
-                        </div>
-                        <div class="room-rating d-flex align-items-center">
-                           <img src="{{asset('assets/portal/img/icons/icon-star.png')}}" alt=""> 4.8
-                        </div>
-                     </div>
-                  </div>
-               </div>
-            </div>
-            <div class="col-md-6 col-lg-4">
-               <div class="single-room">
-                  <div class="room-image" style="background-image:url('{{asset('assets/portal/img/rooms/room3.png')}}"></div>
-                  <div class="room-content">
-                     <h4>Leonardo Hotel Barcelona Gran Via <span>Cox’s Bazar, Chittagong</span></h4>
-                     <div class="room-feature d-flex justify-content-between align-items-center">
-                        <div class="room-icon">
-                           <img src="{{asset('assets/portal/img/icons/icon-home-welcome-drink.png')}}" alt="">
-                           <img src="{{asset('assets/portal/img/icons/icon-home-air-condiitoner.png')}}" alt="">
-                           <img src="{{asset('assets/portal/img/icons/icon-home-tea.png')}}" alt="">
-                           <img src="{{asset('assets/portal/img/icons/icon-home-swimming.png')}}" alt="">
-                           <img src="{{asset('assets/portal/img/icons/icon-home-wifi.png')}}" alt="">
-                           <img src="{{asset('assets/portal/img/icons/icon-home-breakfast.png')}}" alt="">
-                        </div>
-                        <div class="room-rating d-flex align-items-center">
-                           <img src="{{asset('assets/portal/img/icons/icon-star.png')}}" alt=""> 4.8
-                        </div>
-                     </div>
-                  </div>
-               </div>
-            </div>
-            <div class="col-md-6 col-lg-4">
-               <div class="single-room">
-                  <div class="room-image" style="background-image:url('{{asset('assets/portal/img/rooms/room4.png')}}"></div>
-                  <div class="room-content">
-                     <h4>Leonardo Hotel Barcelona Gran Via <span>Cox’s Bazar, Chittagong</span></h4>
-                     <div class="room-feature d-flex justify-content-between align-items-center">
-                        <div class="room-icon">
-                           <img src="{{asset('assets/portal/img/icons/icon-home-welcome-drink.png')}}" alt="">
-                           <img src="{{asset('assets/portal/img/icons/icon-home-air-condiitoner.png')}}" alt="">
-                           <img src="{{asset('assets/portal/img/icons/icon-home-tea.png')}}" alt="">
-                           <img src="{{asset('assets/portal/img/icons/icon-home-swimming.png')}}" alt="">
-                           <img src="{{asset('assets/portal/img/icons/icon-home-wifi.png')}}" alt="">
-                           <img src="{{asset('assets/portal/img/icons/icon-home-breakfast.png')}}" alt="">
-                        </div>
-                        <div class="room-rating d-flex align-items-center">
-                           <img src="{{asset('assets/portal/img/icons/icon-star.png')}}" alt=""> 4.8
-                        </div>
-                     </div>
-                  </div>
-               </div>
-            </div>
-            <div class="col-md-6 col-lg-4">
-               <div class="single-room">
-                  <div class="room-image" style="background-image:url('{{asset('assets/portal/img/rooms/room5.png')}}"></div>
-                  <div class="room-content">
-                     <h4>Leonardo Hotel Barcelona Gran Via <span>Cox’s Bazar, Chittagong</span></h4>
-                     <div class="room-feature d-flex justify-content-between align-items-center">
-                        <div class="room-icon">
-                           <img src="{{asset('assets/portal/img/icons/icon-home-welcome-drink.png')}}" alt="">
-                           <img src="{{asset('assets/portal/img/icons/icon-home-air-condiitoner.png')}}" alt="">
-                           <img src="{{asset('assets/portal/img/icons/icon-home-tea.png')}}" alt="">
-                           <img src="{{asset('assets/portal/img/icons/icon-home-swimming.png')}}" alt="">
-                           <img src="{{asset('assets/portal/img/icons/icon-home-wifi.png')}}" alt="">
-                           <img src="{{asset('assets/portal/img/icons/icon-home-breakfast.png')}}" alt="">
-                        </div>
-                        <div class="room-rating d-flex align-items-center">
-                           <img src="{{asset('assets/portal/img/icons/icon-star.png')}}" alt=""> 4.8
-                        </div>
-                     </div>
-                  </div>
-               </div>
-            </div>
-            <div class="col-md-6 col-lg-4">
-               <div class="single-room">
-                  <div class="room-image" style="background-image:url('{{asset('assets/portal/img/rooms/room6.png')}}"></div>
-                  <div class="room-content">
-                     <h4>Leonardo Hotel Barcelona Gran Via <span>Cox’s Bazar, Chittagong</span></h4>
-                     <div class="room-feature d-flex justify-content-between align-items-center">
-                        <div class="room-icon">
-                           <img src="{{asset('assets/portal/img/icons/icon-home-welcome-drink.png')}}" alt="">
-                           <img src="{{asset('assets/portal/img/icons/icon-home-air-condiitoner.png')}}" alt="">
-                           <img src="{{asset('assets/portal/img/icons/icon-home-tea.png')}}" alt="">
-                           <img src="{{asset('assets/portal/img/icons/icon-home-swimming.png')}}" alt="">
-                           <img src="{{asset('assets/portal/img/icons/icon-home-wifi.png')}}" alt="">
-                           <img src="{{asset('assets/portal/img/icons/icon-home-breakfast.png')}}" alt="">
-                        </div>
-                        <div class="room-rating d-flex align-items-center">
-                           <img src="{{asset('assets/portal/img/icons/icon-star.png')}}" alt=""> 4.8
-                        </div>
-                     </div>
-                  </div>
-               </div>
-            </div>
-            <div class="col-md-6 col-lg-4">
-               <div class="single-room">
-                  <div class="room-image" style="background-image:url('{{asset('assets/portal/img/rooms/room7.png')}}"></div>
-                  <div class="room-content">
-                     <h4>Leonardo Hotel Barcelona Gran Via <span>Cox’s Bazar, Chittagong</span></h4>
-                     <div class="room-feature d-flex justify-content-between align-items-center">
-                        <div class="room-icon">
-                           <img src="{{asset('assets/portal/img/icons/icon-home-welcome-drink.png')}}" alt="">
-                           <img src="{{asset('assets/portal/img/icons/icon-home-air-condiitoner.png')}}" alt="">
-                           <img src="{{asset('assets/portal/img/icons/icon-home-tea.png')}}" alt="">
-                           <img src="{{asset('assets/portal/img/icons/icon-home-swimming.png')}}" alt="">
-                           <img src="{{asset('assets/portal/img/icons/icon-home-wifi.png')}}" alt="">
-                           <img src="{{asset('assets/portal/img/icons/icon-home-breakfast.png')}}" alt="">
-                        </div>
-                        <div class="room-rating d-flex align-items-center">
-                           <img src="{{asset('assets/portal/img/icons/icon-star.png')}}" alt=""> 4.8
-                        </div>
-                     </div>
-                  </div>
-               </div>
-            </div>
-            <div class="col-md-6 col-lg-4">
-               <div class="single-room">
-                  <div class="room-image" style="background-image:url('{{asset('assets/portal/img/rooms/room8.png')}}"></div>
-                  <div class="room-content">
-                     <h4>Leonardo Hotel Barcelona Gran Via <span>Cox’s Bazar, Chittagong</span></h4>
-                     <div class="room-feature d-flex justify-content-between align-items-center">
-                        <div class="room-icon">
-                           <img src="{{asset('assets/portal/img/icons/icon-home-welcome-drink.png')}}" alt="">
-                           <img src="{{asset('assets/portal/img/icons/icon-home-air-condiitoner.png')}}" alt="">
-                           <img src="{{asset('assets/portal/img/icons/icon-home-tea.png')}}" alt="">
-                           <img src="{{asset('assets/portal/img/icons/icon-home-swimming.png')}}" alt="">
-                           <img src="{{asset('assets/portal/img/icons/icon-home-wifi.png')}}" alt="">
-                           <img src="{{asset('assets/portal/img/icons/icon-home-breakfast.png')}}" alt="">
-                        </div>
-                        <div class="room-rating d-flex align-items-center">
-                           <img src="{{asset('assets/portal/img/icons/icon-star.png')}}" alt=""> 4.8
-                        </div>
-                     </div>
-                  </div>
-               </div>
-            </div>
-            <div class="col-md-6 col-lg-4">
-               <div class="single-room">
-                  <div class="room-image" style="background-image:url('{{asset('assets/portal/img/rooms/room9.png')}}"></div>
-                  <div class="room-content">
-                     <h4>Leonardo Hotel Barcelona Gran Via <span>Cox’s Bazar, Chittagong</span></h4>
-                     <div class="room-feature d-flex justify-content-between align-items-center">
-                        <div class="room-icon">
-                           <img src="{{asset('assets/portal/img/icons/icon-home-welcome-drink.png')}}" alt="">
-                           <img src="{{asset('assets/portal/img/icons/icon-home-air-condiitoner.png')}}" alt="">
-                           <img src="{{asset('assets/portal/img/icons/icon-home-tea.png')}}" alt="">
-                           <img src="{{asset('assets/portal/img/icons/icon-home-swimming.png')}}" alt="">
-                           <img src="{{asset('assets/portal/img/icons/icon-home-wifi.png')}}" alt="">
-                           <img src="{{asset('assets/portal/img/icons/icon-home-breakfast.png')}}" alt="">
-                        </div>
-                        <div class="room-rating d-flex align-items-center">
-                           <img src="{{asset('assets/portal/img/icons/icon-star.png')}}" alt=""> 4.8
-                        </div>
-                     </div>
-                  </div>
-               </div>
-            </div>
+
+            @empty
+               <h5>No room found</h5>
+            @endforelse
+
          </div>
          <div class="row">
             <div class="col-md-12 text-center">
