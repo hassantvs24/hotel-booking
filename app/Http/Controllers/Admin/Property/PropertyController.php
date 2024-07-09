@@ -24,7 +24,7 @@ class PropertyController extends BaseController
     /**
      * Display a listing of the resource.
      */
-    public function index(Request $request, PropertyRepository $propertyRepository) : View
+    public function index(Request $request, PropertyRepository $propertyRepository): View
     {
         if (!hasPermission('can_view_property')) {
             $this->unauthorized();
@@ -92,7 +92,7 @@ class PropertyController extends BaseController
     /**
      * Store a newly created resource in storage.
      */
-    public function store(PropertyRequest $request, PropertyRepository $propertyRepository) : RedirectResponse
+    public function store(PropertyRequest $request, PropertyRepository $propertyRepository): RedirectResponse
     {
         if (!hasPermission('can_create_property')) {
             $this->unauthorized();

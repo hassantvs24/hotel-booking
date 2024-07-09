@@ -190,6 +190,9 @@
                             value="{{ old('photo') }}"
                         />
                     </div>
+                    <div class="col-md-12">
+                        <img width="50" height="50" src="" id="preview_icon" alt=""/>
+                    </div>
                 </div>
                 <div class="mt-3 row">
                     <div class="col-md-6">
