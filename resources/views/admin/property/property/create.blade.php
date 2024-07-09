@@ -172,16 +172,6 @@
                 <div class="row">
                     <div class="col-md-6">
                         <x-admin.input
-                            type="select"
-                            name="user_id"
-                            id="user_id"
-                            label="User"
-                            :options="$users"
-                            additional-classes="searchable"
-                        />
-                    </div>
-                    <div class="col-md-6">
-                        <x-admin.input
                             type="file"
                             name="photo"
                             id="photo"
@@ -189,6 +179,9 @@
                             label="Photo"
                             value="{{ old('photo') }}"
                         />
+                    </div>
+                    <div class="col-md-12">
+                        <img width="50" height="50" src="" id="preview_icon" alt=""/>
                     </div>
                 </div>
                 <div class="mt-3 row">
@@ -202,4 +195,17 @@
             </x-admin.form>
         </x-admin.card.card-body>
     </x-admin.card>
+    @push('scripts')
+    <script>
+        $(document).ready(function () {
+            $('#photo').on('change', function () {
+                let reader = new FileReader();
+                reader.onload = (e) => {
+                    $('#preview_icon').attr('src', e.target.result);
+                }
+                reader.readAsDataURL(this.files[0]);
+            });
+        });
+    </script>
+@endpush
 </x-admin.layout>
