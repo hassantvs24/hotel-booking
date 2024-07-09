@@ -44,7 +44,6 @@ class PropertyRequest extends FormRequest
             'status' => 'required|in:Pending,Published,Unpublished',
             'property_category_id' => 'nullable|exists:property_categories,id',
             'place_id' => 'nullable|exists:places,id',
-            'user_id' => 'required|exists:users,id',
         ];
     }
     /**
@@ -78,8 +77,6 @@ class PropertyRequest extends FormRequest
             'status.in' => 'The selected status is invalid.',
             'property_category_id.exists' => 'The selected property category is invalid.',
             'place_id.exists' => 'The selected place is invalid.',
-            'user_id.required' => 'The user is required.',
-            'user_id.exists' => 'The selected user is invalid.',
         ];
     }
 }

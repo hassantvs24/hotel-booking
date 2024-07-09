@@ -14,7 +14,7 @@ use App\Traits\MediaMan;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-
+use Illuminate\Support\Facades\Auth;
 
 class PropertyController extends BaseController
 {
@@ -22,7 +22,7 @@ class PropertyController extends BaseController
     /**
      * Display a listing of the resource.
      */
-    public function index(Request $request, PropertyRepository $propertyRepository) : View
+    public function index(Request $request, PropertyRepository $propertyRepository): View
     {
         if (!hasPermission('can_view_property')) {
             $this->unauthorized();
@@ -86,18 +86,21 @@ class PropertyController extends BaseController
     /**
      * Store a newly created resource in storage.
      */
-    public function store(PropertyRequest $request, PropertyRepository $propertyRepository) : RedirectResponse
+    public function store(PropertyRequest $request, PropertyRepository $propertyRepository): RedirectResponse
     {
         if (!hasPermission('can_create_property')) {
             $this->unauthorized();
         }
 
         try {
-            $property = $propertyRepository->create($request->validated());
+            $property = $propertyRepository->create(array_merge(
+                $request->validated(),
+                ['user_id' => Auth::user()->id]
+            ));
 
             if ($request->hasFile('photo')) {
                 $image = $this->storeFile($request->file('photo'), 'properties');
-                $property->primaryImage()->create([ ...$image, 'media_role' => 'property_image' ]);
+                $property->primaryImage()->create([...$image, 'media_role' => 'property_image']);
             }
 
             return redirect()->route('admin.properties.index')->with([
@@ -162,8 +165,10 @@ class PropertyController extends BaseController
         try {
 
             $property = $propertyRepository->getModel($property);
-            $propertyRepository->update($request->validated(), $property);
-
+            $propertyRepository->update(array_merge(
+                $request->validated(),
+                ['user_id' => Auth::user()->id]
+            ), $property);
             if ($request->hasFile('photo')) {
 
                 if ($property->primaryImage) {
@@ -172,7 +177,7 @@ class PropertyController extends BaseController
                 }
 
                 $image = $this->storeFile($request->file('photo'), 'properties');
-                $property->primaryImage()->create([ ...$image, 'media_role' => 'property_image' ]);
+                $property->primaryImage()->create([...$image, 'media_role' => 'property_image']);
             }
 
             return redirect()->route('admin.properties.index')->with([
