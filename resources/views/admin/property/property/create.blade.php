@@ -9,8 +9,8 @@
                             type="text"
                             name="name"
                             id="name"
-                            placeholder="Place Name"
-                            label="Place Name"
+                            placeholder="Property Name"
+                            label="Property Name"
                             value="{{ old('name') }}"
                         />
                     </div>
