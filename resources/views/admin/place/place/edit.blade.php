@@ -15,18 +15,29 @@
                         />
                     </div>
                     <div class="col-md-6">
-                        <x-admin.input
-                        type="number"
-                        name="lat"
-                        id="lat"
-                        placeholder="Latitude"
-                        label="Latitude"
-                        value="{{ $place->lat }}"
-                    />
+                    <x-admin.input
+                            type="select"
+                            name="city_id"
+                            id="city_id"
+                            label="City"
+                            :options="$cities"
+                            :value="$place->city_id"
+                            additional-classes="searchable"
+                        />
                     </div>
                 </div>
-                <div class="row">
-                    <div class="col-md-6">
+            <div class="row">
+                <div class="col-md-4">
+                    <x-admin.input
+                            type="number"
+                            name="lat"
+                            id="lat"
+                            placeholder="Latitude"
+                            label="Latitude"
+                            value="{{ $place->lat }}"
+                        />
+                    </div>
+                    <div class="col-md-4">
                         <x-admin.input
                             type="number"
                             name="long"
@@ -36,7 +47,7 @@
                             value="{{ $place->long }}"
                         />
                     </div>
-                    <div class="col-md-6">
+                    <div class="col-md-4">
                         <x-admin.input
                         type="text"
                         name="zip_code"
@@ -46,19 +57,9 @@
                         value="{{ $place->zip_code }}"
                     />
                     </div>
-                </div>
-                <div class="row">
-                    <div class="col-md-6">
-                        <x-admin.input
-                        type="textarea"
-                        name="description"
-                        id="description"
-                        placeholder="Description"
-                        label="Description"
-                        value="{{ $place->description }}"
-                        />
-                    </div>
-                    <div class="col-md-6">
+            </div>
+                <div class="row">             
+                    <div class="col-md-4">
                         <x-admin.input
                         type="text"
                         name="nearest_police"
@@ -68,9 +69,7 @@
                         value="{{ $place->nearest_police }}"
                     />
                     </div>
-                </div>
-                <div class="row">
-                    <div class="col-md-6">
+                    <div class="col-md-4">
                         <x-admin.input
                         type="text"
                         name="nearest_hospital"
@@ -80,30 +79,33 @@
                         value="{{ $place->nearest_hospital }}"
                     />
                     </div>
-                    <div class="col-md-6">
+                    <div class="col-md-4">
                         <x-admin.input
                         type="text"
                         name="nearest_fire"
                         id="nearest_fire"
-                        placeholder="Nearest Fire "
-                        label="Nearest Fire "
+                        placeholder="Nearest Fire Station"
+                        label="Nearest Fire Station"
                         value="{{ $place->nearest_fire }}"
+                     />
+                    </div>
+                </div>
+                <div class="row">
+                <div class="col-12">
+                 <x-admin.input
+                    type="textarea"
+                    name="description"
+                    id="description"
+                    placeholder="Description"
+                    label="Description"
+                    value="{{ $place->description }}"
                     />
                     </div>
-
                 </div>
 
                 <div class="row">
-                    <div class="col-6">
-                        <x-admin.input
-                            type="select"
-                            name="city_id"
-                            id="city_id"
-                            label="City"
-                            :options="$cities"
-                            :value="$place->city_id"
-                            additional-classes="searchable"
-                        />
+                    <div class="col-12">
+                       
                     </div>
                 </div>
                 <div class="mt-3 row">

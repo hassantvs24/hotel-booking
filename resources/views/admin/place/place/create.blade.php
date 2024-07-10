@@ -15,18 +15,28 @@
                         />
                     </div>
                     <div class="col-md-6">
-                        <x-admin.input
+                    <x-admin.input
+                            type="select"
+                            name="city_id"
+                            id="city_id"
+                            label="City"
+                            :options="$cities"
+                            additional-classes="searchable"
+                        />
+                    </div>
+                </div>
+            <div class="row">
+                <div class="col-md-4">
+                <x-admin.input
                         type="number"
                         name="lat"
                         id="lat"
                         placeholder="Latitude"
                         label="Latitude"
                         value="{{ old('lat') }}"
-                    />
+                      />
                     </div>
-                </div>
-                <div class="row">
-                    <div class="col-md-6">
+                    <div class="col-md-4">
                         <x-admin.input
                             type="number"
                             name="long"
@@ -36,7 +46,7 @@
                             value="{{ old('long') }}"
                         />
                     </div>
-                    <div class="col-md-6">
+                    <div class="col-md-4">
                         <x-admin.input
                         type="text"
                         name="zip_code"
@@ -45,20 +55,10 @@
                         label="Zip Code"
                         value="{{ old('zip_code') }}"
                     />
-                    </div>
                 </div>
+            </div>
                 <div class="row">
-                    <div class="col-md-6">
-                        <x-admin.input
-                        type="textarea"
-                        name="description"
-                        id="description"
-                        placeholder="Description"
-                        label="Description"
-                        value="{{ old('description') }}"
-                        />
-                    </div>
-                    <div class="col-md-6">
+                    <div class="col-md-4">
                         <x-admin.input
                         type="text"
                         name="nearest_police"
@@ -68,9 +68,7 @@
                         value="{{ old('nearest_police') }}"
                     />
                     </div>
-                </div>
-                <div class="row">
-                    <div class="col-md-6">
+                    <div class="col-md-4">
                         <x-admin.input
                         type="text"
                         name="nearest_hospital"
@@ -79,30 +77,36 @@
                         label="Nearest Hospital"
                         value="{{ old('nearest_hospital') }}"
                     />
-                    </div>
-                    <div class="col-md-6">
+
+                </div>
+                    <div class="col-md-4">
                         <x-admin.input
                         type="text"
                         name="nearest_fire"
                         id="nearest_fire"
-                        placeholder="Nearest Fire "
-                        label="Nearest Fire "
+                        placeholder="Nearest Fire Station "
+                        label="Nearest Fire Station "
                         value="{{ old('nearest_fire') }}"
                     />
                     </div>
-
                 </div>
+                <div class="row">
+                <div class="col-md-12">
+                        <x-admin.input
+                        type="textarea"
+                        name="description"
+                        id="description"
+                        placeholder="Description"
+                        label="Description"
+                        value="{{ old('description') }}"
+                        />
+                    </div>
+                </div>
+                
 
                 <div class="row">
-                    <div class="col-6">
-                        <x-admin.input
-                            type="select"
-                            name="city_id"
-                            id="city_id"
-                            label="City"
-                            :options="$cities"
-                            additional-classes="searchable"
-                        />
+                    <div class="col-12">
+                        
                     </div>
                 </div>
                 <div class="mt-3 row">
