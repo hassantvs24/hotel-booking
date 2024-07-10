@@ -11,7 +11,7 @@ use Illuminate\Database\Eloquent\Relations\MorphOne;
 class Room extends Model
 {
     protected $with = ['primaryImage'];
-    protected $appends = ['image_url'];
+    protected $appends = ['primary_image_url'];
 
     /*----------------------------------------
      * Relationships
@@ -49,10 +49,11 @@ class Room extends Model
     /*----------------------------------------
      * Accessors
      ----------------------------------------*/
-    public function getImageUrlAttribute(): string
+    public function getPrimaryImageUrlAttribute(): string
     {
 
         $imageUrl = asset('assets/default/default_property.png');
+
         if ($this->primaryImage()->exists()) {
             $imageUrl = $this->relations['primaryImage']->url;
         }

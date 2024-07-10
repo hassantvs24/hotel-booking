@@ -321,9 +321,14 @@
             <div class="col-md-6 col-lg-4">
                <div class="single-room">
                   <a href="{{ url('/room/details/' . $room->id) }}">
-                  <div class="room-image"  style="background-image:url('{{ getStoragePath($room->image_url) }}')"></div>
+                  <div class="room-image"  style="background-image:url({{ $room->primary_image_url }})"></div>
                   <div class="room-content">
-                     <h4>{{$room->name}}<span>{{$room->property->place->name}}</span></h4>
+                     <h4>
+                        {{ $room->name }}
+                        <span>
+                           {{ $room->property->place->name }}
+                        </span>
+                     </h4>
                      <div class="room-feature d-flex justify-content-between align-items-center">
                         <div class="room-icon">
                            <img src="{{asset('assets/portal/img/icons/icon-home-welcome-drink.png')}}" alt="">
