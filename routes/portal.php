@@ -5,12 +5,14 @@
 use App\Http\Controllers\Portal\HomeController;
 use App\Http\Controllers\Portal\HotelController;
 use App\Http\Controllers\Portal\PropertyController;
+use App\Http\Controllers\Portal\RoomController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('')->as('portal.')->group(function () {
 
     /*-- Home Routes --*/
     Route::get('/', [HomeController::class, 'index'])->name('home');
+    Route::get('/room/details/{room}', [RoomController::class, 'show'])->name('room.details');
     Route::get('/properties', [PropertyController::class, 'index'])->name('properties.index');
     Route::get('/hotels', [HotelController::class, 'index'])->name('hotels.index');
 

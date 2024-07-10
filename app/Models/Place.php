@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOneThrough;
 
 class Place extends Model
 {
@@ -23,5 +24,11 @@ class Place extends Model
     public function properties(): HasMany
     {
         return $this->hasMany(Property::class);
+    }
+
+
+    public function rooms(): HasOneThrough
+    {
+        return $this->hasOneThrough(Room::class, Property::class);
     }
 }

@@ -2,10 +2,10 @@
 
 namespace Database\Seeders;
 
-use App\Models\Room;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
+use Database\Factories\RoomFactory;
 use Illuminate\Database\Seeder;
-
+use Illuminate\Support\Facades\DB;
+use Illuminate\Database\Eloquent\Factories\Factory;
 
 class RoomSeeder extends Seeder
 {
@@ -14,6 +14,6 @@ class RoomSeeder extends Seeder
      */
     public function run(): void
     {
-        Room::factory()->count(50)->create();
+        RoomFactory::new()->count(20)->create(); //using RoomFactory and Model was defined in Factory
     }
 }

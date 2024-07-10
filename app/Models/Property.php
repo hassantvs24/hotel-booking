@@ -13,37 +13,37 @@ class Property extends Model
     /*----------------------------------------
      * Relationships
      ----------------------------------------*/
-    public function primaryImage() : MorphOne
+    public function primaryImage(): MorphOne
     {
         return $this->morphOne(Media::class, 'media');
     }
 
-    public function images() : MorphMany
+    public function images(): MorphMany
     {
         return $this->morphMany(Media::class, 'media');
     }
 
-    public function rooms() : HasMany
+    public function rooms(): HasMany
     {
         return $this->hasMany(Room::class);
     }
 
-    public function propertyCategory() : BelongsTo
+    public function propertyCategory(): BelongsTo
     {
         return $this->belongsTo(PropertyCategory::class);
     }
 
-    public function place() : BelongsTo
+    public function place(): BelongsTo
     {
         return $this->belongsTo(Place::class);
     }
 
-    public function user() : BelongsTo
+    public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
 
-    public function reviews() : HasMany
+    public function reviews(): HasMany
     {
         return $this->hasMany(Review::class);
     }
@@ -53,8 +53,12 @@ class Property extends Model
         return $this->belongsToMany(FacilitySub::class, 'property_facilities')->withTimestamps();
     }
 
-    public function rules() : HasMany
+    public function rules(): HasMany
     {
         return $this->hasMany(PropertyRulesSetup::class);
+    }
+    public function city(): BelongsTo
+    {
+        return $this->belongsTo(City::class);
     }
 }
