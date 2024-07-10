@@ -12,7 +12,6 @@ class HomeController extends BaseController
 {
     public function index(): View
     {
-        // $rooms = RoomResource::collection(Room::all());
         $rooms = Room::with('property.place')->paginate(9);
         return view('portal.home.index', compact('rooms'));
     }

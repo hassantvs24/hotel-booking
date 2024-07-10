@@ -9,11 +9,9 @@ use Illuminate\Http\Request;
 
 class RoomController extends Controller
 {
-    public function show(Room $room)
+    public function show(Room $room, $slug) : View
     {
-
         $room->load('property.place');
-
         return view('portal.rooms.show', compact('room'));
     }
 }

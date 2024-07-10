@@ -320,8 +320,11 @@
             @forelse ($rooms as $room)
             <div class="col-md-6 col-lg-4">
                <div class="single-room">
-                  <a href="{{ url('/room/details/' . $room->id) }}">
-                  <div class="room-image"  style="background-image:url({{ $room->primary_image_url }})"></div>
+                  <a
+                    href="{{ route('portal.room.details',
+                     ['room' => $room->id, 'slug' => \Illuminate\Support\Str::slug($room->name)]) }}"
+                  >
+                  <div class="room-image" style="background-image:url({{ $room->primary_image_url }})"></div>
                   <div class="room-content">
                      <h4>
                         {{ $room->name }}

@@ -12,7 +12,10 @@ Route::prefix('')->as('portal.')->group(function () {
 
     /*-- Home Routes --*/
     Route::get('/', [HomeController::class, 'index'])->name('home');
-    Route::get('/room/details/{room}', [RoomController::class, 'show'])->name('room.details');
+    Route::get('room/details/{room}/{slug}', [RoomController::class, 'show'])
+        ->name('room.details');
+
+
     Route::get('/properties', [PropertyController::class, 'index'])->name('properties.index');
     Route::get('/hotels', [HotelController::class, 'index'])->name('hotels.index');
 
