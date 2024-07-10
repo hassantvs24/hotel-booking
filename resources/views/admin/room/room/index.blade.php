@@ -14,19 +14,11 @@
         <x-admin.card.card-body class="px-0 pt-0 pb-2 table-responsive">
             <x-admin.table>
                 <x-admin.table-header>
-                    <x-admin.table-head value="Date"/>
-                    <x-admin.table-head value="Photo"/>
+                    <x-admin.table-head/>
                     <x-admin.table-head value="Name"/>
                     <x-admin.table-head value="Room Number"/>
-                    <x-admin.table-head value="Room Size"/>
-                    <x-admin.table-head value="Guest Capacity"/>
-                    <x-admin.table-head value="Extra Bed"/>
-                    <x-admin.table-head value="Total Balcony"/>
-                    <x-admin.table-head value="Total Window"/>
+                    <x-admin.table-head value="Room Info"/>
                     <x-admin.table-head value="Base Price"/>
-                    <x-admin.table-head value="Note"/>
-                    <x-admin.table-head value="Bed Type"/>
-                    <x-admin.table-head value="Room Type"/>
                     <x-admin.table-head value="Property"/>
                     @if (hasPermission($permissions['update']) || hasPermission($permissions['delete']))
                         <x-admin.table-head class="text-right" value="Actions"/>
@@ -34,25 +26,28 @@
                 </x-admin.table-header>
                 <x-admin.table-body> 
                     @forelse( $rooms as $room )
-                        @php
-                        $imageSrc = $room->primaryImage ? $room->primaryImage->url : 'https://placehold.co/600x400';
-                        @endphp
                         <x-admin.table-row>
-                            <x-admin.table-cell :value="format_date($room->created_at)"/>
                             <x-admin.table-cell>
-                                <img width="50" height="50" src="{{ $imageSrc }}" alt="{{ $room->name }}">
+                                <img
+                                    width="50"
+                                    height="50"
+                                    src="{{ $room->primary_image_url }}"
+                                    alt="{{ $room->name }}"
+                                >
                             </x-admin.table-cell>
                             <x-admin.table-cell :value="$room->name"/>
                             <x-admin.table-cell :value="$room->room_number"/>
-                            <x-admin.table-cell :value="$room->room_size"/>
-                            <x-admin.table-cell :value="$room->guest_capacity"/>
-                                <x-admin.table-cell  :value="$room->extra_bed == 1 ? 'Yes' : 'No'"/>
-                            <x-admin.table-cell :value="$room->total_balcony"/>
-                            <x-admin.table-cell :value="$room->total_window"/>
+                            <x-admin.table-cell>
+                                <ul>
+                                    <li><b>Room Type: </b> {{ $room->roomType?->name }}</li>
+                                    <li><b>Capacity: </b> {{ $room->guest_capacity }}</li>
+                                    <li><b>Balcony: </b> {{ $room->total_balcony }}</li>
+                                    <li><b>Window: </b> {{ $room->total_window }}</li>
+                                    <li><b>Bed Type: </b> {{ $room->bedType?->name }}</li>
+                                    <li><b>Extra Bed: </b> {{ $room->extra_bed == 1 ? 'Yes' : 'No' }}</li>
+                                </ul>
+                            </x-admin.table-cell>
                             <x-admin.table-cell :value="$room->base_price"/>
-                            <x-admin.table-cell class="word-wrap" :value="$room->notes"/>
-                            <x-admin.table-cell :value="$room->bedType?->name"/>
-                            <x-admin.table-cell :value="$room->roomType?->name"/>
                             <x-admin.table-cell :value="$room->property?->name"/>
                             @if (hasPermission($permissions['update']) || hasPermission($permissions['delete']))
                                 <x-admin.table-cell class="text-right">
