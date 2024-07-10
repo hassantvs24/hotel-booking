@@ -14,6 +14,7 @@
         <x-admin.card.card-body class="px-0 pt-0 pb-2 table-responsive">
             <x-admin.table>
                 <x-admin.table-header>
+                    <x-admin.table-head />
                     <x-admin.table-head value="Name"/>
                     <x-admin.table-head value="Latitude"/>
                     <x-admin.table-head value="Longitude"/>
@@ -29,6 +30,9 @@
                 <x-admin.table-body>
                     @forelse($places as $place)
                         <x-admin.table-row>
+                            <x-admin.table-cell>
+                                <img width="30" height="30" src="{{$place->primary_image_url}}" alt="{{$place->name}}">
+                            </x-admin.table-cell>
                             <x-admin.table-cell :value="$place->name"/>
                             <x-admin.table-cell :value="$place->lat"/>
                             <x-admin.table-cell :value="$place->long"/>

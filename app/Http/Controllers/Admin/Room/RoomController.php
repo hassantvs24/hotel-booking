@@ -70,24 +70,24 @@ class RoomController extends BaseController
         if (!hasPermission('can_create_room')) {
             $this->unauthorized();
         }
-        // try {
-        $room = $roomRepository->create($request->except('photo'));
+        try {
+            $room = $roomRepository->create($request->except('photo'));
 
-        if ($request->hasFile('photo')) {
-            $image = $this->storeFile($request->file('photo'), 'rooms');
-            $room->primaryImage()->create([...$image, 'media_role' => 'room_image']);
+            if ($request->hasFile('photo')) {
+                $image = $this->storeFile($request->file('photo'), 'rooms');
+                $room->primaryImage()->create([...$image, 'media_role' => 'room_image']);
+            }
+
+            return redirect()->route('admin.rooms.index')->with([
+                'message'    => 'Room created successfully.',
+                'alert-type' => 'success'
+            ]);
+        } catch (\Exception $e) {
+            return redirect()->back()->with([
+                'message'    => 'Something went wrong.',
+                'alert-type' => 'error'
+            ]);
         }
-
-        return redirect()->route('admin.rooms.index')->with([
-            'message'    => 'Room created successfully.',
-            'alert-type' => 'success'
-        ]);
-        // } catch (\Exception $e) {
-        return redirect()->back()->with([
-            'message'    => 'Something went wrong.',
-            'alert-type' => 'error'
-        ]);
-        // }
     }
 
     /**
