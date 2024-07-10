@@ -7,16 +7,18 @@ use App\Http\Requests\Admin\Place\PlaceRequest;
 use App\Models\Place;
 use App\Repositories\Place\CityRepository;
 use App\Repositories\Place\PlaceRepository;
+use App\Traits\MediaMan;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class PlaceController extends BaseController
 {
+    use MediaMan;
     /**
      * Display a listing of the resource.
      */
-    public function index(Request $request, PlaceRepository $placeRepository) : View
+    public function index(Request $request, PlaceRepository $placeRepository): View
     {
         if (!hasPermission('can_view_place')) {
             $this->unauthorized();
@@ -47,7 +49,7 @@ class PlaceController extends BaseController
     /**
      * Show the form for creating a new resource.
      */
-    public function create(CityRepository $cityRepository) : View
+    public function create(CityRepository $cityRepository): View
     {
         if (!hasPermission('can_create_place')) {
             $this->unauthorized();
@@ -61,7 +63,7 @@ class PlaceController extends BaseController
     /**
      * Store a newly created resource in storage.
      */
-    public function store(PlaceRequest $request, PlaceRepository $placeRepository) : RedirectResponse
+    public function store(PlaceRequest $request, PlaceRepository $placeRepository): RedirectResponse
     {
         if (!hasPermission('can_create_place')) {
             $this->unauthorized();
@@ -69,13 +71,17 @@ class PlaceController extends BaseController
 
         try {
 
-            $placeRepository->create($request->validated());
+            $place = $placeRepository->create($request->except('photo'));
+
+            if ($request->hasFile('photo')) {
+                $image = $this->storeFile($request->file('photo'), 'places');
+                $place->primaryImage()->create([...$image, 'media_role' => 'place_image']);
+            }
 
             return redirect()->route('admin.places.index')->with([
                 'message'    => 'Place added successfully.',
                 'alert-type' => 'success'
             ]);
-
         } catch (\Exception $e) {
             return redirect()->back()->with('notification', [
                 ['type' => 'error', 'message' => 'Place could not be created']
@@ -94,7 +100,7 @@ class PlaceController extends BaseController
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(CityRepository $cityRepository, Place $place) : View
+    public function edit(CityRepository $cityRepository, Place $place): View
     {
         if (!hasPermission('can_update_place')) {
             $this->unauthorized();
@@ -108,7 +114,7 @@ class PlaceController extends BaseController
     /**
      * Update the specified resource in storage.
      */
-    public function update(PlaceRequest $request, PlaceRepository $placeRepository, $place) : RedirectResponse
+    public function update(PlaceRequest $request, PlaceRepository $placeRepository, $place): RedirectResponse
     {
         if (!hasPermission('can_update_place')) {
             $this->unauthorized();
@@ -117,13 +123,23 @@ class PlaceController extends BaseController
         try {
 
             $place = $placeRepository->getModel($place);
-            $placeRepository->update($request->validated(), $place);
+            $placeRepository->update($request->except('photo'), $place);
+
+            if ($request->hasFile('photo')) {
+
+                if ($place->primaryImage) {
+                    $this->deleteFile($place->primaryImage->name, 'places');
+                    $place->primaryImage()->delete();
+                }
+
+                $image = $this->storeFile($request->file('photo'), 'places');
+                $place->primaryImage()->create([...$image, 'media_role' => 'place_image']);
+            }
 
             return redirect()->route('admin.places.index')->with([
                 'message'    => 'Place updated successfully.',
                 'alert-type' => 'success'
             ]);
-
         } catch (\Exception $e) {
             return redirect()->back()->with([
                 'message'    => 'Something went wrong.',
@@ -135,7 +151,7 @@ class PlaceController extends BaseController
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(PlaceRepository $placeRepository, $place) : RedirectResponse
+    public function destroy(PlaceRepository $placeRepository, $place): RedirectResponse
     {
         if (!hasPermission('can_delete_place')) {
             $this->unauthorized();
@@ -150,7 +166,6 @@ class PlaceController extends BaseController
                 'message'    => 'Place deleted successfully.',
                 'alert-type' => 'success'
             ]);
-
         } catch (\Exception $e) {
             return redirect()->back()->with([
                 'message'    => 'Something went wrong.',

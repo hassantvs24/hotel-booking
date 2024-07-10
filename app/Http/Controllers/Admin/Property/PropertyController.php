@@ -59,7 +59,7 @@ class PropertyController extends BaseController
         PropertyCategoryRepository $propertyCategoryRepository,
         PlaceRepository $placeRepository,
         SubFacilityRepository $subFacilityRepository
-    ) : View {
+    ): View {
         if (!hasPermission('can_create_property')) {
             $this->unauthorized();
         }
@@ -85,8 +85,10 @@ class PropertyController extends BaseController
         $places = $placeRepository->pluck('name', 'id')->toArray();
         $facilities = $subFacilityRepository->pluck('name', 'id')->toArray();
 
-        return view('admin.property.property.create',
-            compact('propertyClasses', 'status', 'propertyCategories', 'places', 'facilities'));
+        return view(
+            'admin.property.property.create',
+            compact('propertyClasses', 'status', 'propertyCategories', 'places', 'facilities')
+        );
     }
 
     /**
@@ -147,7 +149,7 @@ class PropertyController extends BaseController
         PlaceRepository $placeRepository,
         SubFacilityRepository $subFacilityRepository,
         Property $property
-    ) : view {
+    ): view {
         if (!hasPermission('can_update_property')) {
             $this->unauthorized();
         }
@@ -171,8 +173,10 @@ class PropertyController extends BaseController
         $places = $placeRepository->pluck('name', 'id')->toArray();
         $facilities = $subFacilityRepository->pluck('name', 'id')->toArray();
 
-        return view('admin.property.property.edit',
-            compact('propertyClasses', 'status', 'propertyCategories', 'places', 'facilities', 'property'));
+        return view(
+            'admin.property.property.edit',
+            compact('propertyClasses', 'status', 'propertyCategories', 'places', 'facilities', 'property')
+        );
     }
 
     /**
@@ -182,14 +186,14 @@ class PropertyController extends BaseController
         PropertyRequest $request,
         PropertyRepository $propertyRepository,
         $property
-    ) : RedirectResponse {
+    ): RedirectResponse {
         if (!hasPermission('can_update_property')) {
             $this->unauthorized();
         }
-//        try {
+        try {
 
             $property = $propertyRepository->getModel($property);
-            $propertyRepository->update($request->except(['photo', 'property_facilities']),$property);
+            $propertyRepository->update($request->except(['photo', 'property_facilities']), $property);
 
             if (is_array($request->input('property_facilities'))) {
                 $property->facilities()->sync($request->input('property_facilities'));
@@ -210,18 +214,18 @@ class PropertyController extends BaseController
                 'message'    => 'Property updated successfully.',
                 'alert-type' => 'success'
             ]);
-//        } catch (\Exception $e) {
-//            return redirect()->back()->with([
-//                'message'    => 'Something went wrong.',
-//                'alert-type' => 'error'
-//            ]);
-//        }
+        } catch (\Exception $e) {
+            return redirect()->back()->with([
+                'message'    => 'Something went wrong.',
+                'alert-type' => 'error'
+            ]);
+        }
     }
 
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(PropertyRepository $propertyRepository, $property) : RedirectResponse
+    public function destroy(PropertyRepository $propertyRepository, $property): RedirectResponse
     {
         if (!hasPermission('can_delete_property')) {
             $this->unauthorized();
