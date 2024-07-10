@@ -11,7 +11,7 @@
                         id="name"
                         label="Name"
                         value="{{$room->name}}"
-                    />    
+                    />
                     </div>
                 </div>
                 <div class="row">
@@ -22,7 +22,7 @@
                         id="room_number"
                         label="Room Number"
                         value="{{$room->room_number}}"
-                    />    
+                    />
                     </div>
                     <div class="col-md-6">
                         <x-admin.input
@@ -31,7 +31,7 @@
                         id="room_size"
                         label="Room Size"
                         value="{{$room->room_size}}"
-                    />    
+                    />
                     </div>
                 </div>
                 <div class="row">
@@ -42,7 +42,7 @@
                         id="guest_capacity"
                         label="Guest Capacity"
                         value="{{$room->guest_capacity}}"
-                    />    
+                    />
                     </div>
                     <div class="col-md-6">
                         <x-admin.input
@@ -51,7 +51,7 @@
                         id="total_balcony"
                         label="Total Balcony"
                         value="{{$room->total_balcony}}"
-                    />    
+                    />
                     </div>
                 </div>
                 <div class="row">
@@ -62,7 +62,7 @@
                         id="total_window"
                         label="Total Window"
                         value="{{$room->total_window}}"
-                    />    
+                    />
                     </div>
                     <div class="col-md-6">
                         <x-admin.input
@@ -71,7 +71,7 @@
                         id="base_price"
                         label="Price"
                         value="{{$room->base_price}}"
-                    />    
+                    />
                     </div>
                 </div>
                 <div class="row">
@@ -82,7 +82,7 @@
                         id="notes"
                         label="Note"
                         value="{{$room->notes}}"
-                    />    
+                    />
                     </div>
                     <div class="col-md-6">
                         <x-admin.input
@@ -90,9 +90,9 @@
                         name="bed_type_id"
                         id="bed_type_id"
                         label="Bed Type"
-                        :options="$bedtypes"
+                        :options="$bedTypes"
                         :value="$room->bed_type_id"
-                    />    
+                    />
                     </div>
                 </div>
                 <div class="row">
@@ -102,9 +102,9 @@
                         name="room_type_id"
                         id="room_type_id"
                         label="Room Type"
-                        :options="$roomtypes"
+                        :options="$roomTypes"
                         :value="$room->room_type_id"
-                    />    
+                    />
                     </div>
                     <div class="col-md-6">
                         <x-admin.input
@@ -114,7 +114,7 @@
                         label="Property"
                         :options="$properties"
                         :value="$room->property_id"
-                    />    
+                    />
                     </div>
                 </div>
                 <div class="row">
@@ -123,21 +123,45 @@
                         type="file"
                         name="photo"
                         id="photo"
-                        label="Photo"
-                    />    
+                        label="Primary Image"
+                    />
                     </div>
                     <div class="col-md-12">
-                        <img width="50" height="50" src="{{$room->primaryImage_url}}" id="preview_icon" alt=""/>
+                        <img
+                            width="200"
+                            height="200"
+                            src="{{ $room->primary_image_url }}"
+                            id="preview_icon"
+                            alt=""
+                        />
                     </div>
 
                     <div class="col-md-6 mt-4">
                         <x-admin.input
-                        type="toggle"
-                        name="extra_bed"
-                        id="extra_bed"
-                        label="Extra Bed"
-                        value="{{$room->extra_bed}}"
-                    />  
+                            type="toggle"
+                            name="extra_bed"
+                            id="extra_bed"
+                            label="Has Extra Bed ?"
+                            value="{{ $room->extra_bed }}"
+                        />
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-12">
+                        <x-admin.card>
+                            <x-admin.card.card-header title="Room Images" />
+                            <x-admin.card.card-body>
+                                <x-admin.button text="Add More Image" size="sm"/>
+                                <div class="image-container mt-2">
+                                    <div class="row">
+                                        <div class="col-md-6">
+
+                                        </div>
+                                    </div>
+                                </div>
+                            </x-admin.card.card-body>
+                        </x-admin.card>
                     </div>
                 </div>
 

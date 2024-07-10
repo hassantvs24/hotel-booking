@@ -48,7 +48,7 @@
 
     @elseif ($type === 'toggle')
         <div class="form-check form-switch">
-            <input class="form-check-input" type="checkbox" id="{{ $id }}" @if ($value) checked @endif>
+            <input class="form-check-input" type="checkbox" value="1" name="{{ $name }}" id="{{ $id }}" @if ($value) checked @endif>
             <label class="form-check-label" for="{{ $id }}">{{ $label }}</label>
         </div>
     @else
@@ -58,6 +58,7 @@
             id="{{ $id }}"
             value="{{ $value }}"
             placeholder="{{ $placeholder }}"
+            {{ $multiple ? 'multiple' : '' }}
             class="form-control @error($name) is-invalid @enderror"
         >
     @endif

@@ -12,15 +12,17 @@ use App\Repositories\Room\RoomTypeRepository;
 use App\Traits\MediaMan;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
 class RoomController extends BaseController
 {
     use MediaMan;
+
     /**
      * Display a listing of the resource.
      */
-    public function index(Request $request, RoomRepository $roomRepository): View
+    public function index(Request $request, RoomRepository $roomRepository) : View
     {
         if (!hasPermission('can_view_room')) {
             $this->unauthorized();
@@ -50,44 +52,47 @@ class RoomController extends BaseController
     /**
      * Show the form for creating a new resource.
      */
-    public function create(BedTypeRepository $bedTypeRepository, RoomTypeRepository $roomTypeRepository, PropertyRepository $propertyRepository): View
-    {
+    public function create(
+        BedTypeRepository $bedTypeRepository,
+        RoomTypeRepository $roomTypeRepository,
+        PropertyRepository $propertyRepository
+    ) : View {
         if (!hasPermission('can_create_room')) {
             $this->unauthorized();
         }
-        $bedtypes = $bedTypeRepository->pluck('name', 'id')->toArray();
-        $roomtypes = $roomTypeRepository->pluck('name', 'id')->toArray();
+        $bedTypes = $bedTypeRepository->pluck('name', 'id')->toArray();
+        $roomTypes = $roomTypeRepository->pluck('name', 'id')->toArray();
         $properties = $propertyRepository->pluck('name', 'id')->toArray();
 
-        return view('admin.room.room.create', compact('bedtypes', 'roomtypes', 'properties'));
+        return view('admin.room.room.create', compact('bedTypes', 'roomTypes', 'properties'));
     }
 
     /**
      * Store a newly created resource in storage.
      */
-    public function store(RoomRequest $request, RoomRepository $roomRepository): RedirectResponse
+    public function store(RoomRequest $request, RoomRepository $roomRepository) : RedirectResponse
     {
         if (!hasPermission('can_create_room')) {
             $this->unauthorized();
         }
-        // try {
-        $room = $roomRepository->create($request->except('photo'));
+        try {
+            $room = $roomRepository->create($request->except(['photo']));
 
-        if ($request->hasFile('photo')) {
-            $image = $this->storeFile($request->file('photo'), 'rooms');
-            $room->primaryImage()->create([...$image, 'media_role' => 'room_image']);
+            if ($request->hasFile('photo')) {
+                $image = $this->storeFile($request->file('photo'), 'rooms');
+                $room->primaryImage()->create([...$image, 'media_role' => 'room_image']);
+            }
+
+            return redirect()->route('admin.rooms.index')->with([
+                'message'    => 'Room created successfully.',
+                'alert-type' => 'success'
+            ]);
+        } catch (\Exception $e) {
+            return redirect()->back()->with([
+                'message'    => 'Something went wrong.',
+                'alert-type' => 'error'
+            ]);
         }
-
-        return redirect()->route('admin.rooms.index')->with([
-            'message'    => 'Room created successfully.',
-            'alert-type' => 'success'
-        ]);
-        // } catch (\Exception $e) {
-        return redirect()->back()->with([
-            'message'    => 'Something went wrong.',
-            'alert-type' => 'error'
-        ]);
-        // }
     }
 
     /**
@@ -101,29 +106,41 @@ class RoomController extends BaseController
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(BedTypeRepository $bedTypeRepository, RoomTypeRepository $roomTypeRepository, PropertyRepository $propertyRepository, Room $room): View
-    {
+    public function edit(
+        BedTypeRepository $bedTypeRepository,
+        RoomTypeRepository $roomTypeRepository,
+        PropertyRepository $propertyRepository,
+        Room $room
+    ) : View {
         if (!hasPermission('can_update_room')) {
             $this->unauthorized();
         }
-        $bedtypes = $bedTypeRepository->pluck('name', 'id')->toArray();
-        $roomtypes = $roomTypeRepository->pluck('name', 'id')->toArray();
+        $bedTypes = $bedTypeRepository->pluck('name', 'id')->toArray();
+        $roomTypes = $roomTypeRepository->pluck('name', 'id')->toArray();
         $properties = $propertyRepository->pluck('name', 'id')->toArray();
 
-        return view('admin.room.room.edit', compact('room', 'bedtypes', 'roomtypes', 'properties'));
+        return view('admin.room.room.edit', compact('room', 'bedTypes', 'roomTypes', 'properties'));
     }
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(RoomRequest $request, RoomRepository $roomRepository, $room): RedirectResponse
+    public function update(RoomRequest $request, RoomRepository $roomRepository, $room) : RedirectResponse
     {
         if (!hasPermission('can_update_room')) {
             $this->unauthorized();
         }
+
+        DB::beginTransaction();
         try {
             $room = $roomRepository->getModel($room);
-            $rooms = $roomRepository->update($request->except('photo'), $room);
+            $rooms = $roomRepository->update(
+                array_merge(
+                    $request->except(['photo']),
+                    ['extra_bed' => $request->has('extra_bed') ? 1 : 0]
+                ),
+                $room
+            );
 
             if ($request->hasFile('photo')) {
 
@@ -135,11 +152,16 @@ class RoomController extends BaseController
                 $image = $this->storeFile($request->file('photo'), 'rooms');
                 $rooms->primaryImage()->create([...$image, 'media_role' => 'room_image']);
             }
+
+            DB::commit();
+
             return redirect()->route('admin.rooms.index')->with([
                 'message'    => 'Room updated successfully.',
                 'alert-type' => 'success'
             ]);
+
         } catch (\Exception $e) {
+            DB::rollBack();
             return redirect()->back()->with([
                 'message'    => 'Something went wrong.',
                 'alert-type' => 'error'
@@ -150,7 +172,7 @@ class RoomController extends BaseController
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(RoomRepository $roomRepository, $room): RedirectResponse
+    public function destroy(RoomRepository $roomRepository, $room) : RedirectResponse
     {
         if (!hasPermission('can_delete_room')) {
             $this->unauthorized();

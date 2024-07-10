@@ -34,7 +34,6 @@ class RoomRequest extends FormRequest
             'room_number'    => 'nullable|integer',
             'room_size'      => 'nullable|integer',
             'guest_capacity' => 'nullable|integer',
-            'extra_bed'      => 'nullable|boolean',
             'total_balcony'  => 'required|integer',
             'total_window'   => 'required',
             'base_price'     => 'required|integer',

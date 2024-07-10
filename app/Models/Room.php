@@ -2,7 +2,7 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
@@ -51,7 +51,6 @@ class Room extends Model
      ----------------------------------------*/
     public function getPrimaryImageUrlAttribute(): string
     {
-
         $imageUrl = asset('assets/default/default_room.jpg');
 
         if ($this->primaryImage()->exists()) {
@@ -60,4 +59,9 @@ class Room extends Model
 
         return $imageUrl;
     }
+
+    /*----------------------------------------
+     * Attributes
+     ----------------------------------------*/
+    //
 }

@@ -90,7 +90,7 @@
                         name="bed_type_id"
                         id="bed_type_id"
                         label="Bed Type"
-                        :options="$bedtypes"
+                        :options="$bedTypes"
                     />    
                     </div>
                 </div>
@@ -101,7 +101,7 @@
                         name="room_type_id"
                         id="room_type_id"
                         label="Room Type"
-                        :options="$roomtypes"
+                        :options="$roomTypes"
                     />    
                     </div>
                     <div class="col-md-6">
@@ -120,11 +120,11 @@
                         type="file"
                         name="photo"
                         id="photo"
-                        label="Photo"
+                        label="Primary Image"
                     />    
                     </div>
                     <div class="col-md-12">
-                        <img width="50" height="50" src="" id="preview_icon" alt=""/>
+                        <img width="200" height="200" src="" id="preview_icon" alt=""/>
                     </div>
 
                     <div class="col-md-6 mt-4">
@@ -132,8 +132,7 @@
                         type="toggle"
                         name="extra_bed"
                         id="extra_bed"
-                        label="Extra Bed"
-                        value="{{ old('extra_bed') }}"
+                        label="Has Extra Bed ?"
                     />    
                     </div>
                 </div>
@@ -154,16 +153,16 @@
         </x-admin.card.card-body>
     </x-admin.card>
     @push('scripts')
-    <script>
-        $(document).ready(function () {
-            $('#photo').on('change', function () {
-                let reader = new FileReader();
-                reader.onload = (e) => {
-                    $('#preview_icon').attr('src', e.target.result);
-                }
-                reader.readAsDataURL(this.files[0]);
+        <script>
+            $(document).ready(function () {
+                $('#photo').on('change', function () {
+                    let reader = new FileReader();
+                    reader.onload = (e) => {
+                        $('#preview_icon').attr('src', e.target.result);
+                    }
+                    reader.readAsDataURL(this.files[0]);
+                });
             });
-        });
-    </script>
-@endpush
+        </script>
+    @endpush
 </x-admin.layout>
