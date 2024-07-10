@@ -135,7 +135,7 @@ class SurroundingPlaceController extends BaseController
         }
         try {
             $surroundingPlace = $surroundingPlaceRepository->getModel($surroundingPlace);
-            $surroundingPlaceRepository->update($request->validated(), $surroundingPlace);
+            $surroundingPlaceRepository->update($request->except('photo'), $surroundingPlace);
 
             if ($request->hasFile('photo')) {
 

@@ -104,16 +104,6 @@
                             additional-classes="searchable"
                         />
                     </div>
-                    <div class="col-6">
-                        <x-admin.input
-                            type="file"
-                            name="photo"
-                            id="photo"
-                            placeholder="Photo"
-                            label="Photo"
-                            value="{{ old('photo') }}"
-                        />
-                    </div>
                 </div>
                 <div class="mt-3 row">
                     <div class="col-md-6">

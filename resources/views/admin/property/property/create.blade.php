@@ -207,6 +207,17 @@
     </x-admin.card>
 
     @push('scripts')
+    <script>
+        $(document).ready(function () {
+            $('#photo').on('change', function () {
+                let reader = new FileReader();
+                reader.onload = (e) => {
+                    $('#preview_icon').attr('src', e.target.result);
+                }
+                reader.readAsDataURL(this.files[0]);
+            });
+        });
+    </script>
         <script>
             $(document).ready(function () {
                 $('#property_facilities').select2();

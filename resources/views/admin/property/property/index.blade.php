@@ -38,13 +38,13 @@
                 </x-admin.table-header>
                 <x-admin.table-body>
                     @forelse($properties as $property)
-                        @php
+                        {{-- @php
                         $imageSrc = $property->primaryImage ? $property->primaryImage->url : 'https://placehold.co/600x400';
-                        @endphp
+                        @endphp --}}
                         <x-admin.table-row>
                             <x-admin.table-cell :value="format_date($property->created_at)"/>
                             <x-admin.table-cell>
-                                <img width="50" height="50" src="{{ $imageSrc }}" alt="{{ $property->name }}">
+                                <img width="50" height="50" src="{{ $property->primary_image_url }}" alt="{{ $property->name }}">
                             </x-admin.table-cell>
                             <x-admin.table-cell :value="$property->name"/>
                             <x-admin.table-cell :value="$property->lat"/>

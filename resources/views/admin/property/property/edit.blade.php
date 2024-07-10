@@ -199,7 +199,7 @@
                         />
                     </div>
                     <div class="col-md-12">
-                        <img width="50" height="50" src="{{ $property->primaryImage->url }}" id="preview_icon" alt=""/>
+                        <img width="50" height="50" src="{{ $property->primary_image_url }}" id="preview_icon" alt=""/>
                     </div>
                 </div>
                 <div class="mt-3 row">

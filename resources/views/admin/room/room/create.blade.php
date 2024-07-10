@@ -123,6 +123,10 @@
                         label="Photo"
                     />    
                     </div>
+                    <div class="col-md-12">
+                        <img width="50" height="50" src="" id="preview_icon" alt=""/>
+                    </div>
+
                     <div class="col-md-6 mt-4">
                         <x-admin.input
                         type="toggle"
@@ -149,4 +153,17 @@
             </x-admin.form>
         </x-admin.card.card-body>
     </x-admin.card>
+    @push('scripts')
+    <script>
+        $(document).ready(function () {
+            $('#photo').on('change', function () {
+                let reader = new FileReader();
+                reader.onload = (e) => {
+                    $('#preview_icon').attr('src', e.target.result);
+                }
+                reader.readAsDataURL(this.files[0]);
+            });
+        });
+    </script>
+@endpush
 </x-admin.layout>

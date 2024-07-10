@@ -70,24 +70,24 @@ class RoomController extends BaseController
         if (!hasPermission('can_create_room')) {
             $this->unauthorized();
         }
-        try {
-            $room = $roomRepository->create($request->validated());
+        // try {
+        $room = $roomRepository->create($request->except('photo'));
 
-            if ($request->hasFile('photo')) {
-                $image = $this->storeFile($request->file('photo'), 'rooms');
-                $room->primaryImage()->create([...$image, 'media_role' => 'room_image']);
-            }
-
-            return redirect()->route('admin.rooms.index')->with([
-                'message'    => 'Room created successfully.',
-                'alert-type' => 'success'
-            ]);
-        } catch (\Exception $e) {
-            return redirect()->back()->with([
-                'message'    => 'Something went wrong.',
-                'alert-type' => 'error'
-            ]);
+        if ($request->hasFile('photo')) {
+            $image = $this->storeFile($request->file('photo'), 'rooms');
+            $room->primaryImage()->create([...$image, 'media_role' => 'room_image']);
         }
+
+        return redirect()->route('admin.rooms.index')->with([
+            'message'    => 'Room created successfully.',
+            'alert-type' => 'success'
+        ]);
+        // } catch (\Exception $e) {
+        return redirect()->back()->with([
+            'message'    => 'Something went wrong.',
+            'alert-type' => 'error'
+        ]);
+        // }
     }
 
     /**
@@ -123,7 +123,7 @@ class RoomController extends BaseController
         }
         try {
             $room = $roomRepository->getModel($room);
-            $rooms = $roomRepository->update($request->validated(), $room);
+            $rooms = $roomRepository->update($request->except('photo'), $room);
 
             if ($request->hasFile('photo')) {
 
@@ -156,7 +156,7 @@ class RoomController extends BaseController
             $this->unauthorized();
         }
         try {
-            $room = $roomRepository->getModel($room); 
+            $room = $roomRepository->getModel($room);
             $roomRepository->delete($room->id);
             return redirect()->route('admin.rooms.index')->with([
                 'message'    => 'Room deleted successfully.',

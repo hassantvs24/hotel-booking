@@ -34,20 +34,19 @@ class PlaceRequest extends FormRequest
             'zip_code'        => 'required|string|max:255',
             'description'     => 'nullable|string',
             'nearest_police'  => 'required|string',
-            'nearest_hospital'=> 'required|string',
+            'nearest_hospital' => 'required|string',
             'nearest_fire'    => 'required|string',
-            'photo'           => 'nullable|string',
             'city_id'         => 'required|integer|exists:cities,id',
 
         ];
     }
 
-        /**
+    /**
      * Get the error messages for the defined validation rules.
      *
      * @return array<string, string>
      */
-    public function messages() : array
+    public function messages(): array
     {
         return [
             'name.required'         => 'The place name is required.',
@@ -59,11 +58,11 @@ class PlaceRequest extends FormRequest
             'long.numeric'          => 'The longitude must be a number.',
             'zip_code.required'     => 'The zip code is required.',
             'zip_code.max'          => 'The zip code cannot be longer than 255 characters.',
-            'nearest_police.required'=> 'The nearest police is required.',
+            'nearest_police.required' => 'The nearest police is required.',
             'nearest_police.string' => 'The nearest police must be a string.',
-            'nearest_hospital.required'=> 'The nearest hospital is required.',
+            'nearest_hospital.required' => 'The nearest hospital is required.',
             'nearest_hospital.string' => 'The nearest hospital must be a string.',
-            'nearest_fire.required'=> 'The nearest fire is required.',
+            'nearest_fire.required' => 'The nearest fire is required.',
             'nearest_fire.string' => 'The nearest fire must be a string.',
             'city_id.required'      => 'The city is required.',
             'city_id.integer'       => 'The city ID must be an integer.',
