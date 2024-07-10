@@ -156,6 +156,11 @@ return [
                     'src'  => 'responsive.css',
                     'type' => 'local',
                     'rel'  => 'stylesheet'
+                ],
+                [
+                    'src'  => 'custom.css',
+                    'type' => 'local',
+                    'rel'  => 'stylesheet'
                 ]
             ],
             'js'  => [

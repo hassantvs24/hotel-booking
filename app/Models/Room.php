@@ -52,7 +52,7 @@ class Room extends Model
     public function getPrimaryImageUrlAttribute(): string
     {
 
-        $imageUrl = asset('assets/default/default_property.png');
+        $imageUrl = asset('assets/default/default_room.jpg');
 
         if ($this->primaryImage()->exists()) {
             $imageUrl = $this->relations['primaryImage']->url;

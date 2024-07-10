@@ -10,6 +10,9 @@ use Illuminate\Database\Eloquent\Relations\MorphOne;
 
 class Property extends Model
 {
+    protected $with = ['primaryImage'];
+    protected $appends = ['primary_image_url'];
+
     /*----------------------------------------
      * Relationships
      ----------------------------------------*/
@@ -48,7 +51,7 @@ class Property extends Model
         return $this->hasMany(Review::class);
     }
 
-    public function facilities() : BelongsToMany
+    public function facilities(): BelongsToMany
     {
         return $this->belongsToMany(FacilitySub::class, 'property_facilities')->withTimestamps();
     }
@@ -60,5 +63,20 @@ class Property extends Model
     public function city(): BelongsTo
     {
         return $this->belongsTo(City::class);
+    }
+
+    /*----------------------------------------
+     * Accessors
+     ----------------------------------------*/
+    public function getPrimaryImageUrlAttribute(): string
+    {
+
+        $imageUrl = asset('assets/default/default_property.jpg');
+
+        if ($this->primaryImage()->exists()) {
+            $imageUrl = $this->relations['primaryImage']->url;
+        }
+
+        return $imageUrl;
     }
 }
