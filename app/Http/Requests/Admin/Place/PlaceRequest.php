@@ -36,6 +36,7 @@ class PlaceRequest extends FormRequest
             'nearest_fire'      => 'required|string|max:255',
             'city_id'           => 'required|integer|exists:cities,id',
             'photo'  => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
+            'icon'  => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
         ];
     }
 
@@ -71,6 +72,9 @@ class PlaceRequest extends FormRequest
             'photo.image'               => 'The photo must be an image.',
             'photo.max'                 => 'The photo must not be larger than 2MB.',
             'photo.mimes'               => 'The photo must be a jpeg,png,jpg,gif,svg file.',
+            'icon.image'               => 'The icon must be an image.',
+            'icon.max'                 => 'The icon must not be larger than 2MB.',
+            'icon.mimes'               => 'The icon must be a jpeg,png,jpg,gif,svg file.',
         ];
     }
 }

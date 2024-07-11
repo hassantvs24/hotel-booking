@@ -70,12 +70,16 @@ class PlaceController extends BaseController
         }
 
         try {
-
-            $place = $placeRepository->create($request->except('photo'));
+            $place = $placeRepository->create($request->except('photo', 'icon'));
 
             if ($request->hasFile('photo')) {
                 $image = $this->storeFile($request->file('photo'), 'places');
-                $place->primaryImage()->create([...$image, 'media_role' => 'place_image']);
+                $place->primaryImage()->create(array_merge($image, ['media_role' => 'place_image']));
+            }
+
+            if ($request->hasFile('icon')) {
+                $image = $this->storeFile($request->file('icon'), 'place_icons');
+                $place->icon()->create(array_merge($image, ['media_role' => 'place_icon']));
             }
 
             return redirect()->route('admin.places.index')->with([
@@ -121,19 +125,27 @@ class PlaceController extends BaseController
         }
 
         try {
-
             $place = $placeRepository->getModel($place);
-            $placeRepository->update($request->except('photo'), $place);
+            $placeRepository->update($request->except('photo', 'icon'), $place);
 
             if ($request->hasFile('photo')) {
-
                 if ($place->primaryImage) {
                     $this->deleteFile($place->primaryImage->name, 'places');
                     $place->primaryImage()->delete();
                 }
 
                 $image = $this->storeFile($request->file('photo'), 'places');
-                $place->primaryImage()->create([...$image, 'media_role' => 'place_image']);
+                $place->primaryImage()->create(array_merge($image, ['media_role' => 'place_image']));
+            }
+
+            if ($request->hasFile('icon')) {
+                if ($place->icon) {
+                    $this->deleteFile($place->icon->name, 'place_icons');
+                    $place->icon()->delete();
+                }
+
+                $image = $this->storeFile($request->file('icon'), 'place_icons');
+                $place->icon()->create(array_merge($image, ['media_role' => 'place_icon']));
             }
 
             return redirect()->route('admin.places.index')->with([
@@ -158,7 +170,6 @@ class PlaceController extends BaseController
         }
 
         try {
-
             $place = $placeRepository->getModel($place);
             $placeRepository->delete($place->id);
 

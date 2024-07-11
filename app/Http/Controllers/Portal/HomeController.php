@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Portal;
 
 use App\Http\Controllers\BaseController;
 use App\Http\Resources\RoomResource;
+use App\Models\Place;
 use App\Models\Room;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -13,7 +14,10 @@ class HomeController extends BaseController
     public function index(): View
     {
         $rooms = Room::with('property.place')->paginate(9);
-        return view('portal.home.index', compact('rooms'));
+        $places = Place::with('city')->orderByDesc('id')->paginate(3);
+
+
+        return view('portal.home.index', compact('rooms', 'places'));
     }
 
     public function nonRequested(): View

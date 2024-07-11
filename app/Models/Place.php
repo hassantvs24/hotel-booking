@@ -20,7 +20,7 @@ class Place extends Model
         return $this->morphOne(Media::class, 'media');
     }
 
-    public function icon() : MorphOne
+    public function icon(): MorphOne
     {
         return $this->morphOne(Media::class, 'media');
     }
@@ -55,7 +55,7 @@ class Place extends Model
     public function getPrimaryImageUrlAttribute(): string
     {
 
-        $imageUrl = asset('assets/default/default_place.jpg');
+        $imageUrl = asset('assets/default/default_place.png');
 
         if ($this->primaryImage()->exists()) {
             $imageUrl = $this->relations['primaryImage']->url;
@@ -67,7 +67,7 @@ class Place extends Model
     public function getIconUrlAttribute(): string
     {
 
-        $iconUrl = asset('assets/default/default_place.jpg');
+        $iconUrl = asset('assets/default/default_place_icon.svg');
 
         if ($this->icon()->exists()) {
             $iconUrl = $this->relations['icon']->url;

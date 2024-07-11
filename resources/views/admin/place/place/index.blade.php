@@ -22,6 +22,7 @@
                     <x-admin.table-head value="Nearest Police"/>
                     <x-admin.table-head value="Nearest Hospital"/>
                     <x-admin.table-head value="Nearest Fire"/>
+                    <x-admin.table-head value="Primary Image"/>
                     <x-admin.table-head value="Country"/>
                     @if( hasPermission($permissions['update']) || hasPermission($permissions['delete']) )
                         <x-admin.table-head class="text-right" value="Actions"/>
@@ -31,7 +32,7 @@
                     @forelse($places as $place)
                         <x-admin.table-row>
                             <x-admin.table-cell>
-                                <img width="30" height="30" src="{{$place->primary_image_url}}" alt="{{$place->name}}">
+                                <img width="30" height="30" src="{{$place->icon_url}}" alt="{{$place->name}}">
                             </x-admin.table-cell>
                             <x-admin.table-cell :value="$place->name"/>
                             <x-admin.table-cell :value="$place->lat"/>
@@ -40,6 +41,9 @@
                             <x-admin.table-cell :value="$place->nearest_police"/>
                             <x-admin.table-cell :value="$place->nearest_hospital"/>
                             <x-admin.table-cell :value="$place->nearest_fire"/>
+                                <x-admin.table-cell>
+                                    <img width="30" height="30" src="{{$place->primary_image_url}}" alt="{{$place->name}}">
+                                </x-admin.table-cell>
                             <x-admin.table-cell :value="$place->city?->name"/>
                             @if( hasPermission($permissions['update']) || hasPermission($permissions['delete']) )
                                 <x-admin.table-cell class="text-right">

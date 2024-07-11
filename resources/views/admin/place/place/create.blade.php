@@ -105,17 +105,29 @@
                 
 
                 <div class="row">
-                    <div class="col-md-12">
+                    <div class="col-md-6">
                         <x-admin.input
-                            type="file"
-                            name="photo"
-                            id="photo"
-                            label="Photo"
+                        type="file"
+                        name="photo"
+                        id="photo"
+                        label="Photo"
                         />
+                        <div class="col-md-12">
+                            <img width="200" height="200" src="" id="preview_photo" alt=""/>
+                        </div>
                     </div>
-                    <div class="col-md-12">
-                        <img width="200" height="200" src="" id="preview_icon" alt=""/>
+                    <div class="col-md-6">
+                        <x-admin.input
+                        type="file"
+                        name="icon"
+                        id="icon"
+                        label="Icon"
+                        />
+                        <div class="col-md-12">
+                            <img width="200" height="200" src="" id="preview_icon" alt=""/>
+                        </div>
                     </div>
+                    
                 </div>
                 <div class="mt-3 row">
                     <div class="col-md-6">
@@ -131,10 +143,21 @@
     @push('scripts')
     <script>
         $(document).ready(function () {
-            $('#photo').on('change', function () {
+            $('#icon').on('change', function () {
                 let reader = new FileReader();
                 reader.onload = (e) => {
                     $('#preview_icon').attr('src', e.target.result);
+                }
+                reader.readAsDataURL(this.files[0]);
+            });
+        });
+    </script>
+    <script>
+        $(document).ready(function () {
+            $('#photo').on('change', function () {
+                let reader = new FileReader();
+                reader.onload = (e) => {
+                    $('#preview_photo').attr('src', e.target.result);
                 }
                 reader.readAsDataURL(this.files[0]);
             });

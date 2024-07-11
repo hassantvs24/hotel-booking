@@ -87,20 +87,21 @@
    <section class="bannar">
       <div id="carouselExampleCaptions" class="carousel slide carousel-fade" data-bs-ride="carousel">
          <div class="carousel-inner bannar-inner">
-            <div class="carousel-item bannar-item active" style="background-image:url('{{ asset('assets/portal/img/home/sliders/slide-3.jpg') }}')">
+            @foreach($places as $index => $place)
+            <div class="carousel-item bannar-item  {{ $index == 0 ? 'active' : '' }}" style="background-image:url('{{$place->primary_image_url}}')">
                <div class="carousel-caption bannar-caption">
                   <div class="container">
                      <div class="row">
                         <div class="col-md-6">
                            <div class="bannar-content">
-                              <h4><img src="{{asset('assets/portal/img/home/sliders/slide-icon-1.svg')}}" alt=""> Cox's Bazar. <br> Chittagong</h4>
-                              <p>Cox’s Bazar is a District under Chittagong Division, which is famous for its longest unbroken sandy sea beach. It is located 150 km south of the industrial port- Chittagong. Cox’s Bazar is considered as having the longest sea beach in the world, with a total of 121 kilometer long.</p>
+                              <h4><img src="{{asset('assets/portal/img/home/sliders/slide-icon-1.svg')}}" alt=""> {{$place->name}} <br> {{$place->city?->name}}</h4>
+                              <p>{{$place->description}}</p>
                               <a href="" class="btn-border">Explore Hotels</a>
                            </div>
                         </div>
                         <div class="col-md-5">
                            <div class="bannar-img">
-                              <img src="{{asset('assets/portal/img/home/sliders/slide-small-1.png')}}" alt="...">
+                              <img src="{{$place->primary_image_url}}" alt="...">
                            </div>
                         </div>
                         <div class="col-md-1">
@@ -112,56 +113,7 @@
                   </div>
                </div>
             </div>
-            <div class="carousel-item bannar-item" style="background-image:url('{{ asset('assets/portal/img/home/sliders/slide-2.jpg') }}')">
-               <div class="carousel-caption bannar-caption">
-                  <div class="container">
-                     <div class="row">
-                        <div class="col-md-6">
-                           <div class="bannar-content">
-                              <h4><img src="{{asset('assets/portal/img/home/sliders/slide-icon-2.svg')}}" alt=""> Saint Martin. <br>   Chittagong</h4>
-                              <p>St. Martin is generally known as “Narikel Zinzira” in Bengali, means 'Coconut Island' and this is the only coral reef island in Bangladesh. It is a small island in the north eastern part of the Bay of Bengal, created the southernmost part of our country. And a fantastic tourist attraction.</p>
-                              <a href="" class="btn-border">Explore Hotels</a>
-                           </div>
-                        </div>
-                        <div class="col-md-5">
-                           <div class="bannar-img">
-                              <img src="{{asset('assets/portal/img/home/sliders/slide-small-2.png')}}" alt="...">
-                           </div>
-                        </div>
-                        <div class="col-md-1">
-                           <svg width="2" height="125" viewBox="0 0 2 125" fill="none" xmlns="http://www.w3.org/2000/svg">
-                              <line x1="1" y1="1" x2="1.00001" y2="124" stroke="#2DD4BF" stroke-width="2" stroke-linecap="round" stroke-dasharray="8 8"/>
-                           </svg>
-                        </div>
-                     </div>
-                  </div>
-               </div>
-            </div>
-            <div class="carousel-item bannar-item" style="background-image:url('{{ asset('assets/portal/img/home/sliders/slide-3.jpg') }}')">
-               <div class="carousel-caption bannar-caption">
-                  <div class="container">
-                     <div class="row">
-                        <div class="col-md-6">
-                           <div class="bannar-content">
-                              <h4><img src="{{asset('assets/portal/img/home/sliders/slide-icon-3.svg')}}" alt=""> Ratargul. <br> Sylhet</h4>
-                              <p>Cox’s Bazar is a District under Chittagong Division, which is famous for its longest unbroken sandy sea beach. It is located 150 km south of the industrial port- Chittagong. Cox’s Bazar is considered as having the longest sea beach in the world, with a total of 121 kilometer long.</p>
-                              <a href="" class="btn-border">Explore Hotels</a>
-                           </div>
-                        </div>
-                        <div class="col-md-5">
-                           <div class="bannar-img">
-                              <img src="{{asset('assets/portal/img/home/sliders/slide-small-3.png')}}" alt="...">
-                           </div>
-                        </div>
-                        <div class="col-md-1">
-                           <svg width="2" height="125" viewBox="0 0 2 125" fill="none" xmlns="http://www.w3.org/2000/svg">
-                              <line x1="1" y1="1" x2="1.00001" y2="124" stroke="#2DD4BF" stroke-width="2" stroke-linecap="round" stroke-dasharray="8 8"/>
-                           </svg>
-                        </div>
-                     </div>
-                  </div>
-               </div>
-            </div>
+            @endforeach
             <button class="carousel-control-prev" type="button" data-bs-target="#carouselExampleCaptions" data-bs-slide="prev">
              <span class="carousel-control-prev-icon" aria-hidden="true">
                 <svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -187,9 +139,9 @@
              </span>
             </button>
             <div class="carousel-indicators carousel-indicators-numbers">
-               <button type="button" data-bs-target="#carouselExampleCaptions" data-bs-slide-to="0" class="active" aria-current="true" aria-label="Slide 1">01</button>
-               <button type="button" data-bs-target="#carouselExampleCaptions" data-bs-slide-to="1" aria-label="Slide 2">02</button>
-               <button type="button" data-bs-target="#carouselExampleCaptions" data-bs-slide-to="2" aria-label="Slide 3">/ 03</button>
+               @foreach($places as $index => $place)
+               <button type="button" data-bs-target="#carouselExampleCaptions" data-bs-slide-to="{{ $index }}" class="{{ $index == 0 ? 'active' : '' }}" aria-current="{{ $index == 0 ? 'true' : 'false' }}" aria-label="Slide {{ $index + 1 }}">{{ str_pad($index + 1, 2, '0', STR_PAD_LEFT) }}</button>
+               @endforeach
             </div>
          </div>
          <div class="num"></div>

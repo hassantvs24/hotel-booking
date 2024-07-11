@@ -480,6 +480,7 @@ return [
         'profile_image',
         'city_image',
         'place_image',
+        'place_icon',
         'facility_icon',
         'surrounding_icon',
         'property_icon',
