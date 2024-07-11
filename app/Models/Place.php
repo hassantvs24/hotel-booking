@@ -10,12 +10,17 @@ use Illuminate\Database\Eloquent\Relations\MorphOne;
 
 class Place extends Model
 {
-    protected $with = ['primaryImage'];
-    protected $appends = ['primary_image_url'];
+    protected $with = ['primaryImage', 'icon'];
+    protected $appends = ['primary_image_url', 'icon_url'];
     /*----------------------------------------
      * Relationships
      ----------------------------------------*/
     public function primaryImage(): MorphOne
+    {
+        return $this->morphOne(Media::class, 'media');
+    }
+
+    public function icon() : MorphOne
     {
         return $this->morphOne(Media::class, 'media');
     }
@@ -57,5 +62,17 @@ class Place extends Model
         }
 
         return $imageUrl;
+    }
+
+    public function getIconUrlAttribute(): string
+    {
+
+        $iconUrl = asset('assets/default/default_place.jpg');
+
+        if ($this->icon()->exists()) {
+            $iconUrl = $this->relations['icon']->url;
+        }
+
+        return $iconUrl;
     }
 }
