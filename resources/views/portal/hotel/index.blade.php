@@ -3,38 +3,36 @@
         <div class="container">
             <div class="row">
                 <div class="col-md-8">
+                    
                     <div class="room-search-number">
-                        <h4>16 hotel responded - 18 available rooms</h4>
+                        <h4>{{$hotelsResponded}} hotel responded - 18 available rooms</h4>
                         <img src="{{asset('assets/portal/img/icons/icon-info.png')}}" alt="">
                     </div>
+                    @forelse ($properties as $index=> $property)
                     <div class="room-search-item">
                         <div class="room-column-slider">
                    <span class="room-column-icon">
                    <a href=""><img src="{{asset('assets/portal/img/icons/icon-heart.png')}}" alt=""></a>
                    </span>
-                            <div id="room-slider-1" class="carousel slide" data-bs-ride="carousel">
+                            <div id="room-slider-{{ $index + 1 }}" class="carousel slide" data-bs-ride="carousel">
                                 <div class="carousel-indicators">
-                                    <button type="button" data-bs-target="#room-slider-1" data-bs-slide-to="0" class=""></button>
-                                    <button type="button" data-bs-target="#room-slider-1" data-bs-slide-to="1" class=""></button>
-                                    <button type="button" data-bs-target="#room-slider-1" data-bs-slide-to="2" class="active" aria-current="true"></button>
+                                    @foreach ($property->images as $key => $image)
+                                    <button type="button" data-bs-target="#room-slider-{{ $index + 1 }}" data-bs-slide-to="{{ $key }}" class="{{ $key === 0 ? 'active' : '' }}" aria-current="{{ $key === 0 ? 'true' : 'false' }}"></button>
+                                    @endforeach
                                 </div>
                                 <div class="carousel-inner">
-                                    <div class="carousel-item">
-                                        <img src="{{asset('assets/portal/img/rooms/room-search-1.jpg')}}" class="d-block w-100" alt="...">
-                                    </div>
-                                    <div class="carousel-item">
-                                        <img src="{{asset('assets/portal/img/rooms/room-search-2.jpg')}}" class="d-block w-100" alt="...">
-                                    </div>
-                                    <div class="carousel-item active">
-                                        <img src="{{asset('assets/portal/img/rooms/room-search-3.jpg')}}" class="d-block w-100" alt="...">
-                                    </div>
+                                    {{-- @foreach ($property->images as $key => $image) --}}
+                                        {{-- <div class="carousel-item {{ $key === 0 ? 'active' : '' }}"> --}}
+                                            <img src="{{$property->primary_image_url}}" class="d-block w-100 h-100" alt="...">
+                                        {{-- </div> --}}
+                                    {{-- @endforeach --}}
                                 </div>
-                                <button class="carousel-control-prev" type="button" data-bs-target="#room-slider-1" data-bs-slide="prev">
+                                <button class="carousel-control-prev" type="button" data-bs-target="#room-slider-{{ $index + 1 }}" data-bs-slide="prev">
                       <span class="carousel-control-prev-icon" aria-hidden="true">
                       <img src="{{asset('assets/portal/img/icons/arrow_back.png')}}" alt="">
                       </span>
                                 </button>
-                                <button class="carousel-control-next" type="button" data-bs-target="#room-slider-1" data-bs-slide="next">
+                                <button class="carousel-control-next" type="button" data-bs-target="#room-slider-{{ $index + 1 }}" data-bs-slide="next">
                       <span class="carousel-control-next-icon" aria-hidden="true">
                       <img src="{{asset('assets/portal/img/icons/arrow_forward.png')}}" alt="">
                       </span>
@@ -45,8 +43,8 @@
                             <div class="room-search-top d-flex justify-content-between align-items-start">
                                 <div class="room-search-top-info">
                                     <span><img src="{{asset('assets/portal/img/icons/icon-home.png')}}" alt=""> Hotel</span>
-                                    <h4>Seacrest Oceanfront Resort</h4>
-                                    <p><img src="{{asset('assets/portal/img/icons/icon-pin.png')}}" alt=""> Hotel-Motel Zone, Cox's Bazar</p>
+                                    <h4>{{$property->name}}</h4>
+                                    <p><img src="{{asset('assets/portal/img/icons/icon-pin.png')}}" alt=""> {{$property->place?->name}},{{$property->city?->name}}</p>
                                     <h6>2+ rooms are available</h6>
                                 </div>
                                 <div class="room-search-top-rating d-flex justify-content-between align-items-center">
@@ -71,14 +69,20 @@
                                     </div>
                                     <span>Start From</span>
                                     <p><del>BDT 15,906</del> BDT 15,906</p>
-                                    <a href="" class="btn-border" data-bs-toggle="modal" data-bs-target="#offer-modal-1">Offer</a>
-                                    <a href="" class="btn-bg ms-2" data-bs-toggle="modal" data-bs-target="#accept-modal-1">Accept</a>
+                                    <a href="" class="btn-border" data-bs-toggle="modal" data-bs-target="#offer-modal-{{$index + 1}}">Offer</a>
+                                    <a href="" class="btn-bg ms-2" data-bs-toggle="modal" data-bs-target="#accept-modal-{{ $index + 1 }}">Accept</a>
                                 </div>
                             </div>
                         </div>
                     </div>
+
+                    @empty
+                        <h5>no result found</h5>
+                    @endforelse
+                    
                     <!-- Modal Offer -->
-                    <div class="modal fade" id="offer-modal-1" tabindex="-1">
+                    @foreach ($properties as $index => $property)
+                    <div class="modal fade" id="offer-modal-{{ $index + 1 }}" tabindex="-1">
                         <div class="modal-dialog modal-dialog-centered modal-xl">
                             <div class="modal-content offer">
                                 <div class="modal-header">
@@ -314,8 +318,11 @@
                             </div>
                         </div>
                     </div>
+                    @endforeach
+
+                    @foreach ($properties as $index => $property)
                     <!-- Modal Accept -->
-                    <div class="modal fade" id="accept-modal-1" tabindex="-1">
+                    <div class="modal fade" id="accept-modal-{{ $index + 1 }}" tabindex="-1">
                         <div class="modal-dialog modal-dialog-centered modal-xl">
                             <div class="modal-content offer">
                                 <div class="modal-header">
@@ -551,264 +558,7 @@
                             </div>
                         </div>
                     </div>
-                    <div class="room-search-item">
-                        <div class="room-column-slider">
-                   <span class="room-column-icon">
-                   <a href=""><img src="{{asset('assets/portal/img/icons/icon-heart.png')}}" alt=""></a>
-                   </span>
-                            <div id="room-slider-2" class="carousel slide" data-bs-ride="carousel">
-                                <div class="carousel-indicators">
-                                    <button type="button" data-bs-target="#room-slider-2" data-bs-slide-to="0" class=""></button>
-                                    <button type="button" data-bs-target="#room-slider-2" data-bs-slide-to="1" class="active" aria-current="true"></button>
-                                    <button type="button" data-bs-target="#room-slider-2" data-bs-slide-to="2" class=""></button>
-                                </div>
-                                <div class="carousel-inner">
-                                    <div class="carousel-item">
-                                        <img src="{{asset('assets/portal/img/rooms/room-search-1.jpg')}}" class="d-block w-100" alt="...">
-                                    </div>
-                                    <div class="carousel-item active">
-                                        <img src="{{asset('assets/portal/img/rooms/room-search-2.jpg')}}" class="d-block w-100" alt="...">
-                                    </div>
-                                    <div class="carousel-item">
-                                        <img src="{{asset('assets/portal/img/rooms/room-search-3.jpg')}}" class="d-block w-100" alt="...">
-                                    </div>
-                                </div>
-                                <button class="carousel-control-prev" type="button" data-bs-target="#room-slider-2" data-bs-slide="prev">
-                      <span class="carousel-control-prev-icon" aria-hidden="true">
-                      <img src="{{asset('assets/portal/img/icons/arrow_back.png')}}" alt="">
-                      </span>
-                                </button>
-                                <button class="carousel-control-next" type="button" data-bs-target="#room-slider-2" data-bs-slide="next">
-                      <span class="carousel-control-next-icon" aria-hidden="true">
-                      <img src="{{asset('assets/portal/img/icons/arrow_forward.png')}}" alt="">
-                      </span>
-                                </button>
-                            </div>
-                        </div>
-                        <div class="room-search-box">
-                            <div class="room-search-top d-flex justify-content-between align-items-start">
-                                <div class="room-search-top-info">
-                                    <span><img src="{{asset('assets/portal/img/icons/icon-home.png')}}" alt=""> Resort</span>
-                                    <h4>Seacrest Oceanfront Resort</h4>
-                                    <p><img src="{{asset('assets/portal/img/icons/icon-pin.png')}}" alt=""> Ciutat de Barcelona</p>
-                                </div>
-                                <div class="room-search-top-rating d-flex justify-content-between align-items-center">
-                                    <h5>Rating<span>1234 reviews</span></h5>
-                                    <p>4.8</p>
-                                </div>
-                            </div>
-                            <div class="room-search-bottom d-flex justify-content-between align-items-end">
-                                <div class="room-search-features">
-                                    <span><img src="{{asset('assets/portal/img/icons/icon-welcome-drink.png')}}" alt=""> Welcome Drink</span>
-                                    <span><img src="{{asset('assets/portal/img/icons/icon-breakfast.png')}}" alt=""> Free Breakfast</span>
-                                    <span><img src="{{asset('assets/portal/img/icons/icon-tea.png')}}" alt=""> Tea/Coffee</span>
-                                    <span><img src="{{asset('assets/portal/img/icons/icon-air-condiitoner.png')}}" alt=""> Air Conditioner</span>
-                                </div>
-                                <div class="room-search-price">
-                                    <div class="room-search-timer color-orange" data-date="July 22, 2023 05:33:01">
-                                        <span><img src="{{asset('assets/portal/img/icons/icon-countdown-orange.svg')}}" alt=""></span>
-                                        <span class="days">0</span>
-                                        <span class="hours">0</span>
-                                        <span class="minutes">0</span>
-                                        <span class="seconds">0</span>
-                                    </div>
-                                    <span>Start From</span>
-                                    <p>BDT 7,400</p>
-                                    <a href="" class="btn-bg">Details</a>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="room-search-item">
-                        <div class="room-column-slider">
-                   <span class="room-column-icon">
-                   <a href=""><img src="{{asset('assets/portal/img/icons/icon-heart.png')}}" alt=""></a>
-                   </span>
-                            <div id="room-slider-3" class="carousel slide" data-bs-ride="carousel">
-                                <div class="carousel-indicators">
-                                    <button type="button" data-bs-target="#room-slider-3" data-bs-slide-to="0" class=""></button>
-                                    <button type="button" data-bs-target="#room-slider-3" data-bs-slide-to="1" class=""></button>
-                                    <button type="button" data-bs-target="#room-slider-3" data-bs-slide-to="2" class="active" aria-current="true"></button>
-                                </div>
-                                <div class="carousel-inner">
-                                    <div class="carousel-item">
-                                        <img src="{{asset('assets/portal/img/rooms/room-search-1.jpg')}}" class="d-block w-100" alt="...">
-                                    </div>
-                                    <div class="carousel-item">
-                                        <img src="{{asset('assets/portal/img/rooms/room-search-2.jpg')}}" class="d-block w-100" alt="...">
-                                    </div>
-                                    <div class="carousel-item active">
-                                        <img src="{{asset('assets/portal/img/rooms/room-search-3.jpg')}}" class="d-block w-100" alt="...">
-                                    </div>
-                                </div>
-                                <button class="carousel-control-prev" type="button" data-bs-target="#room-slider-3" data-bs-slide="prev">
-                      <span class="carousel-control-prev-icon" aria-hidden="true">
-                      <img src="{{asset('assets/portal/img/icons/arrow_back.png')}}" alt="">
-                      </span>
-                                </button>
-                                <button class="carousel-control-next" type="button" data-bs-target="#room-slider-3" data-bs-slide="next">
-                      <span class="carousel-control-next-icon" aria-hidden="true">
-                      <img src="{{asset('assets/portal/img/icons/arrow_forward.png')}}" alt="">
-                      </span>
-                                </button>
-                            </div>
-                        </div>
-                        <div class="room-search-box">
-                            <div class="room-search-top d-flex justify-content-between align-items-start">
-                                <div class="room-search-top-info">
-                                    <span><img src="{{asset('assets/portal/img/icons/icon-home.png')}}" alt=""> Resort</span>
-                                    <h4>Beachside Resort</h4>
-                                    <p><img src="{{asset('assets/portal/img/icons/icon-pin.png')}}" alt=""> Hotel-Motel Zone, Cox's Bazar</p>
-                                </div>
-                                <div class="room-search-top-rating d-flex justify-content-between align-items-center">
-                                    <h5>Rating<span>1234 reviews</span></h5>
-                                    <p>4.8</p>
-                                </div>
-                            </div>
-                            <div class="room-search-bottom d-flex justify-content-between align-items-end">
-                                <div class="room-search-features">
-                                    <span><img src="{{asset('assets/portal/img/icons/icon-welcome-drink.png')}}" alt=""> Welcome Drink</span>
-                                    <span><img src="{{asset('assets/portal/img/icons/icon-breakfast.png')}}" alt=""> Free Breakfast</span>
-                                    <span><img src="{{asset('assets/portal/img/icons/icon-tea.png')}}" alt=""> Tea/Coffee</span>
-                                    <span><img src="{{asset('assets/portal/img/icons/icon-air-condiitoner.png')}}" alt=""> Air Conditioner</span>
-                                </div>
-                                <div class="room-search-price">
-                                    <div class="room-search-timer color-red" data-date="December 22, 2023 11:58:01">
-                                        <span><img src="{{asset('assets/portal/img/icons/icon-countdown-red.svg')}}" alt=""></span>
-                                        <span class="days">0</span>
-                                        <span class="hours">0</span>
-                                        <span class="minutes">0</span>
-                                        <span class="seconds">0</span>
-                                    </div>
-                                    <span>Start From</span>
-                                    <p>BDT 8,500</p>
-                                    <a href="" class="btn-bg">Details</a>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="room-search-item">
-                        <div class="room-column-slider">
-                   <span class="room-column-icon">
-                   <a href=""><img src="{{asset('assets/portal/img/icons/icon-heart.png')}}" alt=""></a>
-                   </span>
-                            <div id="room-slider-4" class="carousel slide" data-bs-ride="carousel">
-                                <div class="carousel-indicators">
-                                    <button type="button" data-bs-target="#room-slider-4" data-bs-slide-to="0" class=""></button>
-                                    <button type="button" data-bs-target="#room-slider-4" data-bs-slide-to="1" class=""></button>
-                                    <button type="button" data-bs-target="#room-slider-4" data-bs-slide-to="2" class="active" aria-current="true"></button>
-                                </div>
-                                <div class="carousel-inner">
-                                    <div class="carousel-item">
-                                        <img src="{{asset('assets/portal/img/rooms/room-search-1.jpg')}}" class="d-block w-100" alt="...">
-                                    </div>
-                                    <div class="carousel-item">
-                                        <img src="{{asset('assets/portal/img/rooms/room-search-2.jpg')}}" class="d-block w-100" alt="...">
-                                    </div>
-                                    <div class="carousel-item active">
-                                        <img src="{{asset('assets/portal/img/rooms/room-search-3.jpg')}}" class="d-block w-100" alt="...">
-                                    </div>
-                                </div>
-                                <button class="carousel-control-prev" type="button" data-bs-target="#room-slider-4" data-bs-slide="prev">
-                      <span class="carousel-control-prev-icon" aria-hidden="true">
-                      <img src="{{asset('assets/portal/img/icons/arrow_back.png')}}" alt="">
-                      </span>
-                                </button>
-                                <button class="carousel-control-next" type="button" data-bs-target="#room-slider-4" data-bs-slide="next">
-                      <span class="carousel-control-next-icon" aria-hidden="true">
-                      <img src="{{asset('assets/portal/img/icons/arrow_forward.png')}}" alt="">
-                      </span>
-                                </button>
-                            </div>
-                        </div>
-                        <div class="room-search-box">
-                            <div class="room-search-top d-flex justify-content-between align-items-start">
-                                <div class="room-search-top-info">
-                                    <span><img src="{{asset('assets/portal/img/icons/icon-home.png')}}" alt=""> Resort</span>
-                                    <h4>Ayre Hotel Gran Vía</h4>
-                                    <p><img src="{{asset('assets/portal/img/icons/icon-pin.png')}}" alt=""> Hotel-Motel Zone, Cox's Bazar</p>
-                                </div>
-                                <div class="room-search-top-rating d-flex justify-content-between align-items-center">
-                                    <h5>Rating<span>1234 reviews</span></h5>
-                                    <p>4.8</p>
-                                </div>
-                            </div>
-                            <div class="room-search-bottom d-flex justify-content-between align-items-end">
-                                <div class="room-search-features">
-                                    <span><img src="{{asset('assets/portal/img/icons/icon-welcome-drink.png')}}" alt=""> Welcome Drink</span>
-                                    <span><img src="{{asset('assets/portal/img/icons/icon-breakfast.png')}}" alt=""> Free Breakfast</span>
-                                    <span><img src="{{asset('assets/portal/img/icons/icon-tea.png')}}" alt=""> Tea/Coffee</span>
-                                    <span><img src="{{asset('assets/portal/img/icons/icon-air-condiitoner.png')}}" alt=""> Air Conditioner</span>
-                                </div>
-                                <div class="room-search-price">
-                                    <span>Start From</span>
-                                    <p>BDT 8,400</p>
-                                    <a href="" class="btn-bg">Details</a>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="room-search-item">
-                        <div class="room-column-slider">
-                   <span class="room-column-icon">
-                   <a href=""><img src="{{asset('assets/portal/img/icons/icon-heart.png')}}" alt=""></a>
-                   </span>
-                            <div id="room-slider-5" class="carousel slide" data-bs-ride="carousel">
-                                <div class="carousel-indicators">
-                                    <button type="button" data-bs-target="#room-slider-5" data-bs-slide-to="0" class=""></button>
-                                    <button type="button" data-bs-target="#room-slider-5" data-bs-slide-to="1" class=""></button>
-                                    <button type="button" data-bs-target="#room-slider-5" data-bs-slide-to="2" class="active" aria-current="true"></button>
-                                </div>
-                                <div class="carousel-inner">
-                                    <div class="carousel-item">
-                                        <img src="{{asset('assets/portal/img/rooms/room-search-1.jpg')}}" class="d-block w-100" alt="...">
-                                    </div>
-                                    <div class="carousel-item">
-                                        <img src="{{asset('assets/portal/img/rooms/room-search-2.jpg')}}" class="d-block w-100" alt="...">
-                                    </div>
-                                    <div class="carousel-item active">
-                                        <img src="{{asset('assets/portal/img/rooms/room-search-3.jpg')}}" class="d-block w-100" alt="...">
-                                    </div>
-                                </div>
-                                <button class="carousel-control-prev" type="button" data-bs-target="#room-slider-5" data-bs-slide="prev">
-                      <span class="carousel-control-prev-icon" aria-hidden="true">
-                      <img src="{{asset('assets/portal/img/icons/arrow_back.png')}}" alt="">
-                      </span>
-                                </button>
-                                <button class="carousel-control-next" type="button" data-bs-target="#room-slider-5" data-bs-slide="next">
-                      <span class="carousel-control-next-icon" aria-hidden="true">
-                      <img src="{{asset('assets/portal/img/icons/arrow_forward.png')}}" alt="">
-                      </span>
-                                </button>
-                            </div>
-                        </div>
-                        <div class="room-search-box">
-                            <div class="room-search-top d-flex justify-content-between align-items-start">
-                                <div class="room-search-top-info">
-                                    <span><img src="{{asset('assets/portal/img/icons/icon-home.png')}}" alt=""> Resort</span>
-                                    <h4>Rosewood Mayakoba</h4>
-                                    <p><img src="{{asset('assets/portal/img/icons/icon-pin.png')}}" alt=""> Hotel-Motel Zone, Cox's Bazar</p>
-                                </div>
-                                <div class="room-search-top-rating d-flex justify-content-between align-items-center">
-                                    <h5>Rating<span>1234 reviews</span></h5>
-                                    <p>4.8</p>
-                                </div>
-                            </div>
-                            <div class="room-search-bottom d-flex justify-content-between align-items-end">
-                                <div class="room-search-features">
-                                    <span><img src="{{asset('assets/portal/img/icons/icon-welcome-drink.png')}}" alt=""> Welcome Drink</span>
-                                    <span><img src="{{asset('assets/portal/img/icons/icon-breakfast.png')}}" alt=""> Free Breakfast</span>
-                                    <span><img src="{{asset('assets/portal/img/icons/icon-tea.png')}}" alt=""> Tea/Coffee</span>
-                                    <span><img src="{{asset('assets/portal/img/icons/icon-air-condiitoner.png')}}" alt=""> Air Conditioner</span>
-                                </div>
-                                <div class="room-search-price">
-                                    <span>Start From</span>
-                                    <p>BDT 6,400</p>
-                                    <a href="" class="btn-bg">Details</a>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                    @endforeach
                 </div>
                 <div class="col-md-4">
                     <div class="room-search-map">
