@@ -10,6 +10,7 @@ use App\Repositories\Place\PlaceRepository;
 use App\Traits\MediaMan;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
 class PlaceController extends BaseController
@@ -74,13 +75,13 @@ class PlaceController extends BaseController
             $place = $placeRepository->create($request->except('photo', 'icon'));
 
             if ($request->hasFile('photo')) {
-                $image = $this->storeFile($request->file('photo'), 'places');
-                $place->primaryImage()->create(array_merge($image, ['media_role' => 'place_image']));
+                $primaryImage = $this->storeFile($request->file('photo'), 'places');
+                $place->primaryImage()->create(array_merge($primaryImage, ['media_role' => 'place_image']));
             }
 
             if ($request->hasFile('icon')) {
-                $image = $this->storeFile($request->file('icon'), 'place_icons');
-                $place->icon()->create(array_merge($image, ['media_role' => 'place_icon']));
+                $icon = $this->storeFile($request->file('icon'), 'place_icons');
+                $place->icon()->create(array_merge($icon, ['media_role' => 'place_icon']));
             }
 
             return redirect()->route('admin.places.index')->with([
@@ -125,12 +126,10 @@ class PlaceController extends BaseController
             $this->unauthorized();
         }
 
+        DB::beginTransaction();
         try {
             $place = $placeRepository->getModel($place);
             $placeRepository->update($request->except('photo', 'icon'), $place);
-
-            $placeImage = [];
-            $icon = [];
 
             if ($request->hasFile('photo')) {
                 if ($place->primaryImage) {
@@ -151,13 +150,14 @@ class PlaceController extends BaseController
                 $place->icon()->create(array_merge($icon, ['media_role' => 'place_icon']));
             }
 
-            //dd($placeImage, $icon);
+            DB::commit();
 
             return redirect()->route('admin.places.index')->with([
                 'message'    => 'Place updated successfully.',
                 'alert-type' => 'success'
             ]);
         } catch (\Exception $e) {
+            DB::rollBack();
             return redirect()->back()->with([
                 'message'    => 'Something went wrong.',
                 'alert-type' => 'error'
