@@ -14,16 +14,13 @@
         <x-admin.card.card-body class="px-0 pt-0 pb-2 table-responsive">
             <x-admin.table>
                 <x-admin.table-header>
-                    <x-admin.table-head />
+                    <x-admin.table-head value="Icon"/>
+                    <x-admin.table-head value="Image"/>
                     <x-admin.table-head value="Name"/>
-                    <x-admin.table-head value="Latitude"/>
-                    <x-admin.table-head value="Longitude"/>
+                    <x-admin.table-head value="Co-Ordinates"/>
                     <x-admin.table-head value="Zip Code"/>
-                    <x-admin.table-head value="Nearest Police"/>
-                    <x-admin.table-head value="Nearest Hospital"/>
-                    <x-admin.table-head value="Nearest Fire"/>
-                    <x-admin.table-head value="Primary Image"/>
-                    <x-admin.table-head value="Country"/>
+                    <x-admin.table-head value="Nearest"/>
+                    <x-admin.table-head value="City"/>
                     @if( hasPermission($permissions['update']) || hasPermission($permissions['delete']) )
                         <x-admin.table-head class="text-right" value="Actions"/>
                     @endif
@@ -32,18 +29,36 @@
                     @forelse($places as $place)
                         <x-admin.table-row>
                             <x-admin.table-cell>
-                                <img width="30" height="30" src="{{$place->icon_url}}" alt="{{$place->name}}">
+                                <img
+                                    width="30"
+                                    height="30"
+                                    src="{{ $place->icon_url }}"
+                                    alt="{{ $place->name }}"
+                                >
+                            </x-admin.table-cell>
+                            <x-admin.table-cell>
+                                <img
+                                    width="30"
+                                    height="30"
+                                    src="{{ $place->primary_image_url }}"
+                                    alt="{{ $place->name }}"
+                                >
                             </x-admin.table-cell>
                             <x-admin.table-cell :value="$place->name"/>
-                            <x-admin.table-cell :value="$place->lat"/>
-                            <x-admin.table-cell :value="$place->long"/>
+                            <x-admin.table-cell>
+                                <ul>
+                                    <li>Lat: {{ $place->lat }}</li>
+                                    <li>Lon: {{ $place->long }}</li>
+                                </ul>
+                            </x-admin.table-cell>
                             <x-admin.table-cell :value="$place->zip_code"/>
-                            <x-admin.table-cell :value="$place->nearest_police"/>
-                            <x-admin.table-cell :value="$place->nearest_hospital"/>
-                            <x-admin.table-cell :value="$place->nearest_fire"/>
-                                <x-admin.table-cell>
-                                    <img width="30" height="30" src="{{$place->primary_image_url}}" alt="{{$place->name}}">
-                                </x-admin.table-cell>
+                            <x-admin.table-cell>
+                                <ul>
+                                    <li>Police Station: {{ $place->nearest_police }}</li>
+                                    <li>Fire Station: {{ $place->nearest_fire }}</li>
+                                    <li>Hospital: {{ $place->nearest_hospital }}</li>
+                                </ul>
+                            </x-admin.table-cell>
                             <x-admin.table-cell :value="$place->city?->name"/>
                             @if( hasPermission($permissions['update']) || hasPermission($permissions['delete']) )
                                 <x-admin.table-cell class="text-right">

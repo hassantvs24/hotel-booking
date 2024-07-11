@@ -94,14 +94,20 @@
                      <div class="row">
                         <div class="col-md-6">
                            <div class="bannar-content">
-                              <h4><img src="{{asset('assets/portal/img/home/sliders/slide-icon-1.svg')}}" alt=""> {{$place->name}} <br> {{$place->city?->name}}</h4>
-                              <p>{{$place->description}}</p>
+                              <h4>
+                                 <img src="{{asset('assets/portal/img/home/sliders/slide-icon-1.svg')}}" alt="">
+                                 {{$place->name}} <br>
+                                 {{ $place->city?->name }}
+                              </h4>
+                              <p>
+                                 {{ $place->description }}
+                              </p>
                               <a href="" class="btn-border">Explore Hotels</a>
                            </div>
                         </div>
                         <div class="col-md-5">
                            <div class="bannar-img">
-                              <img src="{{$place->primary_image_url}}" alt="...">
+                              <img src="{{ $place->primary_image_url }}" alt="...">
                            </div>
                         </div>
                         <div class="col-md-1">
