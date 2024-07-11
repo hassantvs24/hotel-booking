@@ -95,8 +95,8 @@
                         <div class="col-md-6">
                            <div class="bannar-content">
                               <h4>
-                                 <img src="{{asset('assets/portal/img/home/sliders/slide-icon-1.svg')}}" alt="">
-                                 {{$place->name}} <br>
+                                 <img src="{{ $place->icon_url }}" alt="">
+                                 {{ $place->name }} <br>
                                  {{ $place->city?->name }}
                               </h4>
                               <p>

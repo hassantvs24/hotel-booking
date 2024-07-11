@@ -15,10 +15,11 @@ use Illuminate\View\View;
 class PlaceController extends BaseController
 {
     use MediaMan;
+
     /**
      * Display a listing of the resource.
      */
-    public function index(Request $request, PlaceRepository $placeRepository): View
+    public function index(Request $request, PlaceRepository $placeRepository) : View
     {
         if (!hasPermission('can_view_place')) {
             $this->unauthorized();
@@ -49,7 +50,7 @@ class PlaceController extends BaseController
     /**
      * Show the form for creating a new resource.
      */
-    public function create(CityRepository $cityRepository): View
+    public function create(CityRepository $cityRepository) : View
     {
         if (!hasPermission('can_create_place')) {
             $this->unauthorized();
@@ -63,7 +64,7 @@ class PlaceController extends BaseController
     /**
      * Store a newly created resource in storage.
      */
-    public function store(PlaceRequest $request, PlaceRepository $placeRepository): RedirectResponse
+    public function store(PlaceRequest $request, PlaceRepository $placeRepository) : RedirectResponse
     {
         if (!hasPermission('can_create_place')) {
             $this->unauthorized();
@@ -104,7 +105,7 @@ class PlaceController extends BaseController
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(CityRepository $cityRepository, Place $place): View
+    public function edit(CityRepository $cityRepository, Place $place) : View
     {
         if (!hasPermission('can_update_place')) {
             $this->unauthorized();
@@ -118,7 +119,7 @@ class PlaceController extends BaseController
     /**
      * Update the specified resource in storage.
      */
-    public function update(PlaceRequest $request, PlaceRepository $placeRepository, $place): RedirectResponse
+    public function update(PlaceRequest $request, PlaceRepository $placeRepository, $place) : RedirectResponse
     {
         if (!hasPermission('can_update_place')) {
             $this->unauthorized();
@@ -128,14 +129,17 @@ class PlaceController extends BaseController
             $place = $placeRepository->getModel($place);
             $placeRepository->update($request->except('photo', 'icon'), $place);
 
+            $placeImage = [];
+            $icon = [];
+
             if ($request->hasFile('photo')) {
                 if ($place->primaryImage) {
                     $this->deleteFile($place->primaryImage->name, 'places');
                     $place->primaryImage()->delete();
                 }
 
-                $image = $this->storeFile($request->file('photo'), 'places');
-                $place->primaryImage()->create(array_merge($image, ['media_role' => 'place_image']));
+                $placeImage = $this->storeFile($request->file('photo'), 'places');
+                $place->primaryImage()->create(array_merge($placeImage, ['media_role' => 'place_image']));
             }
 
             if ($request->hasFile('icon')) {
@@ -143,10 +147,11 @@ class PlaceController extends BaseController
                     $this->deleteFile($place->icon->name, 'place_icons');
                     $place->icon()->delete();
                 }
-
-                $image = $this->storeFile($request->file('icon'), 'place_icons');
-                $place->icon()->create(array_merge($image, ['media_role' => 'place_icon']));
+                $icon = $this->storeFile($request->file('icon'), 'place_icons');
+                $place->icon()->create(array_merge($icon, ['media_role' => 'place_icon']));
             }
+
+            //dd($placeImage, $icon);
 
             return redirect()->route('admin.places.index')->with([
                 'message'    => 'Place updated successfully.',
@@ -163,7 +168,7 @@ class PlaceController extends BaseController
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(PlaceRepository $placeRepository, $place): RedirectResponse
+    public function destroy(PlaceRepository $placeRepository, $place) : RedirectResponse
     {
         if (!hasPermission('can_delete_place')) {
             $this->unauthorized();

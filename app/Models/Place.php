@@ -12,47 +12,52 @@ class Place extends Model
 {
     protected $with = ['primaryImage', 'icon'];
     protected $appends = ['primary_image_url', 'icon_url'];
+
     /*----------------------------------------
      * Relationships
      ----------------------------------------*/
-    public function primaryImage(): MorphOne
+    public function primaryImage() : MorphOne
     {
-        return $this->morphOne(Media::class, 'media');
+        return $this->morphOne(Media::class, 'media')
+            ->where('media_role', 'place_image');
     }
 
-    public function icon(): MorphOne
+    public function icon() : MorphOne
     {
-        return $this->morphOne(Media::class, 'media');
+        return $this->morphOne(Media::class, 'media')
+            ->where('media_role', 'place_icon');
     }
 
-    public function images(): MorphMany
+    public function images() : MorphMany
     {
         return $this->morphMany(Media::class, 'media');
     }
-    public function city(): BelongsTo
+
+    public function city() : BelongsTo
     {
         return $this->belongsTo(City::class);
     }
 
-    public function surroundingPlace(): HasMany
+    public function surroundingPlace() : HasMany
     {
         return $this->hasMany(SurroundingPlace::class);
     }
 
-    public function properties(): HasMany
+    public function properties() : HasMany
     {
         return $this->hasMany(Property::class);
     }
 
 
-    public function rooms(): HasOneThrough
+    public function rooms() : HasOneThrough
     {
         return $this->hasOneThrough(Room::class, Property::class);
     }
+
     /*----------------------------------------
      * Accessors
      ----------------------------------------*/
-    public function getPrimaryImageUrlAttribute(): string
+    public function getPrimaryImageUrlAttribute() : string
     {
 
         $imageUrl = asset('assets/default/default_place.png');
@@ -64,7 +69,7 @@ class Place extends Model
         return $imageUrl;
     }
 
-    public function getIconUrlAttribute(): string
+    public function getIconUrlAttribute() : string
     {
 
         $iconUrl = asset('assets/default/default_place_icon.svg');

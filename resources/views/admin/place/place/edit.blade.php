@@ -122,7 +122,7 @@
                         label="Icon"
                         />
                         <div class="col-md-12">
-                            <img width="200" height="200" src="{{$place->icon_url}}" id="preview_icon" alt=""/>
+                            <img width="200" height="200" src="{{ $place->icon_url }}" id="preview_icon" alt=""/>
                         </div>
                     </div>
                 </div>
