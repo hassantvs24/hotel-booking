@@ -14,7 +14,8 @@ Route::prefix('')->as('portal.')->group(function () {
     Route::get('/', [HomeController::class, 'index'])->name('home');
     Route::get('room/details/{room}/{slug}', [RoomController::class, 'show'])
         ->name('room.details');
-
+    Route::get('place/{place}/hotels/{slug}', [HotelController::class, 'show'])
+        ->name('place.hotels.show');
 
     Route::get('/properties', [PropertyController::class, 'index'])->name('properties.index');
     Route::get('/hotels', [HotelController::class, 'index'])->name('hotels.index');

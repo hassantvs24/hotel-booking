@@ -102,7 +102,7 @@
                               <p>
                                  {{ $place->description }}
                               </p>
-                              <a href="" class="btn-border">Explore Hotels</a>
+                              <a href="{{ route('portal.place.hotels.show', ['place' => $place->id, 'slug' => \Illuminate\Support\Str::slug($place->name)]) }}" class="btn-border">Explore Hotels</a>
                            </div>
                         </div>
                         <div class="col-md-5">
