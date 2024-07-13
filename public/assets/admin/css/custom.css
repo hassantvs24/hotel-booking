@@ -197,3 +197,35 @@
     height: 100%;
     object-fit: cover;
 }
+
+
+
+/* Settings */
+.setting_container {
+    background: #f2f2f24a;
+    padding: 23px;
+    border-radius: 10px;
+}
+
+.setting_item {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px;
+    border-bottom: 1px solid #ccc;
+    border-right: 1px solid #ccc;
+    border-left: 1px solid #ccc;
+}
+
+.setting_item:first-child {
+    border-top: 1px solid #ccc;
+}
+
+.setting_item .setting_title {
+    font-weight: 600;
+    border-right: 1px solid #ccc;
+    padding-right: 10px;
+}
+
+.setting_item .setting_value {
+    padding-left: 10px;
+}

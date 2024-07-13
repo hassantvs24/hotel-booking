@@ -32,6 +32,45 @@
                         </select>
                     </div>
                 </div>
+
+                <div class="col-md-12">
+                    <div class="setting_container mt-2">
+                        <div class="setting_item">
+                            <div class="setting_title">Key</div>
+                            <div class="setting_value">Value</div>
+                        </div>
+                        <div class="setting_item">
+                            <div class="setting_title">Group</div>
+                            <div class="setting_value">
+                                <select name="value_type">
+                                    <option value="text">Text</option>
+                                    <option value="bool">Boolean</option>
+                                    <option value="video">Video</option>
+                                    <option value="image">Image</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="setting_item">
+                            <div class="setting_title">Value Type</div>
+                            <div class="setting_value">
+                                <select name="value_type">
+                                    <option value="text">Text</option>
+                                    <option value="bool">Boolean</option>
+                                    <option value="video">Video</option>
+                                    <option value="image">Image</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="setting_item">
+                            <div class="setting_title">Value</div>
+                            <div class="setting_value">Value</div>
+                        </div>
+                        <div class="setting_item">
+                            <div class="setting_title">Key</div>
+                            <div class="setting_value">Value</div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </x-admin.card.card-body>
 
@@ -39,9 +78,11 @@
 
     @push('scripts')
         <script>
+            let selectElement = $('#settings');
+
             $(document).ready(function () {
 
-                $('#settings').on('select2:select', function (e) {
+                selectElement.on('select2:select', function (e) {
                     let selectedOption = e.params.data;
                     let item = $(selectedOption.element).data('item');
 
@@ -61,7 +102,7 @@
                     return $option;
                 }
 
-                $('#settings').select2({
+                selectElement.select2({
                     templateResult: formatOption,
                 });
             });
