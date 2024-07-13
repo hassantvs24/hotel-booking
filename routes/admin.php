@@ -6,8 +6,8 @@ use App\Http\Controllers\Admin\ACL\UserController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\Facility\FacilityController;
 use App\Http\Controllers\Admin\Facility\SubFacilityController;
-use App\Http\Controllers\Admin\Place\CountryController;
 use App\Http\Controllers\Admin\Place\CityController;
+use App\Http\Controllers\Admin\Place\CountryController;
 use App\Http\Controllers\Admin\Place\PlaceController;
 use App\Http\Controllers\Admin\Place\StateController;
 use App\Http\Controllers\Admin\Property\PropertyCategoryController;
@@ -19,6 +19,7 @@ use App\Http\Controllers\Admin\Room\BedTypeController;
 use App\Http\Controllers\Admin\Room\PriceTypeController;
 use App\Http\Controllers\Admin\Room\RoomController;
 use App\Http\Controllers\Admin\Room\RoomTypeController;
+use App\Http\Controllers\Admin\Setting\SettingController;
 use App\Http\Controllers\Admin\Surrounding\SurroundingController;
 use App\Http\Controllers\Admin\Surrounding\SurroundingPlaceController;
 use Illuminate\Support\Facades\Route;
@@ -37,6 +38,9 @@ Route::prefix('admin')->as('admin.')->middleware(['auth'])->group(function () {
         Route::resource('roles', RoleController::class);
         Route::resource('permissions', PermissionController::class);
     });
+
+    /*-- Setting Routes --*/
+    Route::resource('settings', SettingController::class);
 
     /*-- Place Routes --*/
     Route::prefix('places')->as('places.')->group(function () {

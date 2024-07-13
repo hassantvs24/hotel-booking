@@ -423,7 +423,7 @@ return [
             ],
             [
                 'name'       => 'Settings',
-                'route'      => null,
+                'route'      => 'admin.settings.index',
                 'icon'       => 'ni ni-settings text-primary',
                 'key'        => 'admin/settings',
                 'permission' => 'can_view_settings',

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin\Setting;
 
 use App\Http\Controllers\BaseController;
+use App\Models\Setting;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
@@ -17,7 +18,8 @@ class SettingController extends BaseController
             $this->unauthorized();
         }
 
-        return view('admin.settings.index');
+        $settings = Setting::query()->get()->groupBy('group');
+        return view('admin.setting.index', compact('settings'));
     }
 
     /**
