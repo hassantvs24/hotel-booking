@@ -13,6 +13,10 @@ class Property extends Model
     protected $with = ['primaryImage'];
     protected $appends = ['primary_image_url'];
 
+    public const STATUS_PUBLISHED = 'Published';
+    public const STATUS_UNPUBLISHED = 'Unpublished';
+    public const STATUS_PENDING = 'Pending';
+
     /*----------------------------------------
      * Relationships
      ----------------------------------------*/

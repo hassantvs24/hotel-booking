@@ -5,7 +5,7 @@
                 <div class="col-md-8">
                     
                     <div class="room-search-number">
-                        <h4>{{$hotelsResponded}} hotel responded - 18 available rooms</h4>
+                        <h4>{{ count($properties) }} hotel responded - {{ $properties->sum('') }} available rooms</h4>
                         <img src="{{asset('assets/portal/img/icons/icon-info.png')}}" alt="">
                     </div>
                     @forelse ($properties as $index=> $property)
