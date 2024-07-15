@@ -12,7 +12,7 @@
                   <div class="review-input">
                      <div class="review-input-box full-box">
                         <img src="assets/img/icons/icon-location-alt.svg" alt="">
-                        <input type="text" name="location" placeholder="{{ $errors->has('location') ? '*Please fill the location' : 'Cox\'s Bazar. Chittagong' }}" value="{{old('location') }}">
+                        <input type="text" name="location" placeholder="{{ $errors->has('location') ? '*Please fill the location' : 'Cox\'s Bazar. Chittagong' }}" value="{{old('location') }}" >
                      </div>
                   </div>
                   <div class="review-input">
@@ -25,7 +25,7 @@
                               <path d="M17 22.5V19.5H14V17.5H17V14.5H19V17.5H22V19.5H19V22.5H17ZM5 20.5C4.45 20.5 3.979 20.3043 3.587 19.913C3.19567 19.521 3 19.05 3 18.5V6.5C3 5.95 3.19567 5.47933 3.587 5.088C3.979 4.696 4.45 4.5 5 4.5H6V2.5H8V4.5H14V2.5H16V4.5H17C17.55 4.5 18.021 4.696 18.413 5.088C18.8043 5.47933 19 5.95 19 6.5V12.6C18.6667 12.55 18.3333 12.525 18 12.525C17.6667 12.525 17.3333 12.55 17 12.6V10.5H5V18.5H12C12 18.8333 12.025 19.1667 12.075 19.5C12.125 19.8333 12.2167 20.1667 12.35 20.5H5ZM5 8.5H17V6.5H5V8.5Z" fill="#14B8A6"/>
                            </g>
                         </svg>
-                        <input type="text" name="check_in" placeholder="Check In" class="date-picker"  name="check_in">
+                        <input type="text" name="check_in" placeholder="Check In" class="date-picker"  value="" id="check-in-date">
                      </div>
                      <div class="review-input-box">
                         <svg width="24" height="25" viewBox="0 0 24 25" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -36,7 +36,7 @@
                               <path d="M17 22.5V19.5H14V17.5H17V14.5H19V17.5H22V19.5H19V22.5H17ZM5 20.5C4.45 20.5 3.979 20.3043 3.587 19.913C3.19567 19.521 3 19.05 3 18.5V6.5C3 5.95 3.19567 5.47933 3.587 5.088C3.979 4.696 4.45 4.5 5 4.5H6V2.5H8V4.5H14V2.5H16V4.5H17C17.55 4.5 18.021 4.696 18.413 5.088C18.8043 5.47933 19 5.95 19 6.5V12.6C18.6667 12.55 18.3333 12.525 18 12.525C17.6667 12.525 17.3333 12.55 17 12.6V10.5H5V18.5H12C12 18.8333 12.025 19.1667 12.075 19.5C12.125 19.8333 12.2167 20.1667 12.35 20.5H5ZM5 8.5H17V6.5H5V8.5Z" fill="#14B8A6"/>
                            </g>
                         </svg>
-                        <input type="text"  name="check_out" placeholder="Check Out" class="date-picker">
+                        <input type="text"  name="check_out" placeholder="Check Out" class="date-picker" value="" id="check-out-date">
                      </div>
                   </div>
                   <div class="review-input">
@@ -344,4 +344,24 @@
          </div>
       </div>
    </section>
+
+@push('scripts')
+<script>
+   document.addEventListener('DOMContentLoaded', function() {
+       function formatDate(date) {
+           var options = { weekday: 'short', month: 'long', day: 'numeric' };
+           var formattedDate = date.toLocaleDateString('en-US', options);
+           var parts = formattedDate.split(' ');
+           return `${parts[0]} ${parts[2]} ${parts[1]}`;
+       }
+       var today = new Date();
+       document.getElementById('check-in-date').value = formatDate(today);
+       var checkoutDate = new Date(today);
+       checkoutDate.setDate(checkoutDate.getDate() + 2);
+       document.getElementById('check-out-date').value = formatDate(checkoutDate);
+   });
+</script>
+@endpush
+
+
 </x-portal.layout>

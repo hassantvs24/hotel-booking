@@ -33,23 +33,23 @@
            <div class="row rooms-gallery-border">
               <div class="col-md-6">
                  <div class="single-room-gallery position-relative">
-                    <img src="{{ getStoragePath($property->image_url) }}" class="w-100" alt="">
+                    <img src="{{ $property->primary_image_url }}" class="w-100" alt="">
                     <a href="" class="btn btn-border" data-bs-toggle="modal" data-bs-target="#galleryModal"><img src="assets/img/icons/icon-gallery.png" alt=""> Show All Photos</a>
                  </div>
               </div>
               <div class="col-md-6">
                  <div class="row align-content-center flex-wrap">
                     <div class="col-md-6">
-                       <img src="assets/img/rooms/room-gallery-2.png" class="w-100 position-relative" alt="">
+                       <img src="{{ $property->primary_image_url }}" class="w-100 position-relative" alt="">
                     </div>
                     <div class="col-md-6">
-                       <img src="assets/img/rooms/room-gallery-3.png" class="w-100" alt="">
+                       <img src="{{ $property->primary_image_url }}" class="w-100" alt="">
                     </div>
                     <div class="col-md-6 mt-4">
-                       <img src="assets/img/rooms/room-gallery-4.png" class="w-100" alt="">
+                       <img src="{{ $property->primary_image_url }}" class="w-100" alt="">
                     </div>
                     <div class="col-md-6 mt-4">
-                       <img src="assets/img/rooms/room-gallery-5.png" class="w-100" alt="">
+                       <img src="{{ $property->primary_image_url }}" class="w-100" alt="">
                     </div>
                  </div>
               </div>
@@ -64,7 +64,7 @@
                 <div class="col-lg-6">
                     <div class="review-summary d-flex justify-content-between align-items-end">
                         <div class="review-summary-content d-flex">
-                            <h4>4.8</h4>
+                            <h4>{{ $property->rating}}</h4>
                             <p>Very Good <span>1234 reviews</span></p>
                         </div>
                         <span><a href="">All Reviews <img src="assets/img/icons/icon-down-arrow.png" alt=""></a></span>

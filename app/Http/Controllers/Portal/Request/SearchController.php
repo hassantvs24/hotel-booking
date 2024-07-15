@@ -33,7 +33,7 @@ class SearchController extends Controller
         }
         $properties = $properties->where('status', Property::STATUS_PUBLISHED)->get();
 
-        return view('portal.hotel-search.index', [
+        return view('portal.properties.propertylist', [
             'properties' => $properties,
             'location' => $location,
             'check_in' => $request->input('check_in'),

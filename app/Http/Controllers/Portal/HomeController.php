@@ -40,12 +40,6 @@ class HomeController extends BaseController
         return view('portal.requested-waiting.requested-waiting');
     }
 
-    public function requested(): View
-    {
-        return view('portal.requested.requested');
-    }
-
-
     public function singleHotelnonRequested(): View
     {
         return view('portal.single-hotel-non-requested.layout');

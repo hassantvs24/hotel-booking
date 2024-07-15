@@ -51,5 +51,7 @@
 
     <script src="{{ $path }}"></script>
 @endforeach
+
+    @stack('scripts')
 </body>
 </html>

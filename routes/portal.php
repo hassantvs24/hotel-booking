@@ -15,18 +15,19 @@ Route::prefix('')->as('portal.')->group(function () {
     Route::get('/', [HomeController::class, 'index'])->name('home');
     Route::get('room/details/{room}/{slug}', [RoomController::class, 'show'])
         ->name('room.details');
-    Route::get('place/{place}/hotels/{slug}', [HotelController::class, 'show'])
+    Route::get('place/{place}/hotels/{slug}', [PropertyController::class, 'place_property'])
         ->name('place.hotels.show');
 
     Route::get('/search', [SearchController::class, 'search'])
         ->name('property.search');
 
-    Route::get('/hotel/{property}/{slug}', [HotelController::class, 'hotelDetails'])
+    Route::get('/hotel/{property}/{slug}', [PropertyController::class, 'property_Details'])
         ->name('hotels.details');
 
     Route::get('/properties', [PropertyController::class, 'index'])
         ->name('properties.index');
-    Route::get('/hotels', [HotelController::class, 'index'])
+
+    Route::get('/hotels', [PropertyController::class, 'all_properties'])
         ->name('hotels.index');
 
     /*-- Payment Routes --*/
@@ -44,16 +45,6 @@ Route::prefix('')->as('portal.')->group(function () {
     /*-- requested-waiting Routes --*/
     Route::get('/requested-waiting', [HomeController::class, 'requestedWaiting'])
         ->name('requested-waiting');
-
-    /*-- requested Routes --*/
-    Route::get('/requested', [HomeController::class, 'requested'])
-        ->name('requested');
-
-
-    /*-- single-hotel-non-requested Routes --*/
-    Route::get('/single-hotel-non-requested', [HomeController::class, 'singleHotelnonRequested'])
-        ->name('single-hotel-non-requested');
-
 
     /*-- single-hotel Routes --*/
     Route::get('/single-hotel', [HomeController::class, 'singleHotel'])
