@@ -33,44 +33,64 @@
                     </div>
                 </div>
 
+                @php
+                $valueTypes = [
+                   'text' => 'Text',
+                   'bool' => 'Boolean',
+                   'image' => 'Image',
+                   'video' => 'Video'
+                ];
+                @endphp
+
                 <div class="col-md-12">
                     <div class="setting_container mt-2">
-                        <code id="preview_value"></code>
-                        <div class="setting_item">
-                            <div class="setting_title">Key</div>
-                            <div class="setting_value">Value</div>
-                        </div>
-
-                        <div class="setting_item">
-                            <div class="setting_title">Group</div>
-                            <div class="setting_value">
-                                <select name="value_type">
-                                    <option value="text">Text</option>
-                                    <option value="bool">Boolean</option>
-                                    <option value="video">Video</option>
-                                    <option value="image">Image</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="setting_item">
-                            <div class="setting_title">Value Type</div>
-                            <div class="setting_value">
-                                <select name="value_type">
-                                    <option value="text">Text</option>
-                                    <option value="bool">Boolean</option>
-                                    <option value="video">Video</option>
-                                    <option value="image">Image</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="setting_item">
-                            <div class="setting_title">Value</div>
-                            <div class="setting_value">Value</div>
-                        </div>
-                        <div class="setting_item">
-                            <div class="setting_title">Key</div>
-                            <div class="setting_value">Value</div>
-                        </div>
+                        <table class="table table-bordered">
+                            <tbody>
+                                <tr>
+                                    <th>Key</th>
+                                    <td>
+                                        <x-admin.input
+                                            type="text"
+                                            name="key"
+                                            id="setting_key"
+                                            placeholder="Enter setting Key"
+                                        />
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th>Value Type</th>
+                                    <td>
+                                        <x-admin.input
+                                            type="select"
+                                            name="value_type"
+                                            id="setting_value_type"
+                                            :options="$valueTypes"
+                                        />
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th>Value</th>
+                                    <td>
+                                        <x-admin.input
+                                            type="textarea"
+                                            name="value"
+                                            id="setting_value_text"
+                                            placeholder="Enter Value"
+                                        />
+                                        <x-admin.input
+                                            type="toggle"
+                                            name="value"
+                                            id="setting_value_boolean"
+                                        />
+                                        <x-admin.input
+                                            type="file"
+                                            name="value"
+                                            id="setting_value_image"
+                                        />
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>
@@ -82,18 +102,84 @@
         <script>
             let selectElement = $('#settings');
 
+            let keyField = $('#setting_key');
+            let valueTypeField = $('#setting_value_type');
+            let valueTextField = $('#setting_value_text');
+            let valueBooleanField = $('#setting_value_boolean');
+            let valueImageField = $('#setting_value_image');
+
+
+            function hideAllFields() {
+                keyField.hide();
+                valueTypeField.hide();
+                valueTextField.hide();
+                valueBooleanField.hide();
+                valueImageField.hide();
+            }
+
+            function showSettingFields(valueType = null) {
+                hideAllFields();
+                keyField.show();
+                valueTypeField.show();
+
+                if (!valueType) return;
+
+                switch (valueType) {
+                    case 'text':
+                        valueTextField.show();
+                        break;
+                    case 'bool':
+                        valueBooleanField.show();
+                        break;
+                    case 'image':
+                        valueImageField.show();
+                        break;
+                    default:
+                        valueTextField.show();
+                        break;
+                }
+            }
+
+            hideAllFields();
+
+            function setFieldValue(element, value) {
+                if (!element || !value) return;
+                element.val(value)
+            }
+
+            function populateValues (item) {
+                if (!item) return;
+
+                setFieldValue(keyField, item.key);
+                setFieldValue(valueTypeField, item.value_type);
+
+                if (item.value_type === 'text') {
+                    setFieldValue(valueTextField, item.value);
+                } else if (item.value_type === 'bool') {
+                    setFieldValue(valueBooleanField, item.value);
+                } else if (item.value_type === 'image') {
+                    setFieldValue(valueImageField, item.value);
+                } else {
+                    setFieldValue(valueTextField, item.value);
+                }
+
+
+            }
+
             $(document).ready(function () {
 
                 selectElement.on('select2:select', function (e) {
                     let selectedOption = e.params.data;
                     let item = $(selectedOption.element).data('item');
 
-                    let previewContainer = $('#preview_value');
-
-                    previewContainer.html(item.value)
-
-                    console.log(item);
+                    showSettingFields(item.value_type);
+                    populateValues(item);
                 });
+
+
+                valueTypeField.on('change', function (e) {
+                    showSettingFields(this.value);
+                })
 
 
                 function formatOption(option) {
