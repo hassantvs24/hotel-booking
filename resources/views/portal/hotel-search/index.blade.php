@@ -48,17 +48,16 @@
                        </div>
                        <div class="room-search-bottom d-flex justify-content-between align-items-end">
                           <div class="room-search-features">
-                             <span><img src="assets/img/icons/icon-welcome-drink.png" alt=""> Welcome Drink</span>
-                             <span><img src="assets/img/icons/icon-breakfast.png" alt=""> Free Breakfast</span>
-                             <span><img src="assets/img/icons/icon-tea.png" alt=""> Tea/Coffee</span>
-                             <span><img src="assets/img/icons/icon-air-condiitoner.png" alt=""> Air Conditioner</span>
+                           @foreach ($property->facilities as $facility)
+                              <span><img src="{{$facility->icon_url}}" alt=""> {{$facility->name}}</span>
+                           @endforeach
                           </div>
                           <div class="room-search-price">
                              @if ($property->lowest_room_price)
                                  <span>Price Starting From</span>
                                  <p>BDT {{ $property->lowest_room_price }}</p>
                              @endif
-                             <a href="single-hotel-page.php" class="btn-bg">Details</a>
+                             <a href="{{ route('portal.hotels.details', ['property'=>$property->id,'slug' => \Illuminate\Support\Str::slug($property->name)]) }}" class="btn-bg">Details</a>
                           </div>
                        </div>
                     </div>

@@ -21,6 +21,9 @@ Route::prefix('')->as('portal.')->group(function () {
     Route::get('/search', [SearchController::class, 'search'])
         ->name('property.search');
 
+    Route::get('/hotel/{property}/{slug}', [HotelController::class, 'hotelDetails'])
+        ->name('hotels.details');
+
     Route::get('/properties', [PropertyController::class, 'index'])
         ->name('properties.index');
     Route::get('/hotels', [HotelController::class, 'index'])
