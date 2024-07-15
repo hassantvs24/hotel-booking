@@ -11,7 +11,7 @@ use Illuminate\Database\Eloquent\Relations\MorphOne;
 class Property extends Model
 {
     protected $with = ['primaryImage'];
-    protected $appends = ['primary_image_url'];
+    protected $appends = ['primary_image_url', 'lowest_room_price'];
 
     public const STATUS_PUBLISHED = 'Published';
     public const STATUS_UNPUBLISHED = 'Unpublished';
@@ -82,5 +82,11 @@ class Property extends Model
         }
 
         return $imageUrl;
+    }
+
+
+    public function getLowestRoomPriceAttribute()
+    {
+        return $this->rooms()->min('base_price');
     }
 }

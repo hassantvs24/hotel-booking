@@ -5,6 +5,7 @@
 use App\Http\Controllers\Portal\HomeController;
 use App\Http\Controllers\Portal\HotelController;
 use App\Http\Controllers\Portal\PropertyController;
+use App\Http\Controllers\Portal\Request\SearchController;
 use App\Http\Controllers\Portal\RoomController;
 use Illuminate\Support\Facades\Route;
 
@@ -17,8 +18,13 @@ Route::prefix('')->as('portal.')->group(function () {
     Route::get('place/{place}/hotels/{slug}', [HotelController::class, 'show'])
         ->name('place.hotels.show');
 
-    Route::get('/properties', [PropertyController::class, 'index'])->name('properties.index');
-    Route::get('/hotels', [HotelController::class, 'index'])->name('hotels.index');
+    Route::get('/search', [SearchController::class, 'search'])
+        ->name('property.search');
+
+    Route::get('/properties', [PropertyController::class, 'index'])
+        ->name('properties.index');
+    Route::get('/hotels', [HotelController::class, 'index'])
+        ->name('hotels.index');
 
     /*-- Payment Routes --*/
     Route::get('/payment', [HomeController::class, 'payment'])
