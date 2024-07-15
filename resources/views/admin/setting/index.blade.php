@@ -35,10 +35,12 @@
 
                 <div class="col-md-12">
                     <div class="setting_container mt-2">
+                        <code id="preview_value"></code>
                         <div class="setting_item">
                             <div class="setting_title">Key</div>
                             <div class="setting_value">Value</div>
                         </div>
+
                         <div class="setting_item">
                             <div class="setting_title">Group</div>
                             <div class="setting_value">
@@ -85,6 +87,10 @@
                 selectElement.on('select2:select', function (e) {
                     let selectedOption = e.params.data;
                     let item = $(selectedOption.element).data('item');
+
+                    let previewContainer = $('#preview_value');
+
+                    previewContainer.html(item.value)
 
                     console.log(item);
                 });
