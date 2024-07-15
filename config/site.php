@@ -452,12 +452,7 @@ return [
                 'key'      => 'portal/properties',
                 'children' => [],
             ],
-            [
-                'name'     => 'Hotels',
-                'route'    => 'portal.hotels.index',
-                'key'      => 'portal/hotels',
-                'children' => [],
-            ],
+
             [
                 'name'     => 'Support',
                 'route'    => null,

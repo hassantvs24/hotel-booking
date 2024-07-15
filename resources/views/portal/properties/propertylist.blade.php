@@ -57,7 +57,7 @@
                                  <span>Price Starting From</span>
                                  <p>BDT {{ $property->lowest_room_price }}</p>
                              @endif
-                             <a href="{{ route('portal.hotels.details', ['property'=>$property->id,'slug' => \Illuminate\Support\Str::slug($property->name)]) }}" class="btn-bg">Details</a>
+                             <a href="{{ route('portal.property.details', ['property'=>$property->id,'slug' => \Illuminate\Support\Str::slug($property->name)]) }}" class="btn-bg">Details</a>
                           </div>
                        </div>
                     </div>
