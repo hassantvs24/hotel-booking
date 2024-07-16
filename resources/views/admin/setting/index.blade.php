@@ -20,9 +20,9 @@
                                 <optgroup label="{{ \Illuminate\Support\Str::ucfirst($key) }}">
                                     @foreach($setting as $coreSetting)
                                         <option
-                                            value="{{ $coreSetting->id }}"
-                                            class="core_setting"
-                                            data-item="{{ $coreSetting }}"
+                                                value="{{ $coreSetting->id }}"
+                                                class="core_setting"
+                                                data-item="{{ $coreSetting }}"
                                         >
                                             {{ $coreSetting->key }}
                                         </option>
@@ -34,18 +34,19 @@
                 </div>
 
                 @php
-                $valueTypes = [
-                   'text' => 'Text',
-                   'bool' => 'Boolean',
-                   'image' => 'Image',
-                   'video' => 'Video'
-                ];
+                    $valueTypes = [
+                       'text' => 'Text',
+                       'bool' => 'Boolean',
+                       'image' => 'Image',
+                       'video' => 'Video'
+                    ];
                 @endphp
 
                 <div class="col-md-12">
-                    <div class="setting_container mt-2">
-                        <table class="table table-bordered">
-                            <tbody>
+                    <x-admin.form action="" method="PUT">
+                        <div class="setting_container mt-2">
+                            <table class="table table-bordered">
+                                <tbody>
                                 <tr>
                                     <th>Key</th>
                                     <td>
@@ -54,6 +55,7 @@
                                             name="key"
                                             id="setting_key"
                                             placeholder="Enter setting Key"
+                                            :disabled="true"
                                         />
                                     </td>
                                 </tr>
@@ -65,6 +67,7 @@
                                             name="value_type"
                                             id="setting_value_type"
                                             :options="$valueTypes"
+                                            :disabled="true"
                                         />
                                     </td>
                                 </tr>
@@ -89,9 +92,16 @@
                                         />
                                     </td>
                                 </tr>
-                            </tbody>
-                        </table>
-                    </div>
+                                </tbody>
+                            </table>
+                            <x-admin.button
+                                class="float-right"
+                                type="submit"
+                                size="sm"
+                                text="Save Changes"
+                            />
+                        </div>
+                    </x-admin.form>
                 </div>
             </div>
         </x-admin.card.card-body>
@@ -147,7 +157,7 @@
                 element.val(value)
             }
 
-            function populateValues (item) {
+            function populateValues(item) {
                 if (!item) return;
 
                 setFieldValue(keyField, item.key);

@@ -16,6 +16,7 @@ class Input extends Component
     public $options;
     public $multiple;
     public $placeholder;
+    public $disabled;
     public $additionalClasses;
 
     /**
@@ -30,7 +31,8 @@ class Input extends Component
         $value = null,
         $options = [],
         $multiple = false,
-        $additionalClasses = null
+        $additionalClasses = null,
+        $disabled = false
     ) {
         $this->type = $type;
         $this->name = $name;
@@ -41,6 +43,7 @@ class Input extends Component
         $this->multiple = $multiple;
         $this->placeholder = $placeholder;
         $this->additionalClasses = $additionalClasses;
+        $this->disabled = $disabled;
     }
 
     /**

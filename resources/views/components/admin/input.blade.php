@@ -1,5 +1,6 @@
 @props([
     'type' => null,
+    'disabled' => false,
     'value' => null,
     'placeholder' => null,
     'name' => null,
@@ -36,10 +37,16 @@
                 placeholder="{{ $placeholder }}"
                 name="{{ $name }}"
                 id="{{ $id }}"
+                @if($disabled) disabled @endif
                 class="form-control @error($name) is-invalid @enderror">{{ $value }}</textarea>
     @elseif($type === 'select')
-        <select name="{{ $name }}" id="{{ $id }}"
-                class="form-control is-select {{ $additionalClasses }} @error($name) is-invalid @enderror" {{ $multiple ? 'multiple' : '' }}>
+        <select
+            name="{{ $name }}"
+            id="{{ $id }}"
+            class="form-control is-select {{ $additionalClasses }} @error($name) is-invalid @enderror"
+            {{ $multiple ? 'multiple' : '' }}
+            @if($disabled) disabled @endif
+        >
             <option value="">Select {{ $label }}</option>
             @foreach($options as $key => $option)
                 <option value="{{ $key }}" {{ $ifSelected($value, $key) }}>{{ $option }}</option>
@@ -48,7 +55,7 @@
 
     @elseif ($type === 'toggle')
         <div class="form-check form-switch">
-            <input class="form-check-input" type="checkbox" value="1" name="{{ $name }}" id="{{ $id }}" @if ($value) checked @endif>
+            <input @if($disabled) disabled @endif class="form-check-input" type="checkbox" value="1" name="{{ $name }}" id="{{ $id }}" @if ($value) checked @endif>
             <label class="form-check-label" for="{{ $id }}">{{ $label }}</label>
         </div>
     @else
@@ -60,6 +67,7 @@
             placeholder="{{ $placeholder }}"
             {{ $multiple ? 'multiple' : '' }}
             class="form-control @error($name) is-invalid @enderror"
+            @if($disabled) disabled @endif
         >
     @endif
 
