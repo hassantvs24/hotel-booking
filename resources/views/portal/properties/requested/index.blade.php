@@ -1,4 +1,5 @@
 <x-portal.layout title="Hotels">
+    {{-- Will be use in future fully dynamic just have to pass value --}}
     <section class="room-search">
         <div class="container">
             <div class="row">
