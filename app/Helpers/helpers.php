@@ -47,3 +47,11 @@ if(!function_exists('getStoragePath')){
     }
 }
 
+if (!function_exists('getSetting')) {
+    function getSetting($key) : ?string
+    {
+        $setting = \App\Helpers\Helper::getSetting($key);
+        return $setting;
+    }
+}
+
