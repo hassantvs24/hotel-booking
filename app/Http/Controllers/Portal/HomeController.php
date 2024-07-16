@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Portal;
 
+use App\Helpers\Helper;
 use App\Http\Controllers\BaseController;
 use App\Models\Place;
 use App\Models\Room;
@@ -12,6 +13,8 @@ class HomeController extends BaseController
     public function index() : View
     {
         $allowedSlider = getSetting('home_page_number_of_slider');
+
+        dd(Helper::settings('site'));
 
         $rooms = Room::with('property.place')->paginate(9);
         $places = Place::with('city')

@@ -523,22 +523,6 @@ return [
                 'is_deletable' => false,
             ],
             [
-                'key'          => 'site_title',
-                'value'        => 'Rate Locker',
-                'value_type'   => 'text',
-                'group'        => 'app',
-                'admin_only'   => false,
-                'is_deletable' => false,
-            ],
-            [
-                'key'          => 'site_language',
-                'value'        => 'en-US',
-                'value_type'   => 'text',
-                'group'        => 'app',
-                'admin_only'   => false,
-                'is_deletable' => false,
-            ],
-            [
                 'key'          => 'locale',
                 'value'        => 'en-GB',
                 'value_type'   => 'text',
@@ -761,6 +745,22 @@ return [
                 'is_deletable' => false,
             ],
             // Site Specific Settings
+            [
+                'key'          => 'site_title',
+                'value'        => 'Rate Locker',
+                'value_type'   => 'text',
+                'group'        => 'site',
+                'admin_only'   => false,
+                'is_deletable' => false,
+            ],
+            [
+                'key'          => 'site_language',
+                'value'        => 'en-US',
+                'value_type'   => 'text',
+                'group'        => 'site',
+                'admin_only'   => false,
+                'is_deletable' => false,
+            ],
             [
                 'key'          => 'home_page_title',
                 'value'        => 'Plan Your Dream Trip In <span>Budget</span>',

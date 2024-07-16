@@ -20,12 +20,19 @@ class Helper
 
     public static function getSetting($key) : ?string
     {
-        return static::getAllSettings()[$key] ?: null;
+        return static::settings()[$key] ?: null;
     }
 
-    public static function getAllSettings() : array
+    public static function settings($group = null, $groupBy = false) : array
     {
-        $settings = Setting::query()->pluck('value', 'key')->toArray();
-        return $settings;
+        $settings = Setting::query();
+        if ($group) {
+            $settings = $settings->where('group', $group);
+        }
+        $settings = $settings->get();
+        if ($groupBy) {
+            return $settings->groupBy('group')->toArray();
+        }
+        return $settings->pluck('value', 'key')->toArray();
     }
 }
