@@ -55,3 +55,16 @@ if (!function_exists('getSetting')) {
     }
 }
 
+if (!function_exists('getSiteLogo')) {
+    function getSiteLogo() : string
+    {
+        $logo = null;
+
+        if (!$logo) {
+            $logo = asset('assets/logo/logo.png');
+        }
+
+        return $logo;
+    }
+}
+

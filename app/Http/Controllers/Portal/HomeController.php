@@ -14,8 +14,6 @@ class HomeController extends BaseController
     {
         $allowedSlider = getSetting('home_page_number_of_slider');
 
-        dd(Helper::settings('site'));
-
         $rooms = Room::with('property.place')->paginate(9);
         $places = Place::with('city')
             ->latest()
