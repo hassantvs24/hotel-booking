@@ -18,16 +18,20 @@ class SettingController extends BaseController
             $this->unauthorized();
         }
 
-        $settings = Setting::query()->get()->groupBy('group');
+        $settings = Setting::query()->paginate(10);
         return view('admin.setting.index', compact('settings'));
     }
 
     /**
      * Show the form for creating a new resource.
      */
-    public function create()
+    public function create() : View
     {
-        //
+        if (!hasPermission('can_view_settings')) {
+            $this->unauthorized();
+        }
+
+        return view('admin.setting.create');
     }
 
     /**
@@ -57,9 +61,20 @@ class SettingController extends BaseController
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, string $id)
+    public function update(Request $request, Setting $setting) : \Illuminate\Http\RedirectResponse
     {
-        //
+        if (!hasPermission('can_view_settings')) {
+            $this->unauthorized();
+        }
+
+        $data = $this->validateData($request);
+
+        dd($data);
+
+        return redirect()->back()->with([
+            'message'    => 'Setting Updated successfully.',
+            'alert-type' => 'success'
+        ]);
     }
 
     /**
@@ -68,5 +83,43 @@ class SettingController extends BaseController
     public function destroy(string $id)
     {
         //
+    }
+
+    private function validateData(Request $request) : array
+    {
+        dd($request->all()); // null
+        $id = $request->setting?->id;
+        $updating = (bool) $id;
+
+        $rules = $request->validate([
+            'key'        => 'required|string',
+            'value_type' => 'required|string|in:text,bool,image,video',
+        ]);
+
+        if ($rules['value_type'] === 'bool') {
+            $rules['value'] = 'required|boolean';
+        }
+
+        if ($rules['value_type'] === 'text') {
+            $rules['value'] = 'required|string';
+        }
+
+        if ($rules['value_type'] === 'image') {
+            if (is_uploaded_file($this->value)) {
+                $rules['value'] = 'nullable|mimes:jpg,jpeg,png,gif|max:2048'; // maximum file size 2MB
+            }
+        }
+
+        if ($rules['value_type'] === 'video') {
+            if (is_uploaded_file($this->value)) {
+                $rules['value'] = 'nullable|mimes:mp4|max:2048'; // maximum file size 2MB
+            }
+        }
+
+        if ($id) {
+            $rules['key'] .= ",${id}";
+        }
+
+        return $rules;
     }
 }
