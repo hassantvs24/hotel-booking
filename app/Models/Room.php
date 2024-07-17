@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\MorphOne;
 
@@ -44,6 +45,11 @@ class Room extends Model
     public function extraFacilities(): BelongsToMany
     {
         return $this->belongsToMany(RoomExtraFacility::class);
+    }
+
+    public function facilities(): BelongsToMany
+    {
+        return $this->belongsToMany(FacilitySub::class, 'room_facility_setups')->withTimestamps();
     }
 
     /*----------------------------------------

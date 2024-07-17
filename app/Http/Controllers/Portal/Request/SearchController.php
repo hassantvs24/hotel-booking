@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Portal\Request;
 use App\Http\Controllers\Controller;
 use App\Models\Property;
 use Illuminate\Http\Request;
+use App\Helpers\SearchHelper;
 
 class SearchController extends Controller
 {
@@ -13,6 +14,7 @@ class SearchController extends Controller
         $request->validate([
             'location' => 'required|string|max:255',
         ]);
+        SearchHelper::storeSearchRequest($request);
 
         $properties = Property::query();
 

@@ -8,7 +8,6 @@
             </div>
             <div class="col-md-12 col-xl-5 ms-auto">
                <form action="{{ route('portal.property.search') }}"  method="GET" class="review-box-home">
-                  @csrf
                   <div class="review-input">
                      <div class="review-input-box full-box">
                         <img src="assets/img/icons/icon-location-alt.svg" alt="">
@@ -344,24 +343,4 @@
          </div>
       </div>
    </section>
-
-@push('scripts')
-<script>
-   document.addEventListener('DOMContentLoaded', function() {
-       function formatDate(date) {
-           var options = { weekday: 'short', month: 'long', day: 'numeric' };
-           var formattedDate = date.toLocaleDateString('en-US', options);
-           var parts = formattedDate.split(' ');
-           return `${parts[0]} ${parts[2]} ${parts[1]}`;
-       }
-       var today = new Date();
-       document.getElementById('check-in-date').value = formatDate(today);
-       var checkoutDate = new Date(today);
-       checkoutDate.setDate(checkoutDate.getDate() + 2);
-       document.getElementById('check-out-date').value = formatDate(checkoutDate);
-   });
-</script>
-@endpush
-
-
 </x-portal.layout>

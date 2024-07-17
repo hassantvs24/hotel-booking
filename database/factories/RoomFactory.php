@@ -3,6 +3,7 @@
 namespace Database\Factories;
 
 use App\Models\BedType;
+use App\Models\FacilitySub;
 use App\Models\Property;
 use App\Models\Room;
 use App\Models\RoomType;
@@ -42,5 +43,18 @@ class RoomFactory extends Factory
             'room_type_id'   => $this->faker->randomElement(RoomType::all())->id,
             'property_id'    => $this->faker->randomElement(Property::all())->id,
         ];
+    }
+
+
+
+    // Add room facilities setup
+    public function configure()
+    {
+        return $this->afterCreating(function (Room $room) {
+
+            $room->facilities()->attach(
+                FacilitySub::all()->random(rand(1, 5))->pluck('id')->toArray()
+            );
+        });
     }
 }

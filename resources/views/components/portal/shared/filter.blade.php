@@ -6,22 +6,24 @@
                     <div class="filter-top d-flex justify-content-between align-items-center">
                         <div class="filter-box">
                             <img src="{{asset('assets/portal/img/icons/icon-location-alt.svg')}}" alt="">
-                            <input type="text" placeholder="Cox's Bazar. Chittagong">
+                            <input type="text" placeholder="{{ \App\Helpers\SearchHelper::getPreviousSearchRequest()['location'] ?? 'Cox\'s Bazar. Chittagong' }}" value="{{ \App\Helpers\SearchHelper::getPreviousSearchRequest()['location'] ?? '' }}"/>
                         </div>
                         <div class="filter-box">
                             <div class="review-input">
                                 <div class="review-input-box">
-                                    <input type="text" placeholder="Check In" class="date-picker">
+                                    <input type="text" placeholder="{{ \App\Helpers\SearchHelper::getPreviousSearchRequest()['check_in'] ?? 'Check In' }}" value="{{ \App\Helpers\SearchHelper::getPreviousSearchRequest()['check_in'] ?? '' }}" class="date-picker">
                                 </div>
                                 <div class="review-input-box">
-                                    <input type="text" placeholder="Check Out" class="date-picker">
+                                    <input type="text" placeholder="{{ \App\Helpers\SearchHelper::getPreviousSearchRequest()['check_in'] ?? 'Check Out' }}" class="date-picker" value="{{ \App\Helpers\SearchHelper::getPreviousSearchRequest()['check_in'] ?? '' }}">
                                 </div>
                             </div>
                         </div>
                         <div class="filter-box">
                             <div class="review-input">
                                 <div class="review-input-box">
-                                    <input type="number" name="number" min="0" max="100" placeholder="2 Adult">
+                                    <input type="number" name="number_adults" min="0" max="100" placeholder="{{ \App\Helpers\SearchHelper::getPreviousSearchRequest()['number_adults'] ?? '2 Adult' }}"
+                                    value="{{ \App\Helpers\SearchHelper::getPreviousSearchRequest()['number_adults'] ?? '' }}"
+                                    >
                                     <button type="button" onclick="this.parentNode.querySelector('[type=number]').stepDown();">
                                         <img src="{{asset('assets/portal/img/home/arrow_drop_up.png')}}" alt="">
                                     </button>
@@ -30,7 +32,9 @@
                                     </button>
                                 </div>
                                 <div class="review-input-box">
-                                    <input type="number" name="number" min="0" max="100" placeholder="0 Child">
+                                    <input type="number" name="number_children" min="0" max="100" placeholder="{{ \App\Helpers\SearchHelper::getPreviousSearchRequest()['number_children'] ?? '0 Child' }}"
+                                    value="{{ \App\Helpers\SearchHelper::getPreviousSearchRequest()['number_children'] ?? '' }}"
+                                    >
                                     <button type="button" onclick="this.parentNode.querySelector('[type=number]').stepDown();">
                                         <img src="{{asset('assets/portal/img/home/arrow_drop_up.png')}}" alt="">
                                     </button>
@@ -39,7 +43,9 @@
                                     </button>
                                 </div>
                                 <div class="review-input-box">
-                                    <input type="number" name="number" min="0" max="100" placeholder="1 Room">
+                                    <input type="number" name="number_rooms" min="0" max="100" placeholder="{{ \App\Helpers\SearchHelper::getPreviousSearchRequest()['number_rooms'] ?? '1 Room' }}"
+                                    value="{{ \App\Helpers\SearchHelper::getPreviousSearchRequest()['number_rooms'] ?? '' }}"
+                                    >
                                     <button type="button" onclick="this.parentNode.querySelector('[type=number]').stepDown();">
                                         <img src="{{asset('assets/portal/img/home/arrow_drop_up.png')}}" alt="">
                                     </button>
