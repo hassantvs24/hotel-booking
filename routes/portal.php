@@ -2,6 +2,7 @@
 
 /*----------------- Public Routes -----------------*/
 
+use App\Http\Controllers\Portal\Booking\BookingController;
 use App\Http\Controllers\Portal\HomeController;
 use App\Http\Controllers\Portal\HotelController;
 use App\Http\Controllers\Portal\PropertyController;
@@ -26,6 +27,9 @@ Route::prefix('')->as('portal.')->group(function () {
 
     Route::get('/properties', [PropertyController::class, 'all_properties'])
         ->name('properties.index');
+
+    Route::get('/payment/{room}/{slug}', [BookingController::class, 'index'])->name('payment.index');
+
 
     /*-- Payment Routes --*/
     Route::get('/payment', [HomeController::class, 'payment'])

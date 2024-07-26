@@ -210,7 +210,7 @@
                         </div>
                         <div class="room-column-bottom">
                             <p>BDT {{$room->base_price}} <span>/night</span></p>
-                            <a href="" class="btn btn-bg">Reserve The Room</a>
+                            <a href="{{ route('portal.payment.index', ['room' => $room->id, 'slug' => \Illuminate\Support\Str::slug($room->name)]) }}" class="btn btn-bg">Reserve The Room</a>
                             <a href="" class="btn btn-border">Make An Offer</a>
                         </div>
                     </div>

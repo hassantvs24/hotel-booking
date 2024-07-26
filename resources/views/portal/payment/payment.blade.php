@@ -1,6 +1,4 @@
-@extends('portal.layout.master')
-@section("title","payment")
-@section('content')
+<x-portal.layout title="Payment">
 <section class="payment">
     <div class="container">
         <div class="row">
@@ -13,8 +11,8 @@
                 <div class="booking-information">
                     <h4 class="page-subtitle">Your Booking Information</h4>
                     <ul>
-                        <li><img src="{{asset('assets/portal/img/icons/icon-range.svg')}}" alt=""> 23 Nov To 26 Nov (2 nights)</li>
-                        <li><img src="{{asset('assets/portal/img/icons/icon-persons.svg')}}" alt=""> 2 Adult + 0 Child</li>
+                        <li><img src="{{asset('assets/portal/img/icons/icon-range.svg')}}" alt=""> {{$checkInDateFormatted}} To {{$checkOutDateFormatted}}  {{$numberOfNights?$numberOfNights:'0'}} nights</li>
+                        <li><img src="{{asset('assets/portal/img/icons/icon-persons.svg')}}" alt=""> {{$numberAdults?$numberAdults:'0'}} Adult + {{$numberChildren?$numberChildren:'0'}} Child</li>
                     </ul>
                 </div>
 
@@ -107,16 +105,16 @@
             <div class="col-xl-6 col-md-12 mt-md-3 mt-xl-0">
                 <div class="booking-summary">
                     <div class="booking-summary-top">
-                        <img src="{{asset('assets/portal/img/icons/hotel-booking.svg')}}" alt="">
+                        <img src="{{$room->property->primary_image_url}}" alt="{{$room->property->name}}">
                         <div class="booking-summary-info">
                             <span><img src="{{asset('assets/portal/img/icons/icon-home.png')}}" alt="">Hotel</span>
-                            <h4>Seacrest Oceanfront Resort</h4>
-                            <p><span>Room:</span> Junior Suite</p>
+                            <h4>{{$room->property->name}}</h4>
+                            <p><span>Room:</span> {{$room->name}}</p>
                         </div>
                     </div>
                     <h5>Price Details</h5>
                     <ul>
-                        <li>R#1 - BDT 14,906 X BDT 14,906 <span>BDT 29,812</span></li>
+                        <li>R#1 - BDT {{$room->base_price}} X {{$numberOfNights}}nights <span>BDT {{$price}}</span></li>
                         <li>VAT & Charges (5% + 7%) <span>BDT 3,577</span></li>
                         <li>Sub Total <span>BDT 33,389</span></li>
                     </ul>
@@ -125,5 +123,4 @@
         </div>
     </div>
 </section>
-
-@endsection
+</x-portal.layout>

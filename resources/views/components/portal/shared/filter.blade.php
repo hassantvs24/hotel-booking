@@ -2,7 +2,7 @@
     <div class="container">
         <div class="row">
             <div class="col-md-12">
-                <form action="">
+                <form action="" id="filterform">
                     <div class="filter-top d-flex justify-content-between align-items-center">
                         <div class="filter-box">
                             <img src="{{asset('assets/portal/img/icons/icon-location-alt.svg')}}" alt="">
@@ -526,4 +526,36 @@
             </div>
         </div>
     </div>
+
+@push('scripts')
+    <script>
+        $.ajaxSetup({
+        headers: {
+            'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                }
+            });
+    </script>
+    <script>
+        $(document).ready(function(){
+            $(document).on('change','#filterform',function(event){
+                event.preventDefault();
+                let formData = new FormData(this);
+                $.ajax(
+                    {
+                        url:"{{route('portal.property.search')}}",
+                        method:"GET",
+                        data: formData,
+                        cache:false,
+                        headers: {
+                        'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                        }
+                    }
+                )
+            })
+        })
+    </script>
+        
+@endpush
+
+
 </section>
