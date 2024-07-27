@@ -36,7 +36,7 @@
     <x-portal.shared.navbar is-home="{{ request()->path() === '/' }}"/>
 
     @if(!in_array(request()->path(), $filterNotExists))
-        <x-portal.shared.filter />
+        <x-portal.shared.filter title="{{$title}}" />
     @endif
 
     {{ $slot }}

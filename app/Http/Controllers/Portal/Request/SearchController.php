@@ -7,18 +7,17 @@ use App\Models\Property;
 use Illuminate\Http\Request;
 use App\Helpers\SearchHelper;
 
+
 class SearchController extends Controller
 {
     public function search(Request $request)
     {
-        $request->validate([
-            'location' => 'required|string|max:255',
-        ]);
         SearchHelper::storeSearchRequest($request);
+        $searchRequest = SearchHelper::getPreviousSearchRequest();
 
         $properties = Property::query();
 
-        $location = $request->input('location');
+        $location = $searchRequest['location'];
         if ($location) {
             $properties->whereHas('place', function ($q) use ($location) {
                 $q->where('name', 'like', '%' . $location . '%')

@@ -1,4 +1,4 @@
-<x-portal.layout title="Hotels">
+<x-portal.layout title="Properties">
     <section class="room-search">
         <div class="container">
            <div class="row">

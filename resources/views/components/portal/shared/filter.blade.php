@@ -1,27 +1,32 @@
+@props([ 'title' => null ])
 <section class="filter">
     <div class="container">
         <div class="row">
+            <p>{{$title}} p</p>
             <div class="col-md-12">
-                <form action="" id="filterform">
+                <form action="{{ route('portal.property.search') }}" id="filterform">
                     <div class="filter-top d-flex justify-content-between align-items-center">
                         <div class="filter-box">
                             <img src="{{asset('assets/portal/img/icons/icon-location-alt.svg')}}" alt="">
-                            <input type="text" placeholder="{{ \App\Helpers\SearchHelper::getPreviousSearchRequest()['location'] ?? 'Cox\'s Bazar. Chittagong' }}" value="{{ \App\Helpers\SearchHelper::getPreviousSearchRequest()['location'] ?? '' }}"/>
+                            <input type="text" name="location" id="location" 
+                            placeholder="{{ \App\Helpers\SearchHelper::getPreviousSearchRequest()['location'] ?? 'Cox\'s Bazar. Chittagong' }}"   
+                            value="{{ \App\Helpers\SearchHelper::getPreviousSearchRequest()['location'] ?? '' }}"
+                            {{ in_array($title, ['Payment', 'Show Room']) ? 'disabled' : '' }} />
                         </div>
                         <div class="filter-box">
                             <div class="review-input">
                                 <div class="review-input-box">
-                                    <input type="text" placeholder="{{ \App\Helpers\SearchHelper::getPreviousSearchRequest()['check_in'] ?? 'Check In' }}" value="{{ \App\Helpers\SearchHelper::getPreviousSearchRequest()['check_in'] ?? '' }}" class="date-picker">
+                                    <input type="text" name="check_in" id="check_in" placeholder="{{ \App\Helpers\SearchHelper::getPreviousSearchRequest()['check_in'] ?? 'Check In' }}" value="{{ \App\Helpers\SearchHelper::getPreviousSearchRequest()['check_in'] ?? '' }}" class="date-picker">
                                 </div>
                                 <div class="review-input-box">
-                                    <input type="text" placeholder="{{ \App\Helpers\SearchHelper::getPreviousSearchRequest()['check_in'] ?? 'Check Out' }}" class="date-picker" value="{{ \App\Helpers\SearchHelper::getPreviousSearchRequest()['check_in'] ?? '' }}">
+                                    <input type="text" name="check_out" id="check_out" placeholder="{{ \App\Helpers\SearchHelper::getPreviousSearchRequest()['check_out'] ?? 'Check Out' }}" class="date-picker" value="{{ \App\Helpers\SearchHelper::getPreviousSearchRequest()['check_out'] ?? '' }}">
                                 </div>
                             </div>
                         </div>
                         <div class="filter-box">
                             <div class="review-input">
                                 <div class="review-input-box">
-                                    <input type="number" name="number_adults" min="0" max="100" placeholder="{{ \App\Helpers\SearchHelper::getPreviousSearchRequest()['number_adults'] ?? '2 Adult' }}"
+                                    <input type="number" name="number_adults" id="number_adults" min="0" max="100" placeholder="{{ \App\Helpers\SearchHelper::getPreviousSearchRequest()['number_adults'] ?? '2 Adult' }}"
                                     value="{{ \App\Helpers\SearchHelper::getPreviousSearchRequest()['number_adults'] ?? '' }}"
                                     >
                                     <button type="button" onclick="this.parentNode.querySelector('[type=number]').stepDown();">
@@ -32,7 +37,7 @@
                                     </button>
                                 </div>
                                 <div class="review-input-box">
-                                    <input type="number" name="number_children" min="0" max="100" placeholder="{{ \App\Helpers\SearchHelper::getPreviousSearchRequest()['number_children'] ?? '0 Child' }}"
+                                    <input type="number" name="number_children" id="number_children" min="0" max="100" placeholder="{{ \App\Helpers\SearchHelper::getPreviousSearchRequest()['number_children'] ?? '0 Child' }}"
                                     value="{{ \App\Helpers\SearchHelper::getPreviousSearchRequest()['number_children'] ?? '' }}"
                                     >
                                     <button type="button" onclick="this.parentNode.querySelector('[type=number]').stepDown();">
@@ -43,7 +48,7 @@
                                     </button>
                                 </div>
                                 <div class="review-input-box">
-                                    <input type="number" name="number_rooms" min="0" max="100" placeholder="{{ \App\Helpers\SearchHelper::getPreviousSearchRequest()['number_rooms'] ?? '1 Room' }}"
+                                    <input type="number" name="number_rooms" id="number_rooms" min="0" max="100" placeholder="{{ \App\Helpers\SearchHelper::getPreviousSearchRequest()['number_rooms'] ?? '1 Room' }}"
                                     value="{{ \App\Helpers\SearchHelper::getPreviousSearchRequest()['number_rooms'] ?? '' }}"
                                     >
                                     <button type="button" onclick="this.parentNode.querySelector('[type=number]').stepDown();">
@@ -529,33 +534,35 @@
 
 @push('scripts')
     <script>
-        $.ajaxSetup({
-        headers: {
-            'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+        $(document).ready(function() {
+            $('#filterform').on('change', 'input, select', function(event) {
+                // Define the title variable
+                let title = "{{ $title }}";
+                let formData = $('#filterform').serialize();
+                console.log(formData);
+                
+                // Construct the search URL based on the title
+                let searchUrl = "{{ route('portal.property.search') }}" + '?' + formData;
+                if (title === 'Properties') {
+                    // Update the browser URL without reloading the page
+                    history.pushState(null, null, searchUrl);
+                    console.log('Search URL updated:', searchUrl);
+                } else {
+                    searchUrl = "{{ route('portal.property.search') }}";
                 }
-            });
-    </script>
-    <script>
-        $(document).ready(function(){
-            $(document).on('change','#filterform',function(event){
-                event.preventDefault();
-                let formData = new FormData(this);
-                $.ajax(
-                    {
-                        url:"{{route('portal.property.search')}}",
-                        method:"GET",
-                        data: formData,
-                        cache:false,
-                        headers: {
-                        'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
-                        }
+                $.ajax({
+                    url: searchUrl,
+                    method: "GET",
+                    data: formData,
+                    success: function(response) {
+                        window.location.reload();
+                    },
+                    error: function(xhr, status, error) {
+                        console.error('Error:', xhr.responseText);
                     }
-                )
-            })
-        })
+                });
+            });
+        });
     </script>
-        
-@endpush
-
-
+    @endpush
 </section>
