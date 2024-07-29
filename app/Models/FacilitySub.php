@@ -20,9 +20,14 @@ class FacilitySub extends Model
         return $this->belongsTo(Facility::class);
     }
 
-    public function properties() : BelongsToMany
+    public function properties(): BelongsToMany
     {
         return $this->belongsToMany(Property::class);
+    }
+
+    public function rooms(): BelongsToMany
+    {
+        return $this->belongsToMany(Room::class);
     }
 
     public function icon(): MorphOne

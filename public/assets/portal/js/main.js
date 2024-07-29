@@ -2,7 +2,7 @@ var current_fs, next_fs, previous_fs; //fieldsets
 var left, opacity, scale; //fieldset properties which we will animate
 var animating; //flag to prevent quick multi-click glitches
 
-$(".next").click(function() {
+$(".next").click(function () {
     if (animating) return false;
     animating = true;
 
@@ -18,7 +18,7 @@ $(".next").click(function() {
     current_fs.animate({
         opacity: 0
     }, {
-        step: function(now, mx) {
+        step: function (now, mx) {
             //as the opacity of current_fs reduces to 0 - stored in "now"
             //1. scale current_fs down to 80%
             scale = 1 - (1 - now) * 0.2;
@@ -36,7 +36,7 @@ $(".next").click(function() {
             });
         },
         duration: 800,
-        complete: function() {
+        complete: function () {
             current_fs.hide();
             animating = false;
         },
@@ -45,7 +45,7 @@ $(".next").click(function() {
     });
 });
 
-$(".previous").click(function() {
+$(".previous").click(function () {
     if (animating) return false;
     animating = true;
 
@@ -61,7 +61,7 @@ $(".previous").click(function() {
     current_fs.animate({
         opacity: 0
     }, {
-        step: function(now, mx) {
+        step: function (now, mx) {
             //as the opacity of current_fs reduces to 0 - stored in "now"
             //1. scale previous_fs from 80% to 100%
             scale = 0.8 + (1 - now) * 0.2;
@@ -78,7 +78,7 @@ $(".previous").click(function() {
             });
         },
         duration: 800,
-        complete: function() {
+        complete: function () {
             current_fs.hide();
             animating = false;
         },
@@ -100,7 +100,7 @@ document.addEventListener('readystatechange', event => {
             countDownDate[i]['minutes'] = 0;
         }
 
-        var countdownfunction = setInterval(function() {
+        var countdownfunction = setInterval(function () {
             for (var i = 0; i < countDownDate.length; i++) {
                 var now = new Date().getTime();
                 var distance = countDownDate[i]['time'] - now;
@@ -130,62 +130,62 @@ document.addEventListener('readystatechange', event => {
 //FORM DATA
 
 $(".date-picker").datepicker({
-	dateFormat: 'd M',
-	minDate: new Date()
+    dateFormat: 'yy-mm-dd',
+    minDate: new Date()
 });
-$("#submitBtn").click(function() {
-	var spaces = $("#spaces").val();
-	var parkingPrice = $("#parkingPrice").val();
-	var cashParkers = $("#cashParkers").val();
-	var util = $("#util").val();
-	var count = $("#count").val();
-	var hours = $("#hours").val();
-	var laborRate = $("#laborRate").val();
-	var eventLabor = $("#eventLabor").val();
-	var vname = $("#full_name").val();
-	var company = $("#company").val();
-	var vemail = $("#email").val();
-	if (vname == "" && vemail == "") {
-		alert("Please fill out the form");
-	} else if (vname == "" && vemail !== "") {
-		alert("Name field is required");
-	} else if (vemail == "" && vname !== "") {
-		alert("Email field is required");
-	} else {
-		$.post(
-			"https://parkhub-bosh-poc.bubbleapps.io/version-test/api/1.1/wf/calc?", //Required URL of the page on server
-			{
-				// Data Sending With Request To Server
-				name: vname,
-				email: vemail,
-				company: company,
-				spaces: spaces,
-				parkingPrice: parkingPrice,
-				cashPay: cashParkers,
-				util: util,
-				laborRate: laborRate,
-				eventLabor: eventLabor,
-				eventCount: count,
-				eventHours: hours
-			},
-			function(response, status) {
-				// Required Callback Function
-				alert(
-					"*----Received Data----*nnResponse : " +
-					response +
-					"nnStatus : " +
-					status
-				); //"response" receives - whatever written in echo of above PHP script.
-				$("#form")[0].reset();
-			}
-		);
-	}
+$("#submitBtn").click(function () {
+    var spaces = $("#spaces").val();
+    var parkingPrice = $("#parkingPrice").val();
+    var cashParkers = $("#cashParkers").val();
+    var util = $("#util").val();
+    var count = $("#count").val();
+    var hours = $("#hours").val();
+    var laborRate = $("#laborRate").val();
+    var eventLabor = $("#eventLabor").val();
+    var vname = $("#full_name").val();
+    var company = $("#company").val();
+    var vemail = $("#email").val();
+    if (vname == "" && vemail == "") {
+        alert("Please fill out the form");
+    } else if (vname == "" && vemail !== "") {
+        alert("Name field is required");
+    } else if (vemail == "" && vname !== "") {
+        alert("Email field is required");
+    } else {
+        $.post(
+            "https://parkhub-bosh-poc.bubbleapps.io/version-test/api/1.1/wf/calc?", //Required URL of the page on server
+            {
+                // Data Sending With Request To Server
+                name: vname,
+                email: vemail,
+                company: company,
+                spaces: spaces,
+                parkingPrice: parkingPrice,
+                cashPay: cashParkers,
+                util: util,
+                laborRate: laborRate,
+                eventLabor: eventLabor,
+                eventCount: count,
+                eventHours: hours
+            },
+            function (response, status) {
+                // Required Callback Function
+                alert(
+                    "*----Received Data----*nnResponse : " +
+                    response +
+                    "nnStatus : " +
+                    status
+                ); //"response" receives - whatever written in echo of above PHP script.
+                $("#form")[0].reset();
+            }
+        );
+    }
 });
 
 
 var div_top = $('.filter, .room-search-map').offset().top;
 
-$(window).scroll(function() {
+$(window).scroll(function () {
     var window_top = $(window).scrollTop() - 0;
     if (window_top > div_top) {
         if (!$('.filter, .room-search-map').is('.sticky')) {

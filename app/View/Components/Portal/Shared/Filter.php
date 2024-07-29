@@ -8,12 +8,13 @@ use Illuminate\View\Component;
 
 class Filter extends Component
 {
+    public $title;
     /**
      * Create a new component instance.
      */
-    public function __construct()
+    public function __construct($title = null)
     {
-        //
+        $this->title = $title;
     }
 
     /**
