@@ -3,6 +3,7 @@
         <x-admin.card.card-header title="Add New Property"/>
         <x-admin.card.card-body>
             <x-admin.form action="{{ route('admin.properties.store') }}" method="POST" enctype="multipart/form-data">
+                <input type="hidden" name="status" id="status" />
                 <div class="row">
                     <div class="col-md-12">
                         <x-admin.input
@@ -155,21 +156,64 @@
                             value="{{ old('seo_meta') }}"
                         />
                     </div>
-                </div>
-                <div class="row">
-                </div>
-                <div class="row">
+
                     <div class="col-md-12">
+                        <label for="property_facilities">Setup Facilities</label>
                         <x-admin.input
                             type="select"
                             name="property_facilities[]"
                             id="property_facilities"
-                            label="Facilities"
                             placeholder="Facilities"
                             multiple
                             :options="$facilities"
                         />
                     </div>
+                </div>
+
+{{--                <div class="row">--}}
+{{--                    <div class="col-md-12">--}}
+{{--                        <h6>Property Rules Setup</h6>--}}
+{{--                        <div class="row">--}}
+{{--                            <div class="col-md-3">--}}
+{{--                                <x-admin.input--}}
+{{--                                    type="text"--}}
+{{--                                    name="rules[description][]"--}}
+{{--                                    id="rules_description"--}}
+{{--                                    label="Description"--}}
+{{--                                    placeholder="Description"--}}
+{{--                                />--}}
+{{--                            </div>--}}
+{{--                            <div class="col-md-2">--}}
+{{--                                <x-admin.input--}}
+{{--                                    type="select"--}}
+{{--                                    name="rules[property_rule_id][]"--}}
+{{--                                    id="rules_property_rule_id"--}}
+{{--                                    label="Rule"--}}
+{{--                                    :options="[]"--}}
+{{--                                />--}}
+{{--                            </div>--}}
+{{--                            <div class="col-md-2">--}}
+{{--                                <x-admin.input--}}
+{{--                                    type="select"--}}
+{{--                                    name="rules[property_rule_id][]"--}}
+{{--                                    id="rules_property_rule_id"--}}
+{{--                                    label="Rule"--}}
+{{--                                    :options="[]"--}}
+{{--                                />--}}
+{{--                            </div>--}}
+{{--                            <div class="col-md-2">--}}
+{{--                                <x-admin.input--}}
+{{--                                    type="select"--}}
+{{--                                    name="rules[property_rule_id][]"--}}
+{{--                                    id="rules_property_rule_id"--}}
+{{--                                    label="Rule"--}}
+{{--                                    :options="[]"--}}
+{{--                                />--}}
+{{--                            </div>--}}
+{{--                    </div>--}}
+{{--                </div>--}}
+
+                <div class="row">
                     <div class="col-md-12">
                         <x-admin.input
                             type="file"
@@ -189,9 +233,9 @@
                         <a href="{{ route('admin.properties.index') }}" class="btn btn-danger btn-sm">Back To List</a>
                     </div>
                     <div class="text-right col-md-6">
-                        <x-admin.button variant="info" type="submit" size="sm">Pending</x-admin.button>
-                        <x-admin.button variant="warning" type="submit" size="sm">Un-Publish</x-admin.button>
-                        <x-admin.button variant="primary" type="submit" size="sm">Published</x-admin.button>
+                        <x-admin.button class="submit_button" data-value="Pending" variant="info" type="submit" size="sm">Pending</x-admin.button>
+                        <x-admin.button class="submit_button" data-value="Unpublished" variant="warning" type="submit" size="sm">Un-Publish</x-admin.button>
+                        <x-admin.button class="submit_button" data-value="Published" variant="primary" type="submit" size="sm">Published</x-admin.button>
                     </div>
                 </div>
             </x-admin.form>
@@ -212,8 +256,20 @@
     </script>
     <script>
         $(document).ready(function () {
-            $('#property_facilities').select2();
+            $('#property_facilities').select2({
+                placeholder: "Select Facilities",
+                allowClear: true
+            });
         });
     </script>
+        <script>
+            $('.submit_button').on('click', function (e) {
+                e.preventDefault();
+                let status = $(this).data('value');
+                $('#status').val(status);
+
+                $(this).closest('form').submit();
+            });
+        </script>
     @endpush
 </x-admin.layout>
