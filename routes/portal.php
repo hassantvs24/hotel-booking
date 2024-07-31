@@ -4,7 +4,6 @@
 
 use App\Http\Controllers\Portal\Booking\BookingController;
 use App\Http\Controllers\Portal\HomeController;
-use App\Http\Controllers\Portal\HotelController;
 use App\Http\Controllers\Portal\PropertyController;
 use App\Http\Controllers\Portal\Request\SearchController;
 use App\Http\Controllers\Portal\RoomController;
@@ -30,10 +29,9 @@ Route::prefix('')->as('portal.')->group(function () {
 
     Route::get('/payment/{room}/{slug}', [BookingController::class, 'index'])->name('payment.index');
 
+    Route::post('/booking/{room}', [BookingController::class, 'booking'])->name('booking.store');
 
-    /*-- Payment Routes --*/
-    Route::get('/payment', [HomeController::class, 'payment'])
-        ->name('payment');
+
 
     /*-- property-add Routes --*/
     Route::get('/property-add', [HomeController::class, 'propertyAdd'])
