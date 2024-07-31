@@ -2,7 +2,6 @@
 <section class="filter">
     <div class="container">
         <div class="row">
-            <p>{{$title}} p</p>
             <div class="col-md-12">
                 <form action="{{ route('portal.property.search') }}" id="filterform">
                     <div class="filter-top d-flex justify-content-between align-items-center">
@@ -11,7 +10,8 @@
                             <input type="text" name="location" id="location" 
                             placeholder="{{ \App\Helpers\SearchHelper::getPreviousSearchRequest()['location'] ?? 'Cox\'s Bazar. Chittagong' }}"   
                             value="{{ \App\Helpers\SearchHelper::getPreviousSearchRequest()['location'] ?? '' }}"
-                            {{ in_array($title, ['Payment', 'Show Room']) ? 'disabled' : '' }} />
+                            />
+                            {{-- {{ in_array($title, ['Payment', 'Show Room']) ? 'disabled' : '' }}  --}}
                         </div>
                         <div class="filter-box">
                             <div class="review-input">
@@ -535,15 +535,17 @@
 @push('scripts')
     <script>
         $(document).ready(function() {
+            let initialLocation = $('#location').val();
             $('#filterform').on('change', 'input, select', function(event) {
                 // Define the title variable
                 let title = "{{ $title }}";
+                let currentLocation = $('#location').val();
                 let formData = $('#filterform').serialize();
                 console.log(formData);
                 
                 // Construct the search URL based on the title
                 let searchUrl = "{{ route('portal.property.search') }}" + '?' + formData;
-                if (title === 'Properties') {
+                if (title === 'Properties' || initialLocation !== currentLocation) {
                     // Update the browser URL without reloading the page
                     history.pushState(null, null, searchUrl);
                     console.log('Search URL updated:', searchUrl);
