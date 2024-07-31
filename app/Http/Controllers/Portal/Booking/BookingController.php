@@ -11,7 +11,7 @@ use DateTime;
 use Exception;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Request;
+use Illuminate\Http\Request;
 
 class BookingController extends Controller
 {
@@ -22,6 +22,12 @@ class BookingController extends Controller
         $checkOutDate = new DateTime($searchRequest['check_out']);
         $numberOfNights = $checkInDate->diff($checkOutDate)->days;
 
+        $existingBooking = Booking::where('room_id', $room->id)
+            ->where('user_id', 1)
+            ->first(); // Use first() to get the booking record
+
+        $bookingId = $existingBooking ? $existingBooking->id : null;
+
         $data = [
             'room' => $room,
             'checkInDateFormatted' => $checkInDate->format('d F'),
@@ -29,7 +35,9 @@ class BookingController extends Controller
             'numberOfNights' => $numberOfNights,
             'numberAdults' => $searchRequest['number_adults'],
             'numberChildren' => $searchRequest['number_children'],
-            'price' => $room->base_price * $numberOfNights
+            'price' => $room->base_price * $numberOfNights,
+            'existingBooking' => $existingBooking, // True or false
+            'bookingId' => $bookingId
         ];
 
         return view('portal.payment.payment', $data);
@@ -37,13 +45,20 @@ class BookingController extends Controller
 
 
 
+
     public function booking(Request $request, $room): RedirectResponse
     {
+        $request->validate([
+            'agree1' => 'required|accepted',
+            'agree2' => 'required|accepted'
+        ]);
         try {
             $searchRequest = SearchHelper::getPreviousSearchRequest();
+            $userId = 1;
 
+            // Create the booking
             $bookingNumber = 'BOOK-' . strtoupper(uniqid());
-            Booking::create([
+            $newBooking = Booking::create([
                 'booking_number' => $bookingNumber,
                 'checkin' => $searchRequest['check_in'] ?? null,
                 'checkout' => $searchRequest['check_out'] ?? null,
@@ -53,13 +68,49 @@ class BookingController extends Controller
                 'reference' => null,
                 'notes' => null,
                 'room_id' => $room,
-                'user_id' => Auth::user()->id,
+                'user_id' => $userId,
             ]);
-            return redirect()->back()->with('success', 'Booking created successfully.');
+
+            // Check if booking exists and get the ID
+            $existingBooking = Booking::where('room_id', $room)
+                ->where('user_id', $userId)
+                ->first(); // Use first() to get the booking record
+
+            $bookingId = $existingBooking ? $existingBooking->id : null;
+
+            return redirect()->back()->with([
+                'message'    => 'Booking created successfully.',
+                'alert-type' => 'success',
+                'existingBooking' => $existingBooking !== null, // True or false
+                'bookingId' => $bookingId
+            ]);
         } catch (Exception $e) {
             return redirect()->back()->with([
-                'message'    => 'somthing error' . $e->getMessage(),
-                'alert-type' => 'success'
+                'message'    => 'Something went wrong: ' . $e->getMessage(),
+                'alert-type' => 'error'
+            ]);
+        }
+    }
+
+    public function cancel(Request $request, $bookingId): RedirectResponse
+    {
+        try {
+            $userId = 1; // Use authenticated user ID
+
+            Booking::where('id', $bookingId)
+                ->where('user_id', $userId)
+                ->delete();
+
+            return redirect()->back()->with([
+                'message'    => 'Booking deleted successfully',
+                'alert-type' => 'success',
+                'existingBooking' => false,
+                'bookingId' => null
+            ]);
+        } catch (Exception $e) {
+            return redirect()->back()->with([
+                'message'    => 'Something went wrong: ' . $e->getMessage(),
+                'alert-type' => 'error'
             ]);
         }
     }

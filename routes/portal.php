@@ -32,6 +32,9 @@ Route::prefix('')->as('portal.')->group(function () {
     Route::post('/booking/{room}', [BookingController::class, 'booking'])->name('booking.store');
 
 
+    // Booking routes
+    Route::post('/booking/{room}', [BookingController::class, 'booking'])->name('booking.store');
+    Route::delete('/booking/cancel/{bookingId}', [BookingController::class, 'cancel'])->name('booking.cancel');
 
     /*-- property-add Routes --*/
     Route::get('/property-add', [HomeController::class, 'propertyAdd'])
