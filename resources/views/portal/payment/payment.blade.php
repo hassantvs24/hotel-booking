@@ -86,20 +86,30 @@
                     <input type="text" placeholder="Coupon Code" id="theParagraph" class="hidden">
                 </div>
 
+                @if (session('message'))
+                <div class="alert alert-{{ session('alert-type') }}">
+                    {{ session('message') }}
+                </div>
+            @endif
                 <div class="booking-cancel">
+                    <form action="{{ $existingBooking ? route('portal.booking.cancel', ['bookingId' => $bookingId])  : route('portal.booking.store',$room->id)}}" method="POST">
+                    @csrf
+                    @if ($existingBooking)
+                        @method('delete')
+                    @endif
                     <h4 class="page-subtitle">Cancellation policy</h4>
-                    <p>Cancel before check-in on Dec 24 for a partial refund. After that, this reservation is non-refundable. Learn more</p>
+                    <p>Cancel before check-in on {{$checkInDateFormatted}} for a partial refund. After that, this reservation is non-refundable. Learn more</p>
 
                     <div class="booking-agree">
-                        <input type="checkbox" id="agree1">
+                        <input type="checkbox" name="agree1" id="agree1"  class="{{ $errors->has('agree1') ? 'error-alert' : '' }}">
                         <label for="agree1">I agree to the <a href="">property rules</a> for guests, Rate Locker’s booking and <a href="">refund policy</a>, and you will be responsible for any property damage.</label>
                     </div>
-
                     <div class="booking-agree">
-                        <input type="checkbox" id="agree2">
+                        <input type="checkbox" name="agree2" id="agree2"  class="{{ $errors->has('agree2') ? 'error-alert' : '' }}">
                         <label for="agree2">I also agree to the <a href="">Terms of Service</a>, <a href="">Payments Terms of Service</a>, and I acknowledge the <a href="">Privacy Policy</a>.</label>
                     </div>
-                    <a href="" class="btn-bg">Confirm Booking & Pay</a>
+                    <button type="submit" class="{{$existingBooking? 'btn-bg bg-danger' : 'btn-bg'}}">{{$existingBooking ? 'Cancel' :'Confirm Booking & Pay'}} </button>
+                </form>
                 </div>
             </div>
             <div class="col-xl-6 col-md-12 mt-md-3 mt-xl-0">

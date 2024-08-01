@@ -19,19 +19,23 @@ class SearchController extends Controller
 
         $location = $searchRequest['location'];
         if ($location) {
-            $properties->whereHas('place', function ($q) use ($location) {
-                $q->where('name', 'like', '%' . $location . '%')
-                    ->orWhereHas('city', function ($q) use ($location) {
+            $properties->where(function ($query) use ($location) {
+                $query->where('name', 'like', '%' . $location . '%')
+                    ->orWhereHas('place', function ($q) use ($location) {
                         $q->where('name', 'like', '%' . $location . '%')
-                            ->orWhereHas('state', function ($q) use ($location) {
+                            ->orWhereHas('city', function ($q) use ($location) {
                                 $q->where('name', 'like', '%' . $location . '%')
-                                    ->orWhereHas('country', function ($q) use ($location) {
-                                        $q->where('name', 'like', '%' . $location . '%');
+                                    ->orWhereHas('state', function ($q) use ($location) {
+                                        $q->where('name', 'like', '%' . $location . '%')
+                                            ->orWhereHas('country', function ($q) use ($location) {
+                                                $q->where('name', 'like', '%' . $location . '%');
+                                            });
                                     });
                             });
                     });
             });
         }
+
         $properties = $properties->where('status', Property::STATUS_PUBLISHED)->get();
 
         return view('portal.properties.propertylist', [
