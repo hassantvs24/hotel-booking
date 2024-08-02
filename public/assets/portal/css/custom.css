@@ -1,3 +1,6 @@
 .room-content::after {
     width: 114% !important;
 }
+.error-alert + label::before {
+    border: 2px solid #ff3636 !important;
+}
