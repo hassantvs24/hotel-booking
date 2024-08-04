@@ -12,5 +12,8 @@ Route::get('/user', function (Request $request) {
 /*----------------- Portal API -----------------*/
 Route::prefix('portal')->group(function () {
     Route::get('home', [HomeController::class, 'index']);
-    Route::get('properties', [PropertyController::class, 'index']);
+    Route::prefix('properties')->group(function () {
+        Route::get('/', [PropertyController::class, 'index']);
+        Route::get('/{property}/details', [PropertyController::class, 'details']);
+    });
 });
