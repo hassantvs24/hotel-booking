@@ -12,7 +12,7 @@ class PropertyController extends BaseController
     public function index() : JsonResponse
     {
         $properties = Property::query()
-            ->with(['images', 'facilities'])
+            ->with(['images', 'facilities', 'place.city'])
             ->where('status', Property::STATUS_PUBLISHED)
             ->get();
 
