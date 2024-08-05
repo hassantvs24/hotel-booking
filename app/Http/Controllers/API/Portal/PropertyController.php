@@ -5,7 +5,6 @@ namespace App\Http\Controllers\API\Portal;
 use App\Http\Controllers\BaseController;
 use App\Models\Property;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 
 class PropertyController extends BaseController
 {
@@ -25,7 +24,13 @@ class PropertyController extends BaseController
 
     public function details(Property $property) : JsonResponse
     {
-        $property->load(['images', 'facilities', 'place.city']);
+        $property->load([
+            'images',
+            'facilities',
+            'rooms.images',
+            'rooms.facilities',
+            'place.city'
+        ]);
 
         $data = [
             'property' => $property

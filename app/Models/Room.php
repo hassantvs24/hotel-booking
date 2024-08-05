@@ -69,5 +69,11 @@ class Room extends Model
     /*----------------------------------------
      * Attributes
      ----------------------------------------*/
-    //
+    public function basePrice() : Attribute
+    {
+        return new Attribute(
+            fn($value) => $value / 100,
+            fn($value) => $value * 100
+        );
+    }
 }
