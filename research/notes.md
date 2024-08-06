@@ -1,3 +1,4 @@
 ## Notes
 
-- Need to implement toggle input
+- [ ] Need to implement toggle input
+- [ ] need to implement - property description, checkin time, checkout time
