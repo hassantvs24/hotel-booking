@@ -4,6 +4,7 @@ namespace App\Http\Controllers\API\Portal;
 
 use App\Http\Controllers\BaseController;
 use App\Models\Place;
+use App\Models\Property;
 use App\Models\Room;
 use Illuminate\Http\JsonResponse;
 
@@ -16,6 +17,9 @@ class HomeController extends BaseController
         $rooms = Room::with('property.place')->limit(9)->get();
         $places = Place::with('city')
             ->latest()
+            ->whereHas('properties', function ($query) {
+                $query->where('status', Property::STATUS_PUBLISHED);
+            })
             ->limit($allowedSlider)->get();
 
         $data = [
