@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\API\Portal\HomeController;
 use App\Http\Controllers\API\Portal\PropertyController;
+use App\Http\Controllers\API\Portal\SearchController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -16,5 +17,8 @@ Route::prefix('portal')->group(function () {
         Route::get('/', [PropertyController::class, 'index']);
         Route::get('/{place}/place', [PropertyController::class, 'placeWiseProperties']);
         Route::get('/{property}/details', [PropertyController::class, 'details']);
+    });
+    Route::prefix('search')->group(function () {
+        Route::get('/', [SearchController::class, 'search']);
     });
 });
