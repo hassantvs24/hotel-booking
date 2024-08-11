@@ -17,6 +17,7 @@ Route::prefix('portal')->group(function () {
         Route::get('/', [PropertyController::class, 'index']);
         Route::get('/{place}/place', [PropertyController::class, 'placeWiseProperties']);
         Route::get('/{property}/details', [PropertyController::class, 'details']);
+        Route::get('/{property}/available-rooms', [PropertyController::class, 'availableRooms']);
     });
     Route::prefix('search')->group(function () {
         Route::get('/', [SearchController::class, 'search']);
