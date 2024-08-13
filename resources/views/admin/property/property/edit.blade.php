@@ -13,14 +13,58 @@
                             type="text"
                             name="name"
                             id="name"
-                            placeholder="Place Name"
-                            label="Place Name"
+                            placeholder="Property Name"
+                            label="Property Name"
                             value="{{$property->name}}"
                         />
                     </div>
                 </div>
                 <div class="row">
-                    <div class="col-md-6">
+                    <div class="col-md-4">
+                        <x-admin.input
+                            type="select"
+                            name="property_category_id"
+                            id="property_category_id"
+                            label="Property Category"
+                            :options="$propertyCategories"
+                            :value="$property->property_category_id"
+                            additional-classes="searchable"
+                        />
+                    </div>
+                    <div class="col-md-4">
+                        <x-admin.input
+                            type="select"
+                            name="property_class"
+                            id="property_class"
+                            label="Property Standered"
+                            :options="$propertyClasses"
+                            :value="$property->property_class"
+                        />
+                    </div>
+                    <div class="col-md-4">
+                        <x-admin.input
+                        type="number"
+                        name="rating"
+                        id="rating"
+                        placeholder="Rating"
+                        label="Rating"
+                        value="{{$property->rating}}"
+                    />
+                    </div>
+                </div>
+            <div class="row">
+                <div class="col-md-3">
+                    <x-admin.input
+                        type="select"
+                        name="place_id"
+                        id="place_id"
+                        label="Place"
+                        :options="$places"
+                        :value="$property->place_id"
+                        additional-classes="searchable"
+                        />
+                    </div>
+                    <div class="col-md-3">
                         <x-admin.input
                             type="number"
                             name="lat"
@@ -30,7 +74,8 @@
                             value="{{$property->lat}}"
                         />
                     </div>
-                    <div class="col-md-6">
+
+                    <div class="col-md-3">
                         <x-admin.input
                             type="number"
                             name="long"
@@ -39,20 +84,8 @@
                             label="Longitude"
                             value="{{$property->long}}"
                         />
-                    </div>
-                </div>
-                <div class="row">
-                    <div class="col-md-6">
-                        <x-admin.input
-                        type="text"
-                        name="address"
-                        id="address"
-                        placeholder="Address"
-                        label="Address"
-                        value="{{$property->address}}"
-                    />
-                    </div>
-                    <div class="col-md-6">
+                    </div>   
+                    <div class="col-md-3">
                         <x-admin.input
                         type="text"
                         name="zip_code"
@@ -62,7 +95,7 @@
                         value="{{$property->zip_code}}"
                     />
                     </div>
-                </div>
+            </div>
                 <div class="row">
                     <div class="col-md-4">
                         <x-admin.input
@@ -95,8 +128,18 @@
                         />
                     </div>
                 </div>
-                <div class="row">
-                    <div class="col-md-6">
+            <div class="row">
+                <div class="col-md-4">
+                        <x-admin.input
+                        type="text"
+                        name="address"
+                        id="address"
+                        placeholder="Address"
+                        label="Address"
+                        value="{{$property->address}}"
+                    />
+                </div>
+                    <div class="col-md-4">
                         <x-admin.input
                         type="number"
                         name="total_room"
@@ -106,7 +149,7 @@
                         value="{{$property->total_room}}"
                         />
                     </div>
-                    <div class="col-md-6">
+                    <div class="col-md-4">
                         <x-admin.input
                         type="text"
                         name="currency"
@@ -117,18 +160,8 @@
                     />
                     </div>
                 </div>
-                <div class="row">
-                    <div class="col-md-6">
-                        <x-admin.input
-                        type="number"
-                        name="rating"
-                        id="rating"
-                        placeholder="Rating"
-                        label="Rating"
-                        value="{{$property->rating}}"
-                    />
-                    </div>
-                    <div class="col-md-6">
+            <div class="row">    
+                <div class="col-md-6">
                         <x-admin.input
                         type="text"
                         name="google_review"
@@ -138,7 +171,16 @@
                         value="{{$property->google_review}}"
                     />
                     </div>
-
+                    <div class="col-6">
+                        <x-admin.input
+                            type="select"
+                            name="status"
+                            id="status"
+                            label="Status"
+                            :options="$status"
+                            :value="$property->status"
+                        />
+                    </div>
                 </div>
 
                 <div class="row">
@@ -163,50 +205,9 @@
                     </div>
                 </div>
                 <div class="row">
-                    <div class="col-6">
-                        <x-admin.input
-                            type="select"
-                            name="property_class"
-                            id="property_class"
-                            label="Property Standered"
-                            :options="$propertyClasses"
-                            :value="$property->property_class"
-                        />
-                    </div>
-                    <div class="col-6">
-                        <x-admin.input
-                            type="select"
-                            name="status"
-                            id="status"
-                            label="Status"
-                            :options="$status"
-                            :value="$property->status"
-                        />
-                    </div>
+            
                 </div>
                 <div class="row">
-                    <div class="col-6">
-                        <x-admin.input
-                            type="select"
-                            name="property_category_id"
-                            id="property_category_id"
-                            label="Property Category"
-                            :options="$propertyCategories"
-                            :value="$property->property_category_id"
-                            additional-classes="searchable"
-                        />
-                    </div>
-                    <div class="col-6">
-                        <x-admin.input
-                            type="select"
-                            name="place_id"
-                            id="place_id"
-                            label="Place"
-                            :options="$places"
-                            :value="$property->place_id"
-                            additional-classes="searchable"
-                        />
-                    </div>
                 </div>
                 <div class="row">
                     <div class="col-md-12">

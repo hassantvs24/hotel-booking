@@ -167,7 +167,7 @@
                 </div>
 
                 <div class="row">
-                    <div class="col-12">
+                    <div class="col-6">
                         <x-admin.input
                             type="textarea"
                             name="seo_title"
@@ -177,7 +177,7 @@
                             value="{{ old('seo_title') }}"
                         />
                     </div>
-                    <div class="col-12">
+                    <div class="col-6">
                         <x-admin.input
                             type="textarea"
                             name="seo_meta"
@@ -201,7 +201,7 @@
                 </div>
 
                     <div class="col-md-12">
-                        <label for="property_facilities">Setup Facilities</label>
+                        <label for="property_facilities">Set Property Facilities</label>
                         <x-admin.input
                             type="select"
                             name="property_facilities[]"
