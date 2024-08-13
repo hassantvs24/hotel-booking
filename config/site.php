@@ -486,7 +486,8 @@ return [
         'bed_image',
         'gallery_image',
         'primary_image',
-        'review_icon'
+        'review_icon',
+        'property_logo'
     ],
 
     'settings' => [

@@ -8,7 +8,7 @@ return new class extends Migration {
     /**
      * Run the migrations.
      */
-    public function up() : void
+    public function up(): void
     {
         $allowedPropertyClass = config('site_configs.allowed_property_class');
         $allowedPropertyStatus = config('site_configs.allowed_property_status');
@@ -16,6 +16,7 @@ return new class extends Migration {
         Schema::create('properties', function (Blueprint $table) use ($allowedPropertyClass, $allowedPropertyStatus) {
             $table->id();
             $table->string('name');
+            $table->text('description')->nullable();
             $table->decimal('lat');
             $table->decimal('long');
             $table->string('address')->nullable();
@@ -23,13 +24,16 @@ return new class extends Migration {
             $table->string('total_room')->nullable();
             $table->string('currency')->nullable();
             $table->float('rating')->nullable();
-            $table->string('google_review')->nullable();//Google review link
+            $table->string('google_review')->nullable(); //Google review link
             $table->string('seo_title')->nullable();
             $table->string('seo_meta')->nullable();
             $table->enum('property_class', $allowedPropertyClass)
                 ->default('Unrated');
             $table->enum('status', $allowedPropertyStatus)
                 ->default('Pending');
+            $table->time('check_in_time')->nullable(); // Added check-in time
+            $table->time('check_out_time')->nullable(); // Added check-out time
+            $table->string('phone_number')->nullable(); // Added phone number
 
             $table->foreignId('property_category_id')
                 ->nullable()
@@ -56,7 +60,7 @@ return new class extends Migration {
     /**
      * Reverse the migrations.
      */
-    public function down() : void
+    public function down(): void
     {
         Schema::dropIfExists('properties');
     }
