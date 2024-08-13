@@ -92,6 +92,38 @@
                 <div class="row">
                     <div class="col-md-4">
                         <x-admin.input
+                        type="time"
+                        name="check_in_time"
+                        id="check_in_time"
+                        placeholder="Check In"
+                        label="Check In"
+                        value="{{ old('check_in_time') }}"
+                    />
+                    </div>
+                    <div class="col-md-4">
+                        <x-admin.input
+                            type="time"
+                            name="check_out_time"
+                            id="check_out_time"
+                            placeholder="Check Out"
+                            label="Check Out"
+                            value="{{ old('check_out_time') }}"
+                        />
+                    </div>
+                    <div class="col-md-4">
+                        <x-admin.input
+                            type="text"
+                            name="phone_number"
+                            id="phone_number"
+                            placeholder="Phone Number"
+                            label="Phone Number"
+                            value="{{ old('phone_number') }}"
+                        />
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-4">
+                        <x-admin.input
                         type="text"
                         name="address"
                         id="address"
@@ -132,7 +164,6 @@
                         value="{{ old('google_review') }}"
                     />
                     </div>
-
                 </div>
 
                 <div class="row">
@@ -156,6 +187,18 @@
                             value="{{ old('seo_meta') }}"
                         />
                     </div>
+                    <div class="row">
+                    <div class="col-md-12">
+                        <x-admin.input
+                        type="textarea"
+                        name="description"
+                        id="description"
+                        placeholder="Description"
+                        label="Description"
+                        value="{{ old('description') }}"
+                    />
+                    </div>
+                </div>
 
                     <div class="col-md-12">
                         <label for="property_facilities">Setup Facilities</label>

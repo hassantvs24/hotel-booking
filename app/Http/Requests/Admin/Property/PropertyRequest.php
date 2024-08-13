@@ -29,6 +29,7 @@ class PropertyRequest extends FormRequest
 
         return [
             'name'                 => "required|string|max:255|{$uniqueNameRule}",
+            'description'          => 'nullable|string|max:255',
             'lat'                  => 'required|numeric|between:-90,90',
             'long'                 => 'required|numeric|between:-180,180',
             'photo'                => 'nullable|image|max:2048',
@@ -38,6 +39,9 @@ class PropertyRequest extends FormRequest
             'currency'             => 'nullable|string|max:5',
             'rating'               => 'nullable|numeric|min:0|max:5',
             'google_review'        => 'nullable|url',
+            'check_in_time'        => 'nullable',
+            'check_out_time'       => 'nullable',
+            'phone_number'         => 'nullable|string|max:255',
             'seo_title'            => 'nullable|string|max:255',
             'seo_meta'             => 'nullable|string|max:255',
             'property_class'       => 'required|in:7 Stars,6 Stars,5 Stars,4 Stars,3 Stars,2 Stars,1 Star,Unrated',

@@ -16,7 +16,7 @@ return new class extends Migration {
         Schema::create('properties', function (Blueprint $table) use ($allowedPropertyClass, $allowedPropertyStatus) {
             $table->id();
             $table->string('name');
-            $table->text('description')->nullable();
+            $table->text('description')->nullable();//description
             $table->decimal('lat');
             $table->decimal('long');
             $table->string('address')->nullable();
@@ -24,7 +24,7 @@ return new class extends Migration {
             $table->string('total_room')->nullable();
             $table->string('currency')->nullable();
             $table->float('rating')->nullable();
-            $table->string('google_review')->nullable(); //Google review link
+            $table->string('google_review')->nullable();
             $table->string('seo_title')->nullable();
             $table->string('seo_meta')->nullable();
             $table->enum('property_class', $allowedPropertyClass)

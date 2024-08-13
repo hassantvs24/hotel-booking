@@ -63,7 +63,38 @@
                     />
                     </div>
                 </div>
-
+                <div class="row">
+                    <div class="col-md-4">
+                        <x-admin.input
+                        type="time"
+                        name="check_in_time"
+                        id="check_in_time"
+                        placeholder="Check In"
+                        label="Check In"
+                        value="{{ $property->check_in_time }}"
+                    />
+                    </div>
+                    <div class="col-md-4">
+                        <x-admin.input
+                            type="time"
+                            name="check_out_time"
+                            id="check_out_time"
+                            placeholder="Check Out"
+                            label="Check Out"
+                            value="{{ $property->check_out_time }}"
+                        />
+                    </div>
+                    <div class="col-md-4">
+                        <x-admin.input
+                            type="text"
+                            name="phone_number"
+                            id="phone_number"
+                            placeholder="Phone Number"
+                            label="Phone Number"
+                            value="{{ $property->phone_number }}"
+                        />
+                    </div>
+                </div>
                 <div class="row">
                     <div class="col-md-6">
                         <x-admin.input
@@ -187,6 +218,16 @@
                             multiple
                             :options="$facilities"
                             :value="$property->facilities->pluck('id')->toArray()"
+                        />
+                    </div>
+                    <div class="col-md-12">
+                        <x-admin.input
+                            type="text"
+                            name="description"
+                            id="description"
+                            placeholder="Description"
+                            label="Description"
+                            value="{{$property->description}}"
                         />
                     </div>
                     <div class="col-md-12">
