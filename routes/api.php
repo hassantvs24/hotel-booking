@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\API\Portal\BookingController;
 use App\Http\Controllers\API\Portal\HomeController;
 use App\Http\Controllers\API\Portal\PropertyController;
 use App\Http\Controllers\API\Portal\SearchController;
@@ -19,7 +20,11 @@ Route::prefix('portal')->group(function () {
         Route::get('/{property}/details', [PropertyController::class, 'details']);
         Route::get('/{property}/available-rooms', [PropertyController::class, 'availableRooms']);
     });
+
     Route::prefix('search')->group(function () {
         Route::get('/', [SearchController::class, 'search']);
     });
+
+    Route::get('/room/{room}/payment', [BookingController::class, 'paymentDetails']);
+    Route::post('/booking', [BookingController::class, 'booking']);
 });
