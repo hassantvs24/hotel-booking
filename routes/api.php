@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\API\Portal\Auth\SocialiteController;
 use App\Http\Controllers\API\Portal\HomeController;
 use App\Http\Controllers\API\Portal\PropertyController;
 use App\Http\Controllers\API\Portal\SearchController;
@@ -23,3 +24,10 @@ Route::prefix('portal')->group(function () {
         Route::get('/', [SearchController::class, 'search']);
     });
 });
+
+/*----------------- Auth API -----------------*/
+Route::prefix('auth')->group(function () {
+    Route::get('/{provider}', [SocialiteController::class, 'redirectToProvider']);
+    Route::get('/{provider}/callback', [SocialiteController::class, 'handleProviderCallback']);
+});
+/*----------------- Auth API -----------------*/
