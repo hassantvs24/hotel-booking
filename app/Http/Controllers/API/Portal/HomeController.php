@@ -10,11 +10,11 @@ use Illuminate\Http\JsonResponse;
 
 class HomeController extends BaseController
 {
-    public function index() : JsonResponse
+    public function index(): JsonResponse
     {
         $allowedSlider = getSetting('home_page_number_of_slider');
 
-        $rooms = Room::with('property.place')->limit(9)->get();
+        $properties = Property::with(['primaryImage', 'facilities', 'place.city'])->limit(9)->get();
         $places = Place::with('city')
             ->latest()
             ->whereHas('properties', function ($query) {
@@ -23,7 +23,7 @@ class HomeController extends BaseController
             ->limit($allowedSlider)->get();
 
         $data = [
-            'rooms'  => $rooms,
+            'properties'  => $properties,
             'places' => $places
         ];
 
