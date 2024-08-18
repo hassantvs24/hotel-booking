@@ -72,6 +72,29 @@ return [
             ]
         ],
 
+        'BOOKING'=> [
+            [
+                'name'    => 'View Booking',
+                'slug'    => 'can_view_booking',
+                'subject' => 'booking',
+            ],
+            [
+                'name'    => 'Create Booking',
+                'slug'    => 'can_create_booking',
+                'subject' => 'booking',
+            ],
+            [
+                'name'    => 'Update Booking',
+                'slug'    => 'can_update_booking',
+                'subject' => 'booking',
+            ],
+            [
+                'name'    => 'Delete Booking',
+                'slug'    => 'can_delete_booking',
+                'subject' => 'booking',
+            ]
+        ],
+        
         'ROOM' => [
             [
                 'name'    => 'View Room',

@@ -199,6 +199,24 @@ return [
                 'children'   => []
             ],
             [
+                'name'       => 'Bookings',
+                'route'      => null,
+                'icon'       => 'ni ni-shop text-primary',
+                'key'        => 'admin/bookings*',
+                'permission' => 'can_view_booking',
+                'children'   => [
+                     [
+                        'name'       => 'Bookings',
+                        'route'      => 'admin.bookings.index',
+                        'icon'       => 'ni ni-building text-default',
+                        'key'        => 'admin/bookings',
+                        'permission' => 'can_view_booking',
+                        'children'   => []
+                    ],
+
+                ]
+            ],    
+            [
                 'name'       => 'Rooms',
                 'route'      => null,
                 'icon'       => 'fa fa-bed text-primary',

@@ -3,6 +3,7 @@
 use App\Http\Controllers\Admin\ACL\PermissionController;
 use App\Http\Controllers\Admin\ACL\RoleController;
 use App\Http\Controllers\Admin\ACL\UserController;
+use App\Http\Controllers\Admin\Booking\BookingController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\Facility\FacilityController;
 use App\Http\Controllers\Admin\Facility\SubFacilityController;
@@ -127,6 +128,20 @@ Route::prefix('admin')->as('admin.')->middleware(['auth'])->group(function () {
         });
     });
 
+    /*-- Booking Routes --*/
+    Route::prefix('bookings')->as('bookings.')->group(function () {
+
+        Route::controller(BookingController::class)->group(function () {
+            Route::get('', 'index')->name('index');
+            Route::get('create', 'create')->name('create');
+            Route::post('', 'store')->name('store');
+            Route::get('{booking}/edit', 'edit')->name('edit');
+            Route::put('{booking}', 'update')->name('update');
+            Route::delete('destroy/{booking}', 'destroy')->name('destroy');
+        });
+    });
+    
+    
     /*-- Review Routes --*/
     Route::prefix('reviews')->as('reviews.')->group(function () {
         Route::resource('categories', ReviewCategoryController::class)
