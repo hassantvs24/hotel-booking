@@ -4,6 +4,7 @@ use App\Http\Controllers\Admin\ACL\PermissionController;
 use App\Http\Controllers\Admin\ACL\RoleController;
 use App\Http\Controllers\Admin\ACL\UserController;
 use App\Http\Controllers\Admin\Booking\BookingController;
+use App\Http\Controllers\Admin\Booking\BookingRequestController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\Facility\FacilityController;
 use App\Http\Controllers\Admin\Facility\SubFacilityController;
@@ -23,6 +24,7 @@ use App\Http\Controllers\Admin\Room\RoomTypeController;
 use App\Http\Controllers\Admin\Setting\SettingController;
 use App\Http\Controllers\Admin\Surrounding\SurroundingController;
 use App\Http\Controllers\Admin\Surrounding\SurroundingPlaceController;
+use App\Http\Requests\Admin\Booking\BookingRequest;
 use Illuminate\Support\Facades\Route;
 
 /*----------------- Admin Routes -----------------*/
@@ -130,7 +132,8 @@ Route::prefix('admin')->as('admin.')->middleware(['auth'])->group(function () {
 
     /*-- Booking Routes --*/
     Route::prefix('bookings')->as('bookings.')->group(function () {
-
+        Route::resource('request', BookingRequestController::class)
+            ->parameters(['request' => 'bookingRequest']);
         Route::controller(BookingController::class)->group(function () {
             Route::get('', 'index')->name('index');
             Route::get('create', 'create')->name('create');
@@ -140,8 +143,8 @@ Route::prefix('admin')->as('admin.')->middleware(['auth'])->group(function () {
             Route::delete('destroy/{booking}', 'destroy')->name('destroy');
         });
     });
-    
-    
+
+
     /*-- Review Routes --*/
     Route::prefix('reviews')->as('reviews.')->group(function () {
         Route::resource('categories', ReviewCategoryController::class)

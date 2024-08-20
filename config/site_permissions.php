@@ -72,7 +72,7 @@ return [
             ]
         ],
 
-        'BOOKING'=> [
+        'BOOKING' => [
             [
                 'name'    => 'View Booking',
                 'slug'    => 'can_view_booking',
@@ -94,7 +94,30 @@ return [
                 'subject' => 'booking',
             ]
         ],
-        
+
+        'BOOKING_REQUEST' => [
+            [
+                'name'    => 'View Booking Request',
+                'slug'    => 'can_view_booking_request',
+                'subject' => 'booking_request',
+            ],
+            [
+                'name'    => 'Create Booking Request',
+                'slug'    => 'can_create_booking_request',
+                'subject' => 'booking_request',
+            ],
+            [
+                'name'    => 'Update Booking Request',
+                'slug'    => 'can_update_booking_request',
+                'subject' => 'booking_request',
+            ],
+
+            [
+                'name'    => 'Delete Booking Request',
+                'slug'    => 'can_delete_booking_request',
+                'subject' => 'booking_request',
+            ]
+        ],
         'ROOM' => [
             [
                 'name'    => 'View Room',

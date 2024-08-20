@@ -205,7 +205,7 @@ return [
                 'key'        => 'admin/bookings*',
                 'permission' => 'can_view_booking',
                 'children'   => [
-                     [
+                    [
                         'name'       => 'Bookings',
                         'route'      => 'admin.bookings.index',
                         'icon'       => 'ni ni-building text-default',
@@ -213,9 +213,17 @@ return [
                         'permission' => 'can_view_booking',
                         'children'   => []
                     ],
+                    [
+                        'name'       => 'Requests',
+                        'route'      => 'admin.bookings.request.index',
+                        'icon'       => 'ni ni-building text-default',
+                        'key'        => 'admin/bookings/request',
+                        'permission' => 'can_view_booking_request',
+                        'children'   => []
+                    ],
 
                 ]
-            ],    
+            ],
             [
                 'name'       => 'Rooms',
                 'route'      => null,
