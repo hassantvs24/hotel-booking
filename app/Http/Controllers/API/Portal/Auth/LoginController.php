@@ -25,7 +25,7 @@ class LoginController extends BaseController
             $user = auth()->user();
             $token = $user->createToken('auth_token')->plainTextToken;
 
-            return $this->sendResponse([
+            return $this->sendSuccess([
                 'user'  => $user,
                 'token' => $token,
             ], 'User logged in successfully.');
