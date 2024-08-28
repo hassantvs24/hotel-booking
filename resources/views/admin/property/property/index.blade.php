@@ -17,9 +17,13 @@
                     <x-admin.table-head value="Date"/>
                     <x-admin.table-head value="Primary Image"/>
                     <x-admin.table-head value="Name"/>
+                    <x-admin.table-head value="Description"/>
                     <x-admin.table-head value="Latitude"/>
                     <x-admin.table-head value="Longitude"/>
                     <x-admin.table-head value="Address"/>
+                    <x-admin.table-head value="Check In"/>
+                    <x-admin.table-head value="Check Out"/>
+                    <x-admin.table-head value="Phone Number"/>
                     <x-admin.table-head value="Zip Code"/>
                     <x-admin.table-head value="Total Room"/>
                     <x-admin.table-head value="Currency"/>
@@ -47,12 +51,16 @@
                                 <img width="50" height="50" src="{{ $property->primary_image_url }}" alt="{{ $property->name }}">
                             </x-admin.table-cell>
                             <x-admin.table-cell :value="$property->name"/>
+                            <x-admin.table-cell :value="$property->description"/>
                             <x-admin.table-cell :value="$property->lat"/>
                             <x-admin.table-cell :value="$property->long"/>
                             <x-admin.table-cell
                                 class="word-wrap"
                                 :value="$property->address"
                             />
+                            <x-admin.table-cell :value="$property->check_in_time"/>
+                            <x-admin.table-cell :value="$property->check_out_time"/>
+                            <x-admin.table-cell :value="$property->phone_number"/>
                             <x-admin.table-cell :value="$property->zip_code"/>
                             <x-admin.table-cell :value="$property->total_room"/>
                             <x-admin.table-cell :value="$property->currency"/>
