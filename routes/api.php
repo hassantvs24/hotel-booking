@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Controllers\API\Portal\Auth\LoginController;
+use App\Http\Controllers\API\Portal\Auth\RegisterController;
 use App\Http\Controllers\API\Portal\Auth\SocialiteController;
 use App\Http\Controllers\API\Portal\BookingController;
 use App\Http\Controllers\API\Portal\HomeController;
@@ -41,5 +43,9 @@ Route::prefix('portal')->group(function () {
 Route::prefix('auth')->group(function () {
     Route::get('/{provider}', [SocialiteController::class, 'redirectToProvider']);
     Route::get('/{provider}/callback', [SocialiteController::class, 'handleProviderCallback']);
+
+    Route::post('register', [RegisterController::class, 'register']);
+    Route::post('login', [LoginController::class, 'login']);
+    Route::middleware('auth:sanctum')->post('logout', [LoginController::class, 'logout']);
 });
 /*----------------- Auth API -----------------*/
