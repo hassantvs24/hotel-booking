@@ -12,7 +12,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/user', function (Request $request) {
-    return $request->user();
+    $user = $request->user()->load(['profile']);
+    return $user;
 })->middleware('auth:sanctum');
 
 /*----------------- Portal API -----------------*/
