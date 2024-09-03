@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\API\Portal\Auth\LoginController;
+use App\Http\Controllers\API\Portal\Auth\ProfileController;
 use App\Http\Controllers\API\Portal\Auth\RegisterController;
 use App\Http\Controllers\API\Portal\Auth\SocialiteController;
 use App\Http\Controllers\API\Portal\BookingController;
@@ -48,5 +49,9 @@ Route::prefix('auth')->group(function () {
     Route::post('register', [RegisterController::class, 'register']);
     Route::post('login', [LoginController::class, 'login']);
     Route::middleware('auth:sanctum')->post('logout', [LoginController::class, 'logout']);
+
+    Route::prefix('profile/update')->middleware(['auth:sanctum'])->group(function () {
+        Route::post('personal-info', [ProfileController::class, 'updatePersonalInfo']);
+    });
 });
 /*----------------- Auth API -----------------*/
