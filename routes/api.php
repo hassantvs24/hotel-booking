@@ -1,5 +1,8 @@
 <?php
 
+use App\Http\Controllers\API\Admin\ACL\PermissionController;
+use App\Http\Controllers\API\Admin\ACL\RoleController;
+use App\Http\Controllers\API\Admin\ACL\UserController;
 use App\Http\Controllers\API\Portal\Auth\LoginController;
 use App\Http\Controllers\API\Portal\Auth\ProfileController;
 use App\Http\Controllers\API\Portal\Auth\RegisterController;
@@ -54,4 +57,19 @@ Route::prefix('auth')->group(function () {
         Route::post('personal-info', [ProfileController::class, 'updatePersonalInfo']);
     });
 });
+
 /*----------------- Auth API -----------------*/
+
+Route::middleware('auth:sanctum')->prefix('admin')->group(function() {
+    /*------------------- ACL -------------------*/
+    Route::prefix('acl')->group(function() {
+        Route::apiResource('users', UserController::class)->except(['create', 'show']);
+        Route::apiResource('roles', RoleController::class)->except(['create', 'show']);
+        Route::apiResource('permissions', PermissionController::class)->except(['create', 'show']);
+
+
+        Route::get('permissions/all', [PermissionController::class, 'all']);
+        Route::get('roles/all', [RoleController::class, 'all']);
+    });
+    /*------------------- ACL -------------------*/
+});
