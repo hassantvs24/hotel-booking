@@ -5,6 +5,7 @@ namespace App\Http\Controllers\API\Portal\Auth;
 use App\Http\Controllers\BaseController;
 use App\Http\Requests\Portal\Auth\ProfileRequest;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 class ProfileController extends BaseController
 {
@@ -20,6 +21,24 @@ class ProfileController extends BaseController
             $userProfileData = $request->except(['name', 'email', 'phone']);
 
             $user->update($userData);
+
+            $user->profile()->updateOrCreate(
+                ['user_id' => $user->id],
+                $userProfileData
+            );
+
+            return $this->sendSuccess($user->load('profile'), 'Profile updated successfully.');
+        } catch (\Exception $e) {
+            return $this->sendError('Something went wrong.', [$e->getMessage()]);
+        }
+    }
+
+    public function updatePreferenceInfo(Request $request): JsonResponse
+    {
+        try {
+            $user = $request->user();
+
+            $userProfileData = $request->only(['bio']);
 
             $user->profile()->updateOrCreate(
                 ['user_id' => $user->id],
