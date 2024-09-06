@@ -22,12 +22,13 @@ class RoleController extends BaseController
 		'order_by',
 		'order_type',
 		'filters',
+        'page',
 		'per_page'
 	]),
 		[
 			'with' => ['permissions'],
 		]);
-	$roles = $roleRepository->get($userQuery);
+	$roles = $roleRepository->paginate($userQuery);
 
 	$data = [
 		'roles' => $roles
@@ -42,7 +43,7 @@ class RoleController extends BaseController
    */
   public function all (RoleRepository $roleRepository): JsonResponse
   {
-	$roles = $roleRepository->all();
+	$roles = $roleRepository->get();
 
 	$data = [
 		'roles' => $roles
@@ -107,6 +108,8 @@ class RoleController extends BaseController
   {
 	try {
 	  DB::beginTransaction();
+
+      $role = $roleRepository->getModel($role);
 
 	  $role = $roleRepository->update($request->validated(), $role);
 	  $role->permissions()->sync($request->permissions);

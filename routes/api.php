@@ -3,6 +3,10 @@
 use App\Http\Controllers\API\Admin\ACL\PermissionController;
 use App\Http\Controllers\API\Admin\ACL\RoleController;
 use App\Http\Controllers\API\Admin\ACL\UserController;
+use App\Http\Controllers\API\Admin\Location\CityController;
+use App\Http\Controllers\API\Admin\Location\CountryController;
+use App\Http\Controllers\API\Admin\Location\PlaceController;
+use App\Http\Controllers\API\Admin\Location\StateController;
 use App\Http\Controllers\API\Portal\Auth\LoginController;
 use App\Http\Controllers\API\Portal\Auth\ProfileController;
 use App\Http\Controllers\API\Portal\Auth\RegisterController;
@@ -70,6 +74,15 @@ Route::middleware('auth:sanctum')->prefix('admin')->group(function() {
 
         Route::get('permissions/all', [PermissionController::class, 'all']);
         Route::get('roles/all', [RoleController::class, 'all']);
+    });
+
+    Route::prefix('location')->group(function() {
+        Route::apiResource('countries', CountryController::class)->except(['create', 'show']);
+        Route::apiResource('states', StateController::class)->except(['create', 'show']);
+        Route::apiResource('cities', CityController::class)->except(['create', 'show']);
+        Route::apiResource('places', PlaceController::class)->except(['create', 'show']);
+
+        Route::get('countries/all', [CountryController::class, 'all']);
     });
     /*------------------- ACL -------------------*/
 });
