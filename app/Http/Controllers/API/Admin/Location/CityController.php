@@ -19,7 +19,7 @@ class CityController extends BaseController
         $query = array_merge(
             $request->only(['search', 'filters', 'order_by', 'order', 'per_page', 'page']),
             [
-                'with' => [],
+                'with' => ['state'],
                 'where' => [],
                 'order_by' => 'id',
                 'order' => 'DESC',
