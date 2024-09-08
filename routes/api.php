@@ -75,6 +75,7 @@ Route::middleware('auth:sanctum')->prefix('admin')->group(function() {
         Route::get('permissions/all', [PermissionController::class, 'all']);
         Route::get('roles/all', [RoleController::class, 'all']);
     });
+    /*------------------- ACL -------------------*/
 
     Route::prefix('location')->group(function() {
         Route::apiResource('countries', CountryController::class)->except(['create', 'show']);
@@ -83,6 +84,7 @@ Route::middleware('auth:sanctum')->prefix('admin')->group(function() {
         Route::apiResource('places', PlaceController::class)->except(['create', 'show']);
 
         Route::get('countries/all', [CountryController::class, 'all']);
+        Route::get('states/all', [StateController::class, 'all']);
+        Route::get('cities/all', [CityController::class, 'all']);
     });
-    /*------------------- ACL -------------------*/
 });
