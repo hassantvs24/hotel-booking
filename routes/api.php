@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\API\Admin\Surrounding\SurroundingController;
 use App\Http\Controllers\API\Admin\ACL\PermissionController;
 use App\Http\Controllers\API\Admin\ACL\RoleController;
 use App\Http\Controllers\API\Admin\ACL\UserController;
@@ -87,4 +88,6 @@ Route::middleware('auth:sanctum')->prefix('admin')->group(function() {
         Route::get('states/all', [StateController::class, 'all']);
         Route::get('cities/all', [CityController::class, 'all']);
     });
+
+    Route::apiResource('surroundings', SurroundingController::class)->except(['create', 'show']);
 });
