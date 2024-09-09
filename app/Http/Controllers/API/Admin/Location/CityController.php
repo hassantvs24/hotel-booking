@@ -4,6 +4,7 @@ namespace App\Http\Controllers\API\Admin\Location;
 
 use App\Http\Controllers\BaseController;
 use App\Http\Requests\Admin\Place\CityRequest;
+use App\Models\City;
 use App\Repositories\Admin\CityRepository;
 use App\Traits\MediaMan;
 use Exception;
@@ -51,7 +52,7 @@ class CityController extends BaseController
     public function store(CityRequest $request, CityRepository $cityRepository): JsonResponse
     {
         try {
-            $city = $cityRepository->create($request->except(['photo']));
+            $city = $cityRepository->create($request->except(['photo', 'remove_photo']));
 
             if ($request->hasFile('photo')) {
                 $photo = $this->storeFile($request->file('photo'), 'cities');
@@ -93,9 +94,24 @@ class CityController extends BaseController
     {
         try {
             $city = $cityRepository->getModel($city);
-            $city = $cityRepository->update($request->validated(), $city);
+            $city = $cityRepository->update($request->except(['photo', 'remove_photo']), $city);
 
-            return $this->sendSuccess($city, 'City updated successfully');
+            if (!$request->hasFile('photo') && $request->input('remove_photo')) {
+                $this->deleteImage($city);
+            }
+
+            if ($request->hasFile('photo')) {
+
+                $this->deleteImage($city);
+
+                $photo = $this->storeFile($request->file('photo'), 'cities');
+                $city->photo()->create([
+                    ...$photo,
+                    'media_role' => 'place_image'
+                ]);
+            }
+
+            return $this->sendSuccess($city->load(['state', 'photo']), 'City updated successfully');
 
         } catch (Exception $e) {
             return $this->sendError($e->getMessage());
@@ -109,6 +125,7 @@ class CityController extends BaseController
     {
         try {
             $city = $cityRepository->getModel($city);
+            $this->deleteImage($city);
             $cityRepository->delete($city->id);
 
             return $this->sendSuccess(null, 'City deleted successfully');
@@ -127,5 +144,13 @@ class CityController extends BaseController
         ];
 
         return $this->sendSuccess($data);
+    }
+
+    private function deleteImage($city) : void
+    {
+        if ($city->photo) {
+            $this->deleteFile($city->photo->name, 'cities');
+            $city->photo()->delete();
+        }
     }
 }
