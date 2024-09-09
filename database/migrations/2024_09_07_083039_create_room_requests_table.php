@@ -20,7 +20,7 @@ return new class extends Migration
             $table->integer('room')->default(1);
             $table->double('discount_price');
             $table->enum('status', ['Pending', 'Done', 'TimeOut'])->default('Pending');
-
+            $table->timestamp('request_expiration_time')->nullable();
             $table->foreignId('room_id')
                 ->nullable()
                 ->constrained()
