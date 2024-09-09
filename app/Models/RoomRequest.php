@@ -7,5 +7,6 @@ use Illuminate\Database\Eloquent\Model;
 
 class RoomRequest extends Model
 {
-    use HasFactory;
+    //
+    protected $guarded = [];
 }
