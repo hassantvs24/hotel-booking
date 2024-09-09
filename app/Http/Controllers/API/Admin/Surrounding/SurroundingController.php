@@ -96,12 +96,13 @@ class SurroundingController extends BaseController
             $surrounding = $surroundingRepository->getModel($surrounding);
             $surroundingRepository->update($request->only('name', 'notes'), $surrounding);
 
+            if (!$request->hasFile('icon') && $request->input('remove_icon')) {
+                $this->deleteImage($surrounding);
+            }
+
             if ($request->hasFile('icon')) {
 
-                if ($surrounding->icon()->exists()) {
-                    $this->deleteFile($surrounding->icon->name, 'surrounding_icons');
-                    $surrounding->icon()->delete();
-                }
+                $this->deleteImage($surrounding);
 
                 $image = $this->storeFile($request->file('icon'), 'surrounding_icons');
                 $surrounding->icon()->create([
@@ -110,7 +111,7 @@ class SurroundingController extends BaseController
                 ]);
             }
 
-            return $this->sendSuccess($surrounding, 'Surrounding updated successfully.');
+            return $this->sendSuccess($surrounding->load('icon'), 'Surrounding updated successfully.');
         } catch (\Exception $e) {
             return $this->sendError(
                 'Surrounding update failed.',
@@ -141,6 +142,14 @@ class SurroundingController extends BaseController
                 'Surrounding deletion failed.',
                 (array)$e->getMessage()
             );
+        }
+    }
+
+    private function deleteImage($surrounding) : void
+    {
+        if ($surrounding->icon()->exists()) {
+            $this->deleteFile($surrounding->icon->name, 'surrounding_icons');
+            $surrounding->icon()->delete();
         }
     }
 }

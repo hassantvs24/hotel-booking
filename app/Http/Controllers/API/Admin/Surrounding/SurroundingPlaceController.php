@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Admin\Surrounding;
+namespace App\Http\Controllers\API\Admin\Surrounding;
 
 use App\Http\Controllers\BaseController;
 use App\Http\Requests\Admin\Surrounding\SurroundingPlaceRequest;
