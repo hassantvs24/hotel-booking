@@ -5,12 +5,14 @@ namespace App\Http\Controllers\API\Admin\Location;
 use App\Http\Controllers\BaseController;
 use App\Http\Requests\Admin\Place\CityRequest;
 use App\Repositories\Admin\CityRepository;
+use App\Traits\MediaMan;
 use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class CityController extends BaseController
 {
+    use MediaMan;
     /**
      * Display a listing of the resource.
      */
@@ -49,7 +51,17 @@ class CityController extends BaseController
     public function store(CityRequest $request, CityRepository $cityRepository): JsonResponse
     {
         try {
-            $city = $cityRepository->create($request->validated());
+            $city = $cityRepository->create($request->except(['photo']));
+
+            if ($request->hasFile('photo')) {
+                $photo = $this->storeFile($request->file('photo'), 'cities');
+                $city->photo()->create([
+                    ...$photo,
+                    'media_role' => 'place_image'
+                ]);
+            }
+
+            $city->load(['state', 'photo']);
 
             return $this->sendSuccess($city, 'City created successfully');
 
