@@ -2,17 +2,40 @@
 
 namespace App\Http\Controllers\API\Admin\Location;
 
-use App\Http\Controllers\Controller;
+use App\Http\Controllers\BaseController;
+use App\Http\Requests\Admin\Place\CityRequest;
+use App\Models\City;
+use App\Repositories\Admin\CityRepository;
+use App\Traits\MediaMan;
+use Exception;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
-class CityController extends Controller
+class CityController extends BaseController
 {
+    use MediaMan;
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request, CityRepository $cityRepository): JsonResponse
     {
-        //
+        $query = array_merge(
+            $request->only(['search', 'filters', 'order_by', 'order', 'per_page', 'page']),
+            [
+                'with' => ['state'],
+                'where' => [],
+                'order_by' => 'id',
+                'order' => 'DESC',
+            ]
+        );
+
+        $cities = $cityRepository->paginate($query);
+
+        $data = [
+            'cities' => $cities
+        ];
+
+        return $this->sendSuccess($data);
     }
 
     /**
@@ -26,9 +49,26 @@ class CityController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request)
+    public function store(CityRequest $request, CityRepository $cityRepository): JsonResponse
     {
-        //
+        try {
+            $city = $cityRepository->create($request->except(['photo', 'remove_photo']));
+
+            if ($request->hasFile('photo')) {
+                $photo = $this->storeFile($request->file('photo'), 'cities');
+                $city->photo()->create([
+                    ...$photo,
+                    'media_role' => 'place_image'
+                ]);
+            }
+
+            $city->load(['state', 'photo']);
+
+            return $this->sendSuccess($city, 'City created successfully');
+
+        } catch (Exception $e) {
+            return $this->sendError($e->getMessage());
+        }
     }
 
     /**
@@ -50,16 +90,67 @@ class CityController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, string $id)
+    public function update(CityRequest $request, CityRepository $cityRepository, $city): JsonResponse
     {
-        //
+        try {
+            $city = $cityRepository->getModel($city);
+            $city = $cityRepository->update($request->except(['photo', 'remove_photo']), $city);
+
+            if (!$request->hasFile('photo') && $request->input('remove_photo')) {
+                $this->deleteImage($city);
+            }
+
+            if ($request->hasFile('photo')) {
+
+                $this->deleteImage($city);
+
+                $photo = $this->storeFile($request->file('photo'), 'cities');
+                $city->photo()->create([
+                    ...$photo,
+                    'media_role' => 'place_image'
+                ]);
+            }
+
+            return $this->sendSuccess($city->load(['state', 'photo']), 'City updated successfully');
+
+        } catch (Exception $e) {
+            return $this->sendError($e->getMessage());
+        }
     }
 
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(string $id)
+    public function destroy(CityRepository $cityRepository, $city): JsonResponse
     {
-        //
+        try {
+            $city = $cityRepository->getModel($city);
+            $this->deleteImage($city);
+            $cityRepository->delete($city->id);
+
+            return $this->sendSuccess(null, 'City deleted successfully');
+
+        } catch (Exception $e) {
+            return $this->sendError($e->getMessage());
+        }
+    }
+
+    public function all(CityRepository $cityRepository): JsonResponse
+    {
+        $cities = $cityRepository->get();
+
+        $data = [
+            'cities' => $cities
+        ];
+
+        return $this->sendSuccess($data);
+    }
+
+    private function deleteImage($city) : void
+    {
+        if ($city->photo) {
+            $this->deleteFile($city->photo->name, 'cities');
+            $city->photo()->delete();
+        }
     }
 }
