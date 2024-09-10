@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\API\Admin\Facility\FacilityController;
 use App\Http\Controllers\API\Admin\Surrounding\SurroundingController;
 use App\Http\Controllers\API\Admin\ACL\PermissionController;
 use App\Http\Controllers\API\Admin\ACL\RoleController;
@@ -43,7 +44,7 @@ Route::prefix('portal')->group(function () {
     Route::get('/room/{room}/payment', [BookingController::class, 'paymentDetails']);
     Route::post('/booking', [BookingController::class, 'booking']);
 
-    // room request 
+    // room request
     Route::prefix('room')->group(function () {
         Route::post('/request', [RoomRequestController::class, 'roomRequest']);
     });
@@ -86,15 +87,18 @@ Route::middleware('auth:sanctum')->prefix('admin')->group(function() {
     /*------------------- ACL -------------------*/
 
     Route::prefix('location')->group(function() {
-        Route::apiResource('countries', CountryController::class)->except(['create', 'show']);
-        Route::apiResource('states', StateController::class)->except(['create', 'show']);
-        Route::apiResource('cities', CityController::class)->except(['create', 'show']);
-        Route::apiResource('places', PlaceController::class)->except(['create', 'show']);
+        Route::apiResource('countries', CountryController::class)->except(['create', 'show', 'edit']);
+        Route::apiResource('states', StateController::class)->except(['create', 'show', 'edit']);
+        Route::apiResource('cities', CityController::class)->except(['create', 'show', 'edit']);
+        Route::apiResource('places', PlaceController::class)->except(['create', 'show', 'edit']);
 
         Route::get('countries/all', [CountryController::class, 'all']);
         Route::get('states/all', [StateController::class, 'all']);
         Route::get('cities/all', [CityController::class, 'all']);
     });
 
-    Route::apiResource('surroundings', SurroundingController::class)->except(['create', 'show']);
+    Route::apiResource('surroundings', SurroundingController::class)->except(['create', 'show', 'edit']);
+    Route::get('surroundings/all', [SurroundingController::class, 'all']);
+
+    Route::apiResource('facilities', FacilityController::class)->except(['create', 'show', 'edit']);
 });
