@@ -8,7 +8,7 @@ return new class extends Migration {
     /**
      * Run the migrations.
      */
-    public function up() : void
+    public function up(): void
     {
         $allowedStatus = config('site_configs.allowed_booking_status');
 
@@ -23,6 +23,7 @@ return new class extends Migration {
 
             $table->enum('status', $allowedStatus)
                 ->default('Pending');
+            $table->timestamp('request_expiration_time')->nullable();
             $table->foreignId('place_id')
                 ->nullable()
                 ->constrained()
@@ -42,7 +43,7 @@ return new class extends Migration {
     /**
      * Reverse the migrations.
      */
-    public function down() : void
+    public function down(): void
     {
         Schema::dropIfExists('booking_requests');
     }

@@ -35,6 +35,7 @@ Route::prefix('portal')->group(function () {
         Route::get('/{place}/place', [PropertyController::class, 'placeWiseProperties']);
         Route::get('/{property}/details', [PropertyController::class, 'details']);
         Route::get('/{property}/available-rooms', [PropertyController::class, 'availableRooms']);
+        Route::get('/{property}/booking-request-check', [PropertyController::class, 'bookingRoomCheck']);
     });
 
     Route::prefix('search')->group(function () {

@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Models\BookingRequest;
 use App\Models\RoomRequest;
 use Illuminate\Console\Command;
 use Illuminate\Support\Carbon;
@@ -35,6 +36,9 @@ class DeleteExpiredHotelRequests extends Command
     {
         // Delete hotel requests where the 24-hour or 6-minute timer has expired
         RoomRequest::where('request_expiration_time', '<', Carbon::now())
+            ->delete();
+
+        BookingRequest::where('request_expiration_time', '<', Carbon::now())
             ->delete();
 
         $this->info('Expired hotel requests and acceptances deleted.');

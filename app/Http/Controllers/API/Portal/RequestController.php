@@ -7,13 +7,19 @@ use App\Models\BookingAccepted;
 use App\Models\BookingRequest;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 
 class RequestController extends BaseController
 {
     public function index(Request $request): JsonResponse
     {
         $requestQuerry = $request->all();
-        $data = BookingRequest::create($requestQuerry);
+        $data = BookingRequest::updateOrCreate(
+            [
+                'user_id' => $requestQuerry['user_id'],
+            ],
+            array_merge($requestQuerry, ['request_expiration_time' => Carbon::now()->addMinutes(2)])
+        );
 
         return $this->sendSuccess($data);
     }
