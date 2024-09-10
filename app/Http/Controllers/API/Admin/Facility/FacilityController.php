@@ -54,9 +54,9 @@ class FacilityController extends BaseController
                 ]);
             }
 
-            return $this->sendSuccess($facility, 'Facility created successfully.');
+            return $this->sendSuccess($facility->load('icon'), 'Facility created successfully.');
         } catch (Exception $e) {
-            return $this->sendError('Something went wrong.');
+            return $this->sendError($e->getMessage());
         }
     }
 
@@ -108,7 +108,7 @@ class FacilityController extends BaseController
                 ]);
             }
 
-            return $this->sendSuccess($facility, 'Facility updated successfully.');
+            return $this->sendSuccess($facility->load('icon'), 'Facility updated successfully.');
         } catch (Exception $e) {
             return $this->sendError('Something went wrong.');
         }
@@ -131,13 +131,19 @@ class FacilityController extends BaseController
         }
     }
 
+    public function all(FacilityRepository $facilityRepository): JsonResponse
+    {
+        $facilities = $facilityRepository->get();
+
+        $data = [
+            'facilities' => $facilities
+        ];
+
+        return $this->sendSuccess($data);
+    }
+
     private function deleteIcon($facility) : void
     {
-//        if ($facility->icon) {
-//            $this->deleteFile($facility->icon->name, 'facility_icons');
-//            $facility->icon()->delete();
-//        }
-
         if ($facility->icon()->exists()) {
             $this->deleteFile($facility->icon->name, 'facility_icons');
             $facility->icon()->delete();

@@ -102,4 +102,5 @@ Route::middleware('auth:sanctum')->prefix('admin')->group(function() {
     Route::get('surroundings/all', [SurroundingController::class, 'all']);
 
     Route::apiResource('facilities', FacilityController::class)->except(['create', 'show', 'edit']);
+    Route::get('facilities/all', [FacilityController::class, 'all']);
 });
