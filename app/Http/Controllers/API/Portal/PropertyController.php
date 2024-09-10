@@ -6,6 +6,7 @@ use App\Http\Controllers\BaseController;
 use App\Models\Place;
 use App\Models\Property;
 use App\Models\Room;
+use App\Models\RoomRequest;
 use Illuminate\Http\JsonResponse;
 
 class PropertyController extends BaseController
@@ -67,6 +68,14 @@ class PropertyController extends BaseController
         $data = [
             'rooms' => $rooms
         ];
+
+        return $this->sendSuccess($data);
+    }
+
+    public function bookingRoomCheck($property): JsonResponse
+    {
+
+        $data = RoomRequest::where('property_id', $property)->exists();
 
         return $this->sendSuccess($data);
     }
