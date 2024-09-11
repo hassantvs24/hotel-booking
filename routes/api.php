@@ -1,6 +1,8 @@
 <?php
 
+use App\Http\Controllers\Admin\Facility\SubFacilityController as FacilitySubFacilityController;
 use App\Http\Controllers\API\Admin\Facility\FacilityController;
+use App\Http\Controllers\API\Admin\Facility\SubFacilityController;
 use App\Http\Controllers\API\Admin\Surrounding\SurroundingController;
 use App\Http\Controllers\API\Admin\ACL\PermissionController;
 use App\Http\Controllers\API\Admin\ACL\RoleController;
@@ -9,6 +11,7 @@ use App\Http\Controllers\API\Admin\Location\CityController;
 use App\Http\Controllers\API\Admin\Location\CountryController;
 use App\Http\Controllers\API\Admin\Location\PlaceController;
 use App\Http\Controllers\API\Admin\Location\StateController;
+use App\Http\Controllers\API\Admin\Surrounding\SurroundingPlaceController;
 use App\Http\Controllers\API\Portal\Auth\LoginController;
 use App\Http\Controllers\API\Portal\Auth\ProfileController;
 use App\Http\Controllers\API\Portal\Auth\RegisterController;
@@ -103,4 +106,10 @@ Route::middleware('auth:sanctum')->prefix('admin')->group(function() {
 
     Route::apiResource('facilities', FacilityController::class)->except(['create', 'show', 'edit']);
     Route::get('facilities/all', [FacilityController::class, 'all']);
+   
+    Route::apiResource('sub-facilities', SubFacilityController::class)->except(['create', 'show', 'edit']);
+    Route::get('sub-facilities/all',[SubFacilityController::class,'all']);
+    
+    Route::apiResource('surrounding-places', SurroundingPlaceController::class)->except(['create', 'show', 'edit']);
+    Route::get('surrounding-places/all', [SurroundingPlaceController::class, 'all']);
 });

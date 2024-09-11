@@ -7,6 +7,7 @@ use App\Http\Requests\Admin\Surrounding\SurroundingRequest;
 use App\Models\Surrounding;
 use App\Repositories\Admin\SurroundingRepository;
 use App\Traits\MediaMan;
+use Database\Factories\SurroundingFactory;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -62,7 +63,7 @@ class SurroundingController extends BaseController
                 ]);
             }
 
-            return $this->sendSuccess($surrounding, 'Surrounding created successfully.');
+            return $this->sendSuccess($surrounding->load('icon'), 'Surrounding created successfully.');
         } catch (\Exception $e) {
             return $this->sendError(
                 'Surrounding creation failed.',
@@ -137,6 +138,7 @@ class SurroundingController extends BaseController
             $surroundingRepository->delete($surrounding->id);
 
             return $this->sendSuccess(null, 'Surrounding deleted successfully.');
+            
         } catch (\Exception $e) {
             return $this->sendError(
                 'Surrounding deletion failed.',
@@ -151,5 +153,17 @@ class SurroundingController extends BaseController
             $this->deleteFile($surrounding->icon->name, 'surrounding_icons');
             $surrounding->icon()->delete();
         }
+    }
+
+
+    public function all (SurroundingRepository $surroundingRepository): JsonResponse
+    {
+        $surroundings = $surroundingRepository->get();
+
+        $data = [
+            'surroundings' => $surroundings
+        ];
+
+        return $this->sendSuccess($data);
     }
 }

@@ -4,14 +4,11 @@ namespace App\Http\Controllers\API\Admin\Surrounding;
 
 use App\Http\Controllers\BaseController;
 use App\Http\Requests\Admin\Surrounding\SurroundingPlaceRequest;
-use App\Models\SurroundingPlace;
-use App\Repositories\Place\PlaceRepository;
 use App\Repositories\Surrounding\SurroundingPlaceRepository;
-use App\Repositories\Surrounding\SurroundingRepository;
 use App\Traits\MediaMan;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\View\View;
 
 class SurroundingPlaceController extends BaseController
 {
@@ -19,16 +16,14 @@ class SurroundingPlaceController extends BaseController
     /**
      * Display a listing of the resource.
      */
-    public function index(Request $request, SurroundingPlaceRepository $surroundingPlaceRepository): View
+    public function index(Request $request, SurroundingPlaceRepository $surroundingPlaceRepository): JsonResponse
     {
-        if (!hasPermission('can_view_surrounding_place')) {
-            $this->unauthorized();
-        }
+       
 
         $query = array_merge(
             $request->only(['search', 'filters', 'order_by', 'order', 'per_page', 'page']),
             [
-                'with'     => [],
+                'with'     => ['surrounding', 'place', 'icon'],
                 'where'    => [],
                 'order_by' => 'id',
                 'order'    => 'DESC',
@@ -37,28 +32,18 @@ class SurroundingPlaceController extends BaseController
 
         $surroundingPlaces = $surroundingPlaceRepository->paginate($query);
 
-        $permissions = [
-            'manage' => 'can_view_surrounding_place',
-            'create' => 'can_create_surrounding_place',
-            'update' => 'can_update_surrounding_place',
-            'delete' => 'can_delete_surrounding_place',
-        ];
 
-        return view('admin.surrounding.place.index', compact('surroundingPlaces', 'permissions'));
+
+        return $this->sendSuccess(['surroundingPlaces' => $surroundingPlaces]);
     }
 
     /**
      * Show the form for creating a new resource.
      */
-    public function create(PlaceRepository $placeRepository, SurroundingRepository $surroundingRepository): View
+    public function create()
     {
-        if (!hasPermission('can_create_surrounding_place')) {
-            $this->unauthorized();
-        }
-        $places = $placeRepository->pluck('name', 'id')->toArray();
-        $surroundings = $surroundingRepository->pluck('name', 'id')->toArray();
-
-        return view('admin.surrounding.place.create', compact('places', 'surroundings'));
+      //
+    
     }
 
     /**
@@ -66,36 +51,26 @@ class SurroundingPlaceController extends BaseController
      * @throws \Exception
      */
     public function store(
-        SurroundingPlaceRequest $request,
-        SurroundingPlaceRepository $surroundingPlaceRepository
-    ): RedirectResponse {
-
-        if (!hasPermission('can_create_surrounding_place')) {
-            $this->unauthorized();
-        }
-
+        SurroundingPlaceRequest $request,SurroundingPlaceRepository $surroundingPlaceRepository): JsonResponse
+    {
         try {
             $surroundingPlace = $surroundingPlaceRepository->create($request->only('name', 'lat', 'long', 'notes', 'place_id', 'surrounding_id'));
 
-            if ($request->hasFile('photo')) {
-                $image = $this->storeFile($request->file('photo'), 'surrounding_icons');
+            if ($request->hasFile('icon')) {
+                $icon = $this->storeFile($request->file('icon'), 'surrounding_icons');
                 $surroundingPlace->icon()->create([
-                    ...$image,
+                    ...$icon,
                     'media_role' => 'surrounding_icon'
                 ]);
             }
-
-            return redirect()->route('admin.surroundings.surrounding-places.index')->with([
-                'message'    => 'Surrounding place created successfully.',
-                'alert-type' => 'success'
-            ]);
+           return $this->sendSuccess($surroundingPlace->load('place','surrounding', 'icon'), 'Surrounding Created Successfully');
+        
+        
         } catch (\Exception $e) {
-            return redirect()->back()->with([
-                'message'    => $e->getMessage(),
-                'alert-type' => 'error'
-            ]);
-        }
+
+            return $this->sendError('Error creating Surrounding Place.', [$e->getMessage()]);
     }
+}
 
     /**
      * Display the specified resource.
@@ -108,58 +83,44 @@ class SurroundingPlaceController extends BaseController
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(
-        PlaceRepository $placeRepository,
-        SurroundingRepository $surroundingRepository,
-        SurroundingPlace $surroundingPlace
-    ): View {
-        if (!hasPermission('can_update_surrounding_place')) {
-            $this->unauthorized();
-        }
-        $places = $placeRepository->pluck('name', 'id')->toArray();
-        $surroundings = $surroundingRepository->pluck('name', 'id')->toArray();
-
-        return view('admin.surrounding.place.edit', compact('places', 'surroundings', 'surroundingPlace'));
+    public function edit(string $id){
+      
     }
 
     /**
      * Update the specified resource in storage.
      */
     public function update(
-        SurroundingPlaceRequest $request,
-        SurroundingPlaceRepository $surroundingPlaceRepository,
-        $surroundingPlace
-    ): RedirectResponse {
-        if (!hasPermission('can_update_surrounding_place')) {
-            $this->unauthorized();
-        }
+        SurroundingPlaceRequest $request,SurroundingPlaceRepository $surroundingPlaceRepository, $surroundingPlace): JsonResponse 
+        {
         try {
             $surroundingPlace = $surroundingPlaceRepository->getModel($surroundingPlace);
-            $surroundingPlaceRepository->update($request->except('photo'), $surroundingPlace);
-
-            if ($request->hasFile('photo')) {
+            $surroundingPlaceRepository->update($request->except('icon'), $surroundingPlace);
+           
+            if (!$request->hasFile('icon') && $request->input('remove_icon')) {
+                $this->deleteImage($surroundingPlace);
+            }
+            
+            if ($request->hasFile('icon')) {
 
                 if ($surroundingPlace->icon()->exists()) {
                     $this->deleteFile($surroundingPlace->icon->name, 'surrounding_icons');
                     $surroundingPlace->icon()->delete();
                 }
 
-                $image = $this->storeFile($request->file('photo'), 'surrounding_icons');
+                $icon = $this->storeFile($request->file('icon'), 'surrounding_icons');
                 $surroundingPlace->icon()->create([
-                    ...$image,
+                    ...$icon,
                     'media_role' => 'surrounding_icon'
                 ]);
             }
 
-            return redirect()->route('admin.surroundings.surrounding-places.index')->with([
-                'message'    => 'Surrounding place updated successfully.',
-                'alert-type' => 'success'
-            ]);
-        } catch (\Exception $e) {
-            return redirect()->back()->with([
-                'message'    => 'Something Went Wrong',
-                'alert-type' => 'error'
-            ]);
+            $surroundingPlace->load(['icon', 'surrounding', 'place']);
+
+        return $this->sendSuccess($surroundingPlace, 'Surrounding Place updated successfully.'); 
+     } catch (\Exception $e) {
+         
+            return $this->sendError('Surrounding Place update failed.', [$e->getMessage()]);
         }
     }
 
@@ -167,12 +128,8 @@ class SurroundingPlaceController extends BaseController
      * Remove the specified resource from storage.
      */
     public function destroy(
-        SurroundingPlaceRepository $surroundingPlaceRepository,
-        $surroundingPlace
-    ): RedirectResponse {
-        if (!hasPermission('can_delete_surrounding_place')) {
-            $this->unauthorized();
-        }
+        SurroundingPlaceRepository $surroundingPlaceRepository, $surroundingPlace): JsonResponse {
+    
         try {
             $surroundingPlace = $surroundingPlaceRepository->getModel($surroundingPlace);
 
@@ -182,15 +139,23 @@ class SurroundingPlaceController extends BaseController
             }
             $surroundingPlaceRepository->delete($surroundingPlace->id);
 
-            return redirect()->route('admin.surroundings.surrounding-places.index')->with([
-                'message'    => 'Surrounding place deleted successfully.',
-                'alert-type' => 'success'
-            ]);
-        } catch (\Exception $e) {
-            return redirect()->back()->with([
-                'message'    => 'Something Went Wrong',
-                'alert-type' => 'error'
-            ]);
+            return $this->sendSuccess(null, 'Surrrrounding Place deleted successfully.');
+        
+        } 
+        catch (\Exception $e) {
+          
+            return $this->sendError('Surrdounding deletion failed.', [$e->getMessage()]);
         }
     }
+        /**
+     * Delete the icon associated with a sub facility.
+     */
+    private function deleteImage($surroundingPlace): void
+    {
+        if ($surroundingPlace->icon()->exists()) {
+            $this->deleteFile($surroundingPlace->icon->name, 'surrounding_icons');
+            $surroundingPlace->icon()->delete();
+        }
+    }
+
 }
