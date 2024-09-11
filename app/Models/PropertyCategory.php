@@ -29,7 +29,7 @@ class PropertyCategory extends Model
 
     public function getIconUrlAttribute() : string
     {
-        $iconUrl = asset('assets/default/default_property.png');
+        $iconUrl = asset('assets/default/default_property.jpg');
 
         if ($this->icon()->exists()) {
             $iconUrl = $this->relations['icon']->url;
