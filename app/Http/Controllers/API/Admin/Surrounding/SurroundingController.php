@@ -113,7 +113,8 @@ class SurroundingController extends BaseController
             }
 
             return $this->sendSuccess($surrounding->load('icon'), 'Surrounding updated successfully.');
-        } catch (\Exception $e) {
+         
+        }catch (\Exception $e) {
             return $this->sendError(
                 'Surrounding update failed.',
                 (array)$e->getMessage()
