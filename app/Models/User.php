@@ -29,6 +29,8 @@ class User extends Authenticatable
         'user_type',
     ];
 
+    protected $appends = ['is_admin', 'is_merchant'];
+
     /**
      * The attributes that should be hidden for serialization.
      *
@@ -61,6 +63,19 @@ class User extends Authenticatable
                 $query->where('name', $permission);
                 $query->orWhere('slug', $permission);
             })->exists();
+    }
+
+    /*----------------------------------------
+    Accessors
+    ----------------------------------------*/
+    public function getIsAdminAttribute(): bool
+    {
+        return $this->hasRole(config('site.adminGroup'));
+    }
+
+    public function getIsMerchantAttribute(): bool
+    {
+        return $this->hasRole(config('site.hotelOwnerGroup'));
     }
 
     /*----------------------------------------

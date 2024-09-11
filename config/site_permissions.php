@@ -697,5 +697,5 @@ return [
 
         'CAN_VIEW_CONTACT'   => 'can_view_contact',
         'CAN_LOGIN_TO_ADMIN' => 'can_login_to_admin',
-    ]
+    ],
 ];

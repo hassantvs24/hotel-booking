@@ -891,4 +891,7 @@ return [
             ]
         ],
     ],
+
+    'adminGroup'     => env('ADMINISTRATOR_GROUP'),
+    'hotelOwnerGroup' => env('HOTEL_OWNER_GROUP'),
 ];
