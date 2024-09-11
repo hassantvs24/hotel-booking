@@ -10,6 +10,7 @@ use App\Http\Controllers\API\Admin\Location\CityController;
 use App\Http\Controllers\API\Admin\Location\CountryController;
 use App\Http\Controllers\API\Admin\Location\PlaceController;
 use App\Http\Controllers\API\Admin\Location\StateController;
+use App\Http\Controllers\API\Admin\Property\PropertyCategoryController;
 use App\Http\Controllers\API\Admin\Property\PropertyRuleController;
 use App\Http\Controllers\API\Admin\Review\ReviewCategoryController;
 use App\Http\Controllers\API\Admin\Surrounding\SurroundingPlaceController;
@@ -119,4 +120,7 @@ Route::middleware('auth:sanctum')->prefix('admin')->group(function() {
 
     Route::apiResource('property-rules',PropertyRuleController::class)->except(['create', 'show', 'edit']);
     Route::get('property-rules/all', [PropertyRuleController::class, 'all']);
+
+    Route::apiResource('property-categories',PropertyCategoryController::class)->except(['create', 'show', 'edit']);
+    Route::get('property-categories/all', [PropertyCategoryController::class, 'all']);
 });
