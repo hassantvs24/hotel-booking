@@ -24,7 +24,7 @@ class SubFacilityController extends BaseController
         $query = array_merge(
             $request->only(['search', 'filters', 'order_by', 'order', 'per_page', 'page']),
             [
-                'with'     => [],
+                'with'     => ['facility','icon'],
                 'where'    => [],
                 'order_by' => 'id',
                 'order'    => 'DESC',
@@ -53,7 +53,7 @@ class SubFacilityController extends BaseController
                 ]);
             }
 
-            return $this->sendSuccess($subFacility->load('facility_id', 'icon'), 'Sub Facility Created Successfully');
+            return $this->sendSuccess($subFacility->load('facility', 'icon'), 'Sub Facility Created Successfully');
         } 
         catch (Exception $e) {
             return $this->sendError('Error creating Sub Facility.', [$e->getMessage()]);
@@ -108,7 +108,7 @@ class SubFacilityController extends BaseController
                 ]);
             }
 
-            return $this->sendSuccess($subFacilityModel->load('facility_id', 'icon'), 'Sub Facility updated successfully.');
+        return $this->sendSuccess($subFacilityModel->load('facility', 'icon'), 'Sub Facility updated successfully.');
         } catch (Exception $e) {
             return $this->sendError('SubFacility update failed.', [$e->getMessage()]);
         }
