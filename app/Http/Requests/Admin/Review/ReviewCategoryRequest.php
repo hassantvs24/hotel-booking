@@ -21,7 +21,7 @@ class ReviewCategoryRequest extends FormRequest
      */
     public function rules(): array
     {
-        $modelId = $this->reviewCategory ?: null;
+        $modelId = $this->review_category ?: null;
 
         $uniqueNameRule = ($this->method() === 'PUT' && $modelId !== null)
             ? 'unique:review_categories,name,' . $modelId

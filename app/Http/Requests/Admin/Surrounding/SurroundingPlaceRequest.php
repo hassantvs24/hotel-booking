@@ -21,7 +21,7 @@ class SurroundingPlaceRequest extends FormRequest
      */
     public function rules(): array
     {
-        $modelId = $this->surroundingPlace ?: null;
+        $modelId = $this->surrounding_place ?: null;
 
         $uniqueNameRule = ($this->method() === 'PUT' && $modelId !== null)
             ? 'unique:surrounding_places,name,' . $modelId
