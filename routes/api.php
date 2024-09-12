@@ -13,6 +13,7 @@ use App\Http\Controllers\API\Admin\Location\StateController;
 use App\Http\Controllers\API\Admin\Property\PropertyCategoryController;
 use App\Http\Controllers\API\Admin\Property\PropertyRuleController;
 use App\Http\Controllers\API\Admin\Review\ReviewCategoryController;
+use App\Http\Controllers\API\Admin\Review\ReviewController;
 use App\Http\Controllers\API\Admin\Surrounding\SurroundingPlaceController;
 use App\Http\Controllers\API\Portal\Auth\LoginController;
 use App\Http\Controllers\API\Portal\Auth\ProfileController;
@@ -118,9 +119,13 @@ Route::middleware('auth:sanctum')->prefix('admin')->group(function() {
     Route::apiResource('review-categories',ReviewCategoryController::class)->except(['create', 'show', 'edit']);
     Route::get('review-categories/all', [ReviewCategoryController::class, 'all']);
 
+    Route::apiResource('reviews',ReviewController::class)->except(['create', 'show', 'edit']);
+    Route::get('reviews/all', [ReviewCategoryController::class, 'all']);
+
     Route::apiResource('property-rules',PropertyRuleController::class)->except(['create', 'show', 'edit']);
     Route::get('property-rules/all', [PropertyRuleController::class, 'all']);
 
     Route::apiResource('property-categories',PropertyCategoryController::class)->except(['create', 'show', 'edit']);
     Route::get('property-categories/all', [PropertyCategoryController::class, 'all']);
+
 });
