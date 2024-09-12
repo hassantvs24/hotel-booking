@@ -39,7 +39,7 @@ class ReviewController extends BaseController
     /**
      * Show the form for creating a new resource.
      */
-    public function create() 
+    public function create()
     {
        //
     }
@@ -54,13 +54,13 @@ class ReviewController extends BaseController
                 $request->validated(),
                 ['user_id' => Auth::user()->id]
             );
-        
+
             $reviews = $reviewRepository->create($reviewData);
-        
+
             $reviews->load('reviewCategory', 'property', 'user');
-        
+
             return $this->sendSuccess($reviews, 'Review Created Successfully');
-        
+
         } catch (\Exception $e) {
 
             return $this->sendError('Error creating Reviews.', [$e->getMessage()]);;
@@ -81,7 +81,7 @@ class ReviewController extends BaseController
     public function edit(string $id)
     {
       //
-        
+
     }
 
     /**
@@ -98,7 +98,7 @@ class ReviewController extends BaseController
 
             $reviews->load(['reviewCategory', 'property', 'user']);
 
-            return $this->sendSuccess($reviews, 'Review updated successfully.'); 
+            return $this->sendSuccess($reviews, 'Review updated successfully.');
 
         } catch (\Exception $e) {
             return $this->sendError('Review update failed.', [$e->getMessage()]);
@@ -111,14 +111,14 @@ class ReviewController extends BaseController
      */
     public function destroy(ReviewRepositroy $reviewRepository, $review) : JsonResponse
     {
-     
+
 
         try {
             $reviews = $reviewRepository->getModel($review);
             $reviewRepository->delete($reviews->id);
 
             return $this->sendSuccess(null, 'Review deleted successfully.');
-        
+
         } catch (\Exception $e) {
 
             return $this->sendError('Review deletion failed.', [$e->getMessage()]);
