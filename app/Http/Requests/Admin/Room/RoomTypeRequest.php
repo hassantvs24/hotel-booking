@@ -21,7 +21,7 @@ class RoomTypeRequest extends FormRequest
      */
     public function rules() : array
     {
-        $modelId = $this->roomType ?: null;
+        $modelId = $this->roomTypes ?: null;
 
         $uniqueNameRule = ($this->method() === 'PUT' && $modelId !== null)
             ? 'unique:room_types,name,' . $modelId
