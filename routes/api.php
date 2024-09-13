@@ -1,5 +1,6 @@
 <?php
 
+
 use App\Http\Controllers\API\Admin\Facility\FacilityController;
 use App\Http\Controllers\API\Admin\Facility\SubFacilityController;
 use App\Http\Controllers\API\Admin\Surrounding\SurroundingController;
@@ -10,10 +11,9 @@ use App\Http\Controllers\API\Admin\Location\CityController;
 use App\Http\Controllers\API\Admin\Location\CountryController;
 use App\Http\Controllers\API\Admin\Location\PlaceController;
 use App\Http\Controllers\API\Admin\Location\StateController;
-use App\Http\Controllers\API\Admin\Property\PropertyCategoryController;
 use App\Http\Controllers\API\Admin\Property\PropertyRuleController;
+use App\Http\Controllers\API\Admin\Property\PropertyController as AdminPropertyController;
 use App\Http\Controllers\API\Admin\Review\ReviewCategoryController;
-use App\Http\Controllers\API\Admin\Review\ReviewController;
 use App\Http\Controllers\API\Admin\Surrounding\SurroundingPlaceController;
 use App\Http\Controllers\API\Portal\Auth\LoginController;
 use App\Http\Controllers\API\Portal\Auth\ProfileController;
@@ -80,9 +80,9 @@ Route::prefix('auth')->group(function () {
 
 /*----------------- Auth API -----------------*/
 
-Route::middleware('auth:sanctum')->prefix('admin')->group(function() {
+Route::middleware('auth:sanctum')->prefix('admin')->group(function () {
     /*------------------- ACL -------------------*/
-    Route::prefix('acl')->group(function() {
+    Route::prefix('acl')->group(function () {
         Route::apiResource('users', UserController::class)->except(['create', 'show']);
         Route::apiResource('roles', RoleController::class)->except(['create', 'show']);
         Route::apiResource('permissions', PermissionController::class)->except(['create', 'show']);
@@ -93,7 +93,7 @@ Route::middleware('auth:sanctum')->prefix('admin')->group(function() {
     });
     /*------------------- ACL -------------------*/
 
-    Route::prefix('location')->group(function() {
+    Route::prefix('location')->group(function () {
         Route::apiResource('countries', CountryController::class)->except(['create', 'show', 'edit']);
         Route::apiResource('states', StateController::class)->except(['create', 'show', 'edit']);
         Route::apiResource('cities', CityController::class)->except(['create', 'show', 'edit']);
@@ -102,6 +102,7 @@ Route::middleware('auth:sanctum')->prefix('admin')->group(function() {
         Route::get('countries/all', [CountryController::class, 'all']);
         Route::get('states/all', [StateController::class, 'all']);
         Route::get('cities/all', [CityController::class, 'all']);
+        Route::get('places/all', [PlaceController::class, 'all']);
     });
 
     Route::apiResource('surroundings', SurroundingController::class)->except(['create', 'show', 'edit']);
@@ -109,23 +110,19 @@ Route::middleware('auth:sanctum')->prefix('admin')->group(function() {
 
     Route::apiResource('facilities', FacilityController::class)->except(['create', 'show', 'edit']);
     Route::get('facilities/all', [FacilityController::class, 'all']);
-   
+
     Route::apiResource('sub-facilities', SubFacilityController::class)->except(['create', 'show', 'edit']);
-    Route::get('sub-facilities/all',[SubFacilityController::class,'all']);
-    
+    Route::get('sub-facilities/all', [SubFacilityController::class, 'all']);
+
     Route::apiResource('surrounding-places', SurroundingPlaceController::class)->except(['create', 'show', 'edit']);
     Route::get('surrounding-places/all', [SurroundingPlaceController::class, 'all']);
 
-    Route::apiResource('review-categories',ReviewCategoryController::class)->except(['create', 'show', 'edit']);
+    Route::apiResource('review-categories', ReviewCategoryController::class)->except(['create', 'show', 'edit']);
     Route::get('review-categories/all', [ReviewCategoryController::class, 'all']);
 
-    Route::apiResource('reviews',ReviewController::class)->except(['create', 'show', 'edit']);
-    Route::get('reviews/all', [ReviewCategoryController::class, 'all']);
-
-    Route::apiResource('property-rules',PropertyRuleController::class)->except(['create', 'show', 'edit']);
+    Route::apiResource('property-rules', PropertyRuleController::class)->except(['create', 'show', 'edit']);
     Route::get('property-rules/all', [PropertyRuleController::class, 'all']);
 
-    Route::apiResource('property-categories',PropertyCategoryController::class)->except(['create', 'show', 'edit']);
-    Route::get('property-categories/all', [PropertyCategoryController::class, 'all']);
-
+    Route::apiResource('properties', AdminPropertyController::class)->except(['create', 'show', 'edit']);
+    Route::get('properties/all', [AdminPropertyController::class, 'all']);
 });
