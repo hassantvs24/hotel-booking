@@ -53,7 +53,9 @@ class PriceTypeController extends BaseController
             return $this->sendSuccess($priceTypeRepository, 'Price Type created successfully.');
 
         } 
-        catch (\Exception $e) {return $this->sendError('Price Type creation failed.', (array)$e->getMessage());
+        catch (\Exception $e) {
+            
+            return $this->sendError('Price Type creation failed.', (array)$e->getMessage());
         
         }
     }
