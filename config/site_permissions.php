@@ -72,6 +72,52 @@ return [
             ]
         ],
 
+        'BOOKING' => [
+            [
+                'name'    => 'View Booking',
+                'slug'    => 'can_view_booking',
+                'subject' => 'booking',
+            ],
+            [
+                'name'    => 'Create Booking',
+                'slug'    => 'can_create_booking',
+                'subject' => 'booking',
+            ],
+            [
+                'name'    => 'Update Booking',
+                'slug'    => 'can_update_booking',
+                'subject' => 'booking',
+            ],
+            [
+                'name'    => 'Delete Booking',
+                'slug'    => 'can_delete_booking',
+                'subject' => 'booking',
+            ]
+        ],
+
+        'BOOKING_REQUEST' => [
+            [
+                'name'    => 'View Booking Request',
+                'slug'    => 'can_view_booking_request',
+                'subject' => 'booking_request',
+            ],
+            [
+                'name'    => 'Create Booking Request',
+                'slug'    => 'can_create_booking_request',
+                'subject' => 'booking_request',
+            ],
+            [
+                'name'    => 'Update Booking Request',
+                'slug'    => 'can_update_booking_request',
+                'subject' => 'booking_request',
+            ],
+
+            [
+                'name'    => 'Delete Booking Request',
+                'slug'    => 'can_delete_booking_request',
+                'subject' => 'booking_request',
+            ]
+        ],
         'ROOM' => [
             [
                 'name'    => 'View Room',
@@ -651,5 +697,5 @@ return [
 
         'CAN_VIEW_CONTACT'   => 'can_view_contact',
         'CAN_LOGIN_TO_ADMIN' => 'can_login_to_admin',
-    ]
+    ],
 ];

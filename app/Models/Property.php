@@ -69,6 +69,11 @@ class Property extends Model
         return $this->belongsTo(City::class);
     }
 
+    public function bookingAccepteds(): HasMany
+    {
+        return $this->hasMany(BookingAccepted::class);
+    }
+
     /*----------------------------------------
      * Accessors
      ----------------------------------------*/

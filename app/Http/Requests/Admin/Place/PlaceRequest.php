@@ -21,10 +21,11 @@ class PlaceRequest extends FormRequest
      */
     public function rules(): array
     {
-        $modelId = $this->route('place');
+        $modelId = $this->place ?: null;
 
-        $uniqueNameRule = $modelId ? 'unique:places,name,' . $modelId : 'unique:places,name';
-
+        $uniqueNameRule = ($this->method() === 'PUT' && $modelId !== null)
+            ? 'unique:places,name,' . $modelId
+            : 'unique:places,name';
         return [
             'name'              => "required|string|max:255|{$uniqueNameRule}",
             'lat'               => 'required|numeric',

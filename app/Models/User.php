@@ -8,12 +8,13 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Laravel\Sanctum\HasApiTokens;
 use Spatie\Permission\Traits\HasPermissions;
 use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticatable
 {
-    use HasFactory, Notifiable, HasRoles;
+    use HasFactory, Notifiable, HasRoles, HasApiTokens;
     /**
      * The attributes that are mass assignable.
      *
@@ -27,6 +28,8 @@ class User extends Authenticatable
         'password',
         'user_type',
     ];
+
+    protected $appends = ['is_admin', 'is_merchant'];
 
     /**
      * The attributes that should be hidden for serialization.
@@ -60,6 +63,19 @@ class User extends Authenticatable
                 $query->where('name', $permission);
                 $query->orWhere('slug', $permission);
             })->exists();
+    }
+
+    /*----------------------------------------
+    Accessors
+    ----------------------------------------*/
+    public function getIsAdminAttribute(): bool
+    {
+        return $this->hasRole(config('site.adminGroup'));
+    }
+
+    public function getIsMerchantAttribute(): bool
+    {
+        return $this->hasRole(config('site.hotelOwnerGroup'));
     }
 
     /*----------------------------------------
