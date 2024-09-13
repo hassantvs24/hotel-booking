@@ -4,7 +4,7 @@ namespace App\Http\Controllers\API\Admin\Property;
 
 use App\Http\Controllers\BaseController;
 use App\Http\Requests\Admin\Property\PropertyCategoryRequest;
-use App\Repositories\Property\PropertyCategoryRepository;
+use App\Repositories\Admin\PropertyCategoryRepository;
 use App\Traits\MediaMan;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;

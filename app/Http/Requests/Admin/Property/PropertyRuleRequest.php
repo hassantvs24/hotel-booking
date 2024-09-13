@@ -21,7 +21,7 @@ class PropertyRuleRequest extends FormRequest
      */
     public function rules(): array
     {
-        $modelId = $this->propertyRule ?: null;
+        $modelId = $this->property_rule ?: null;
 
         $uniqueNameRule = ($this->method() === 'PUT' && $modelId !== null)
             ? 'unique:property_rules,rule_title,' . $modelId

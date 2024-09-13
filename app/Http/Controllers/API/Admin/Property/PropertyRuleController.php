@@ -4,7 +4,7 @@ namespace App\Http\Controllers\API\Admin\Property;
 
 use App\Http\Controllers\BaseController;
 use App\Http\Requests\Admin\Property\PropertyRuleRequest;
-use App\Repositories\Property\PropertyRuleRepository;
+use App\Repositories\Admin\PropertyRuleRepository;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -30,7 +30,7 @@ class PropertyRuleController extends BaseController
 
         $propertyRules = $ruleRepository->paginate($query);
 
-    
+
         return $this->sendSuccess(['propertyRules' => $propertyRules]);
     }
 
@@ -80,7 +80,7 @@ class PropertyRuleController extends BaseController
      */
     public function update(PropertyRuleRequest $request, PropertyRuleRepository $propertyRuleRepository, $propertyRule): JsonResponse
     {
-      
+
          try {
         $propertyRule = $propertyRuleRepository->getModel($propertyRule);
         $propertyRuleRepository->update($request->validated(), $propertyRule);
@@ -102,9 +102,9 @@ class PropertyRuleController extends BaseController
             $propertyRule = $propertyRuleRepository->getModel($propertyRule);
             $propertyRuleRepository->delete($propertyRule->id);
 
-       
+
             return $this->sendSuccess($propertyRule, 'Property Rules deletion successfully.');
-        } 
+        }
         catch (\Exception $e) {
 
            return $this->sendError('Property Rules deletion failed.', (array)$e->getMessage());

@@ -21,7 +21,7 @@ class PropertyCategoryRequest extends FormRequest
      */
     public function rules() : array
     {
-        $modelId = $this->propertyCategory ?: null;
+        $modelId = $this->property_category ?: null;
 
         $uniqueNameRule = ($this->method() === 'PUT' && $modelId !== null)
             ? 'unique:property_categories,name,' . $modelId
