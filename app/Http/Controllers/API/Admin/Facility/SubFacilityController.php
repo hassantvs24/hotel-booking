@@ -4,9 +4,7 @@ namespace App\Http\Controllers\API\Admin\Facility;
 
 use App\Http\Controllers\BaseController;
 use App\Http\Requests\Admin\Facility\SubFacilityRequest;
-use App\Models\FacilitySub;
-use App\Repositories\Facility\FacilityRepository;
-use App\Repositories\Facility\SubFacilityRepository;
+use App\Repositories\Admin\SubFacilityRepository;
 use App\Traits\MediaMan;
 use Exception;
 use Illuminate\Http\JsonResponse;
@@ -32,7 +30,7 @@ class SubFacilityController extends BaseController
         );
 
         $subFacilities = $subFacilityRepository->paginate($query);
-        
+
 
         return $this->sendSuccess(['subFacilities' => $subFacilities]);
     }
@@ -54,7 +52,7 @@ class SubFacilityController extends BaseController
             }
 
             return $this->sendSuccess($subFacility->load('facility', 'icon'), 'Sub Facility Created Successfully');
-        } 
+        }
         catch (Exception $e) {
             return $this->sendError('Error creating Sub Facility.', [$e->getMessage()]);
         }

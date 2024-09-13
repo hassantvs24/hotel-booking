@@ -60,7 +60,7 @@ class RoomTypeController extends BaseController
             }
 
             return $this->sendSuccess($roomTypes->load('icon'), 'Room Type created successfully.');
-        
+
         } catch (\Exception $e) {
             return $this->sendError(
                 'Room Type creation failed.',
@@ -88,34 +88,31 @@ class RoomTypeController extends BaseController
     /**
      * Update the specified resource in storage.
      */
-    public function update(RoomTypeRequest $request, RoomTypeRepository $typeRepository, $roomTypes):JsonResponse
+    public function update(RoomTypeRequest $request, RoomTypeRepository $typeRepository, $roomType):JsonResponse
     {
-    
-
         try {
+            $roomType = $typeRepository->getModel($roomType);
+            $typeRepository->update( $request->only(['name', 'notes']), $roomType);
 
-            $roomTypes = $typeRepository->getModel($roomTypes);
-            $typeRepository->update( $request->only(['name', 'notes']),$roomTypes);
-            
             if (!$request->hasFile('icon') && $request->input('remove_icon')) {
-                $this->deleteImage($roomTypes);
+                $this->deleteImage($roomType);
             }
 
             if ($request->hasFile('icon')) {
 
-                if ($roomTypes->icon()->exists()) {
-                    $this->deleteFile($roomTypes->icon->name, 'room_types');
-                    $roomTypes->icon()->delete();
+                if ($roomType->icon()->exists()) {
+                    $this->deleteFile($roomType->icon->name, 'room_types');
+                    $roomType->icon()->delete();
                 }
 
                 $icon = $this->storeFile($request->file('icon'), 'room_types');
-                $roomTypes->icon()->create([
+                $roomType->icon()->create([
                     ...$icon,
                     'media_role' => 'room_icon'
                 ]);
             }
 
-            return $this->sendSuccess($roomTypes->load('icon'), 'Room Type updated successfully.');
+            return $this->sendSuccess($roomType->load('icon'), 'Room Type updated successfully.');
 
         } catch (\Exception $e) {
 
