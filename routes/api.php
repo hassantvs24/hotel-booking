@@ -26,6 +26,7 @@ use App\Http\Controllers\API\Portal\PropertyController;
 use App\Http\Controllers\API\Portal\RequestController;
 use App\Http\Controllers\API\Portal\RoomRequestController;
 use App\Http\Controllers\API\Portal\SearchController;
+use App\Http\Controllers\API\Portal\Vendor\VendorController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -61,6 +62,10 @@ Route::prefix('portal')->group(function () {
         Route::post("/", [RequestController::class, 'index']);
         Route::get("/properties", [RequestController::class, 'property_list']);
     });
+
+    Route::get('/getAllPropertyOption', [VendorController::class, 'allPropertyOption']);
+    Route::post('/property/store', [VendorController::class, 'store']);
+    Route::get('/property/allproperties', [VendorController::class, 'allproperties']);
 });
 
 
