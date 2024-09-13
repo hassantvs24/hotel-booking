@@ -4,7 +4,7 @@ namespace App\Http\Controllers\API\Admin\Room;
 
 use App\Http\Controllers\BaseController;
 use App\Http\Requests\Admin\Room\RoomTypeRequest;
-use App\Repositories\Room\RoomTypeRepository;
+use App\Repositories\Admin\RoomTypeRepository;
 use App\Traits\MediaMan;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;

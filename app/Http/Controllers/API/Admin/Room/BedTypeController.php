@@ -4,11 +4,9 @@ namespace App\Http\Controllers\API\Admin\Room;
 
 use App\Http\Controllers\BaseController;
 use App\Http\Requests\Admin\Room\BedTypeRequest;
-use App\Models\BedType;
-use App\Repositories\Room\BedTypeRepository;
+use App\Repositories\Admin\BedTypeRepository;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\View\View;
 
 class BedTypeController extends BaseController
 {
@@ -17,7 +15,7 @@ class BedTypeController extends BaseController
      */
     public function index(Request $request, BedTypeRepository $bedTypeRepository):JsonResponse
     {
-        
+
         $query = array_merge(
             $request->only(['search', 'filters', 'order_by', 'order', 'per_page', 'page']),
             [
@@ -52,11 +50,11 @@ class BedTypeController extends BaseController
 
             return $this->sendSuccess($bedTypeRepository, 'Bed Type created successfully.');
 
-        } 
+        }
         catch (\Exception $e) {
-           
+
             return $this->sendError('Bed Type creation failed.', (array)$e->getMessage());
-        
+
         }
     }
 

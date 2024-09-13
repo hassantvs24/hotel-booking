@@ -4,7 +4,7 @@ namespace App\Http\Controllers\API\Admin\Room;
 
 use App\Http\Controllers\BaseController;
 use App\Http\Requests\Admin\Room\PriceTypeRequest;
-use App\Repositories\Room\PriceTypeRepository;
+use App\Repositories\Admin\PriceTypeRepository;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -29,7 +29,7 @@ class PriceTypeController extends BaseController
 
         $priceTypes= $typeRepository->paginate($query);
 
-        
+
         return $this->sendSuccess(['priceTypes' => $priceTypes]);
     }
 
@@ -52,11 +52,11 @@ class PriceTypeController extends BaseController
 
             return $this->sendSuccess($priceTypeRepository, 'Price Type created successfully.');
 
-        } 
+        }
         catch (\Exception $e) {
-            
+
             return $this->sendError('Price Type creation failed.', (array)$e->getMessage());
-        
+
         }
     }
 

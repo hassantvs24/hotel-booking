@@ -21,7 +21,7 @@ class BedTypeRequest extends FormRequest
      */
     public function rules(): array
     {
-        $modelId = $this->bedType ?: null;
+        $modelId = $this->bed_type ?: null;
 
         $uniqueNameRule = ($this->method() === 'PUT' && $modelId !== null)
             ? 'unique:bed_types,name,' . $modelId
