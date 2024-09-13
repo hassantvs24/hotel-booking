@@ -29,6 +29,8 @@ return new class extends Migration {
             $table->string('slug');
             $table->mediumText('description')->nullable();
             $table->string('subject');
+            $table->enum('permission_type', ['global', 'property'])
+                ->default('global');
             $table->string('guard_name');
             $table->timestamps();
 
@@ -41,6 +43,11 @@ return new class extends Migration {
                 $table->unsignedBigInteger($columnNames['team_foreign_key'])->nullable();
                 $table->index($columnNames['team_foreign_key'], 'roles_team_foreign_key_index');
             }
+            $table->foreignId('property_id')
+                ->nullable()
+                ->constrained()
+                ->onDelete('cascade');
+
             $table->string('name');
 
             $table->mediumText('description')->nullable();

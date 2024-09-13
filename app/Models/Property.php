@@ -50,6 +50,13 @@ class Property extends Model
         return $this->belongsTo(User::class);
     }
 
+    public function staffs() : BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'property_user')
+            ->withPivot(['designation', 'is_active'])
+            ->withTimestamps();
+    }
+
     public function reviews(): HasMany
     {
         return $this->hasMany(Review::class);
