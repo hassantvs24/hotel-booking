@@ -18,13 +18,13 @@ class ReviewController extends BaseController
     /**
      * Display a listing of the resource.
      */
-    public function index(Request $request, ReviewRepositroy $reviewRepository) : JsonResponse
+    public function index(Request $request, ReviewRepositroy $reviewRepository): JsonResponse
     {
 
         $query = array_merge(
             $request->only(['search', 'filters', 'order_by', 'order', 'per_page', 'page']),
             [
-                'with'     => ['reviewCategory','property','user'],
+                'with'     => ['reviewCategory', 'property', 'user'],
                 'where'    => [],
                 'order_by' => 'id',
                 'order'    => 'DESC',
@@ -41,12 +41,12 @@ class ReviewController extends BaseController
      */
     public function create()
     {
-       //
+        //
     }
     /**
      * Store a newly created resource in storage.
      */
-    public function store(ReviewRequest $request, ReviewRepositroy $reviewRepository) : JsonResponse
+    public function store(ReviewRequest $request, ReviewRepositroy $reviewRepository): JsonResponse
     {
         try {
 
@@ -60,7 +60,6 @@ class ReviewController extends BaseController
             $reviews->load('reviewCategory', 'property', 'user');
 
             return $this->sendSuccess($reviews, 'Review Created Successfully');
-
         } catch (\Exception $e) {
 
             return $this->sendError('Error creating Reviews.', [$e->getMessage()]);;
@@ -80,14 +79,14 @@ class ReviewController extends BaseController
      */
     public function edit(string $id)
     {
-      //
+        //
 
     }
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(ReviewRequest $request, ReviewRepositroy $reviewRepository, $review) : JsonResponse
+    public function update(ReviewRequest $request, ReviewRepositroy $reviewRepository, $review): JsonResponse
     {
         try {
             $reviews = $reviewRepository->getModel($review);
@@ -99,7 +98,6 @@ class ReviewController extends BaseController
             $reviews->load(['reviewCategory', 'property', 'user']);
 
             return $this->sendSuccess($reviews, 'Review updated successfully.');
-
         } catch (\Exception $e) {
             return $this->sendError('Review update failed.', [$e->getMessage()]);
         }
@@ -109,7 +107,7 @@ class ReviewController extends BaseController
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(ReviewRepositroy $reviewRepository, $review) : JsonResponse
+    public function destroy(ReviewRepositroy $reviewRepository, $review): JsonResponse
     {
 
 
@@ -118,10 +116,20 @@ class ReviewController extends BaseController
             $reviewRepository->delete($reviews->id);
 
             return $this->sendSuccess(null, 'Review deleted successfully.');
-
         } catch (\Exception $e) {
 
             return $this->sendError('Review deletion failed.', [$e->getMessage()]);
         }
+    }
+
+    public function all(ReviewRepositroy $reviewRepository): JsonResponse
+    {
+        $reviews = $reviewRepository->get();
+
+        $data = [
+            'reviews' => $reviews
+        ];
+
+        return $this->sendSuccess($data);
     }
 }
