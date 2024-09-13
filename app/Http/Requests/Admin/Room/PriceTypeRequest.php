@@ -22,7 +22,7 @@ class PriceTypeRequest extends FormRequest
      */
     public function rules() : array
     {
-        $modelId = $this->priceType ?: null;
+        $modelId = $this->price_type ?: null;
 
         $uniqueNameRule = ($this->method() === 'PUT' && $modelId !== null)
             ? 'unique:price_types,name,' . $modelId
