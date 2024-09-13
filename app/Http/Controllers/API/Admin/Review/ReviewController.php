@@ -1,10 +1,8 @@
 <?php
 
 namespace App\Http\Controllers\API\Admin\Review;
-
 use App\Http\Controllers\BaseController;
 use App\Http\Requests\Admin\Review\ReviewRequest;
-use App\Models\Review;
 use App\Repositories\Property\PropertyRepository;
 use App\Repositories\Review\ReviewCategoryRepository;
 use App\Repositories\Review\ReviewRepositroy;
