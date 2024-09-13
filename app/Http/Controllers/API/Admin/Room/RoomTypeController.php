@@ -60,6 +60,7 @@ class RoomTypeController extends BaseController
             }
 
             return $this->sendSuccess($roomTypes->load('icon'), 'Room Type created successfully.');
+        
         } catch (\Exception $e) {
             return $this->sendError(
                 'Room Type creation failed.',
