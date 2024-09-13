@@ -157,7 +157,7 @@ class PlaceController extends BaseController
             $this->deleteFile($place->icon->name, 'place_icons');
             $place->icon()->delete();
         }
-         if ($place->primaryImage()->exists()) {
+        if ($place->primaryImage()->exists()) {
             $this->deleteFile($place->primaryImage->name, 'places');
             $place->primaryImage()->delete();
         }
