@@ -3,6 +3,7 @@
 
 use App\Http\Controllers\API\Admin\Facility\FacilityController;
 use App\Http\Controllers\API\Admin\Facility\SubFacilityController;
+use App\Http\Controllers\API\Admin\Property\PropertyCategoryController;
 use App\Http\Controllers\API\Admin\Surrounding\SurroundingController;
 use App\Http\Controllers\API\Admin\ACL\PermissionController;
 use App\Http\Controllers\API\Admin\ACL\RoleController;
@@ -132,10 +133,13 @@ Route::middleware('auth:sanctum')->prefix('admin')->group(function () {
 
     Route::apiResource('properties', AdminPropertyController::class)->except(['create', 'show', 'edit']);
     Route::get('properties/all', [AdminPropertyController::class, 'all']);
-    
+
+    Route::apiResource('property-categories', PropertyCategoryController::class)->except(['create', 'show', 'edit']);
+    Route::get('property-categories/all', [PropertyCategoryController::class, 'all']);
+
     Route::apiResource('room-types',RoomTypeController::class)->except(['create', 'show', 'edit']);
     Route::get('room-types/all', [RoomTypeController::class, 'all']);
-    
+
     Route::apiResource('bed-types',BedTypeController::class)->except(['create', 'show', 'edit']);
     Route::get('bed-types/all', [BedTypeController::class, 'all']);
 

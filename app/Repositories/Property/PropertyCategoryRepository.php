@@ -10,5 +10,6 @@ class PropertyCategoryRepository extends Repository
     public function __construct()
     {
         $this->model = new PropertyCategory();
+        $this->searchable = [];
     }
 }

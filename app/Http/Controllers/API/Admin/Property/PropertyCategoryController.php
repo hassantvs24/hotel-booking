@@ -38,7 +38,7 @@ class PropertyCategoryController extends BaseController
     /**
      * Show the form for creating a new resource.
      */
-    public function create() 
+    public function create()
     {
       //
     }
@@ -46,9 +46,9 @@ class PropertyCategoryController extends BaseController
     /**
      * Store a newly created resource in storage.
      */
-    public function store(
-        PropertyCategoryRequest $request,PropertyCategoryRepository $categoryRepository) : JsonResponse {
-        
+    public function store(PropertyCategoryRequest $request, PropertyCategoryRepository $categoryRepository) : JsonResponse
+    {
+
         try {
             $propertyCategories = $categoryRepository->create($request->only(['name', 'notes']));
 
@@ -66,7 +66,7 @@ class PropertyCategoryController extends BaseController
 
             return $this->sendSuccess($propertyCategories->load('icon'), 'Property Category created successfully.');
 
-        } 
+        }
         catch (\Exception $e) {
 
             return $this->sendError('Property Category creation failed.',(array)$e->getMessage());
@@ -94,13 +94,13 @@ class PropertyCategoryController extends BaseController
      */
     public function update(
         PropertyCategoryRequest $request,PropertyCategoryRepository $categoryRepository,$propertyCategories) : JsonResponse {
-        
+
             try {
 
             $propertyCategories = $categoryRepository->getModel($propertyCategories);
 
             $categoryRepository->update($request->only(['name', 'notes']),$propertyCategories);
-            
+
             if (!$request->hasFile('icon') && $request->input('remove_icon')) {
                 $this->deleteImage($propertyCategories);
             }
@@ -112,7 +112,7 @@ class PropertyCategoryController extends BaseController
                 }
 
                 $icon = $this->storeFile($request->file('icon'),'property_categories');
-               
+
                 $propertyCategories->icon()->create([
                     ...$icon,
 
@@ -123,7 +123,7 @@ class PropertyCategoryController extends BaseController
             return $this->sendSuccess($propertyCategories->load('icon'), 'Property Category updated successfully.');
 
        } catch (\Exception $e) {
-        
+
         return $this->sendError(
             'Property update failed.',
             (array)$e->getMessage()
@@ -136,7 +136,7 @@ class PropertyCategoryController extends BaseController
      */
     public function destroy(PropertyCategoryRepository $categoryRepository, $propertyCategories) : JsonResponse
     {
-    
+
         try {
 
             $model = $categoryRepository->getModel($propertyCategories);
@@ -163,5 +163,16 @@ class PropertyCategoryController extends BaseController
             $this->deleteFile($propertyCategories->icon->name, 'property_icon');
             $propertyCategories->icon()->delete();
         }
+    }
+
+    public function all(PropertyCategoryRepository $categoryRepository) : JsonResponse
+    {
+        $propertyCategories = $categoryRepository->get();
+
+        $data = [
+            'categories' => $propertyCategories
+        ];
+
+        return $this->sendSuccess($data);
     }
 }
