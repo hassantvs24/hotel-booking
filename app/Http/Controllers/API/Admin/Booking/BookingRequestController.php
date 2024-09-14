@@ -18,7 +18,6 @@ class BookingRequestController extends BaseController
      */
     public function index(Request $request, BookingRequestRepository $bookingRequestRepository): JsonResponse
     {
-
         $query = array_merge(
             $request->only(['search', 'filters', 'order_by', 'order', 'per_page', 'page']),
             [
@@ -28,12 +27,13 @@ class BookingRequestController extends BaseController
                 'order'    => 'DESC',
             ]
         );
+
         $query['where'][] = ['status', 'Pending'];
 
         $bookingRequests = $bookingRequestRepository->paginate($query);
 
         $data = [
-            'bookingRequests' => $bookingRequests
+            'booking_requests' => $bookingRequests
         ];
 
         return $this->sendSuccess($data);

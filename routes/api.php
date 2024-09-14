@@ -150,4 +150,7 @@ Route::middleware('auth:sanctum')->prefix('admin')->group(function () {
 
     Route::apiResource('price-types',PriceTypeController::class)->except(['create', 'show', 'edit']);
     Route::get('price-types/all', [PriceTypeController::class, 'all']);
+
+    Route::apiResource('booking-request',BookingRequestController::class)->except(['create','show','edit']);
+    Route::get('booking-request/all',[BookingRequestController::class, 'all']);
 });
