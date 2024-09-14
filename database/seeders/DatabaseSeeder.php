@@ -16,9 +16,8 @@ class DatabaseSeeder extends Seeder
         $this->call([
             SettingSeeder::class,
             PermissionSeeder::class,
-            RoleSeeder::class,
             UserSeeder::class,
-            ACLSeeder::class,
+            //ACLSeeder::class,
             CountrySeeder::class,
             StateSeeder::class,
             CitySeeder::class,
@@ -29,6 +28,7 @@ class DatabaseSeeder extends Seeder
             PropertyRuleSeeder::class,
             RoomElementSeeder::class,
             PropertySeeder::class,
+            RoleSeeder::class,
             RoomSeeder::class,
             ReviewSeeder::class,
             OfferSeeder::class

@@ -22,6 +22,7 @@ class PermissionSeeder extends Seeder
                     'name' => $permission['name'],
                     'slug' => $permission['slug'],
                     'subject' => Str::ucfirst($permission['subject']),
+                    'permission_type' => $permission['permission_type'],
                 ]);
             }
         }
