@@ -4,19 +4,12 @@ namespace App\Http\Controllers\API\Admin\Property;
 
 use App\Http\Controllers\BaseController;
 use App\Http\Requests\Admin\Property\PropertyRequest;
-use App\Models\Property;
-use App\Repositories\Facility\SubFacilityRepository;
-use App\Repositories\Place\PlaceRepository;
-use App\Repositories\Property\PropertyCategoryRepository;
 use App\Repositories\Property\PropertyRepository;
-use App\Repositories\User\UserRepository;
 use App\Traits\MediaMan;
-use Illuminate\Contracts\View\View;
+use Exception;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Auth;
 
 class PropertyController extends BaseController
 {
@@ -67,7 +60,7 @@ class PropertyController extends BaseController
             $property = $propertyRepository->create(
                 array_merge(
                     $request->except(['photo', 'property_facilities']),
-                    ['user_id' => Auth::auth()->id()]
+                    ['user_id' => $request->user()->id]
                 )
             );
 
@@ -83,7 +76,7 @@ class PropertyController extends BaseController
             DB::commit();
 
             return $this->sendSuccess($property->load('facilities', 'primaryImage'));
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             DB::rollBack();
             return $this->sendError($e->getMessage());
         }
@@ -132,7 +125,7 @@ class PropertyController extends BaseController
             }
 
             return $this->sendSuccess($property->load('facilities', 'primaryImage'));
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return $this->sendError($e->getMessage());
         }
     }
@@ -147,8 +140,8 @@ class PropertyController extends BaseController
             $this->deleteImage($property);
             $propertyRepository->delete($property->id);
 
-            return $this->sendSuccess([], 'Property deleted sucessfully');
-        } catch (\Exception $e) {
+            return $this->sendSuccess([], 'Property deleted successfully');
+        } catch (Exception $e) {
             return $this->sendError($e->getMessage());
         }
     }
