@@ -167,7 +167,7 @@ class PropertyController extends BaseController
 
     private function deleteImage($property): void
     {
-        if ($property->primaryImage->exists()) {
+        if ($property->primaryImage()->exists()) {
             $this->deleteFile($property->primaryImage->name, 'properties');
             $property->primaryImage()->delete();
         }
