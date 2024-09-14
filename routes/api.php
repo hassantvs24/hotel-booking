@@ -1,6 +1,6 @@
 <?php
 
-
+use App\Http\Controllers\API\Admin\Booking\BookingRequestController;
 use App\Http\Controllers\API\Admin\Facility\FacilityController;
 use App\Http\Controllers\API\Admin\Facility\SubFacilityController;
 use App\Http\Controllers\API\Admin\Surrounding\SurroundingController;
@@ -11,6 +11,7 @@ use App\Http\Controllers\API\Admin\Location\CityController;
 use App\Http\Controllers\API\Admin\Location\CountryController;
 use App\Http\Controllers\API\Admin\Location\PlaceController;
 use App\Http\Controllers\API\Admin\Location\StateController;
+use App\Http\Controllers\API\Admin\Property\PropertyCategoryController;
 use App\Http\Controllers\API\Admin\Property\PropertyRuleController;
 use App\Http\Controllers\API\Admin\Property\PropertyController as AdminPropertyController;
 use App\Http\Controllers\API\Admin\Review\ReviewCategoryController;
@@ -134,4 +135,11 @@ Route::middleware('auth:sanctum')->prefix('admin')->group(function () {
 
     Route::apiResource('properties', AdminPropertyController::class)->except(['create', 'show', 'edit']);
     Route::get('properties/all', [AdminPropertyController::class, 'all']);
+
+    Route::apiResource('property-categories',PropertyCategoryController::class)->except(['create','show','edit']);
+    Route::get('property-categories/all',[PropertyCategoryController::class, 'all']);
+
+    Route::apiResource('booking-request',BookingRequestController::class)->except(['create','show','edit']);
+    Route::get('booking-request/all',[BookingRequestController::class, 'all']);
+
 });
