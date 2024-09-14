@@ -93,34 +93,34 @@ class PropertyCategoryController extends BaseController
      * Update the specified resource in storage.
      */
     public function update(
-        PropertyCategoryRequest $request,PropertyCategoryRepository $categoryRepository,$propertyCategories) : JsonResponse {
+        PropertyCategoryRequest $request,PropertyCategoryRepository $categoryRepository,$property_category) : JsonResponse {
         
             try {
 
-            $propertyCategories = $categoryRepository->getModel($propertyCategories);
+            $propertyCategories = $categoryRepository->getModel($property_category);
 
-            $categoryRepository->update($request->only(['name', 'notes']),$propertyCategories);
+            $categoryRepository->update($request->only(['name', 'notes']),$property_category);
             
             if (!$request->hasFile('icon') && $request->input('remove_icon')) {
-                $this->deleteImage($propertyCategories);
+                $this->deleteImage($property_category);
             }
             if ($request->hasFile('icon')) {
 
-                if ($propertyCategories->icon()->exists()) {
-                    $this->deleteFile($propertyCategories->icon->name, 'property_icon');
-                    $propertyCategories->icon()->delete();
+                if ($property_category->icon()->exists()) {
+                    $this->deleteFile($property_category->icon->name, 'property_icon');
+                    $property_category->icon()->delete();
                 }
 
                 $icon = $this->storeFile($request->file('icon'),'property_categories');
                
-                $propertyCategories->icon()->create([
+                $property_category->icon()->create([
                     ...$icon,
 
                     'media_role' => 'property_icon'
                 ]);
             }
 
-            return $this->sendSuccess($propertyCategories->load('icon'), 'Property Category updated successfully.');
+            return $this->sendSuccess($property_category->load('icon'), 'Property Category updated successfully.');
 
        } catch (\Exception $e) {
         
@@ -134,12 +134,12 @@ class PropertyCategoryController extends BaseController
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(PropertyCategoryRepository $categoryRepository, $propertyCategories) : JsonResponse
+    public function destroy(PropertyCategoryRepository $categoryRepository, $property_category) : JsonResponse
     {
     
         try {
 
-            $model = $categoryRepository->getModel($propertyCategories);
+            $model = $categoryRepository->getModel($property_category);
 
             if ($model->icon()->exists()) {
                 $this->deleteFile($model->icon->name, 'property_icon');
@@ -157,11 +157,24 @@ class PropertyCategoryController extends BaseController
             );
         }
     }
-    private function deleteImage($propertyCategories) : void
+
+    public function all(PropertyCategoryRepository $propertyCategoryRepository):JsonResponse
     {
-        if ($propertyCategories->icon()->exists()) {
-            $this->deleteFile($propertyCategories->icon->name, 'property_icon');
-            $propertyCategories->icon()->delete();
+        $propertyCategories = $propertyCategoryRepository->get();
+
+        $data = [
+            'propertyCategories' => $propertyCategories
+        ];
+        return $this->sendSuccess($data);
+    }
+
+
+
+    private function deleteImage($property_category) : void
+    {
+        if ($property_category->icon()->exists()) {
+            $this->deleteFile($property_category->icon->name, 'property_icon');
+            $property_category->icon()->delete();
         }
     }
 }

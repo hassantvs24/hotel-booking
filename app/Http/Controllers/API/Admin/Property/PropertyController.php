@@ -31,7 +31,7 @@ class PropertyController extends BaseController
         $query = array_merge(
             $request->only(['search', 'filters', 'order_by', 'order', 'per_page', 'page']),
             [
-                'with'     => [],
+                'with'     => ['user'],
                 'where'    => [],
                 'order_by' => 'id',
                 'order'    => 'DESC',
@@ -40,7 +40,12 @@ class PropertyController extends BaseController
 
         $properties = $propertyRepository->paginate($query);
 
-        return $this->sendSuccess($properties);
+
+        $data = [
+            'properties' => $properties,
+        ];
+
+        return $this->sendSuccess($data);
     }
 
     /**
@@ -137,9 +142,6 @@ class PropertyController extends BaseController
      */
     public function destroy(PropertyRepository $propertyRepository, $property): JsonResponse
     {
-        if (!hasPermission('can_delete_property')) {
-            $this->unauthorized();
-        }
         try {
             $property = $propertyRepository->getModel($property);
             $this->deleteImage($property);
