@@ -17,15 +17,15 @@ class PropertyCategoryController extends BaseController
     /**
      * Display a listing of the resource.
      */
-    public function index(Request $request, PropertyCategoryRepository $categoryRepository) : JsonResponse
+    public function index(Request $request, PropertyCategoryRepository $categoryRepository): JsonResponse
     {
         $query = array_merge(
             $request->only(['search', 'filters', 'order_by', 'order', 'per_page', 'page']),
             [
-                'with'     => [],
-                'where'    => [],
+                'with' => [],
+                'where' => [],
                 'order_by' => 'id',
-                'order'    => 'DESC',
+                'order' => 'DESC',
             ]
         );
 
@@ -40,14 +40,15 @@ class PropertyCategoryController extends BaseController
      */
     public function create()
     {
-      //
+        //
     }
 
     /**
      * Store a newly created resource in storage.
      */
     public function store(
-        PropertyCategoryRequest $request,PropertyCategoryRepository $categoryRepository) : JsonResponse {
+        PropertyCategoryRequest $request, PropertyCategoryRepository $categoryRepository): JsonResponse
+    {
 
         try {
             $propertyCategories = $categoryRepository->create($request->only(['name', 'notes']));
@@ -66,10 +67,9 @@ class PropertyCategoryController extends BaseController
 
             return $this->sendSuccess($propertyCategories->load('icon'), 'Property Category created successfully.');
 
-        }
-        catch (\Exception $e) {
+        } catch (\Exception $e) {
 
-            return $this->sendError('Property Category creation failed.',(array)$e->getMessage());
+            return $this->sendError('Property Category creation failed.', (array)$e->getMessage());
         }
     }
 
@@ -86,55 +86,51 @@ class PropertyCategoryController extends BaseController
      */
     public function edit(string $id)
     {
-       //
+        //
     }
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(
-        PropertyCategoryRequest $request,PropertyCategoryRepository $categoryRepository,$property_category) : JsonResponse {
+    public function update(PropertyCategoryRequest $request, PropertyCategoryRepository $categoryRepository, $propertyCategory): JsonResponse
+    {
 
-            try {
+        try {
+            $propertyCategory = $categoryRepository->getModel($propertyCategory);
 
-            $propertyCategories = $categoryRepository->getModel($property_category);
-
-            $categoryRepository->update($request->only(['name', 'notes']),$property_category);
+            $categoryRepository->update($request->only(['name', 'notes']), $propertyCategory);
 
             if (!$request->hasFile('icon') && $request->input('remove_icon')) {
-                $this->deleteImage($property_category);
+                $this->deleteImage($propertyCategory);
             }
+
             if ($request->hasFile('icon')) {
 
-                if ($property_category->icon()->exists()) {
-                    $this->deleteFile($property_category->icon->name, 'property_icon');
-                    $property_category->icon()->delete();
-                }
+                $this->deleteImage($propertyCategory);
 
-                $icon = $this->storeFile($request->file('icon'),'property_categories');
+                $icon = $this->storeFile($request->file('icon'), 'property_categories');
 
-                $property_category->icon()->create([
+                $propertyCategory->icon()->create([
                     ...$icon,
-
                     'media_role' => 'property_icon'
                 ]);
             }
 
-            return $this->sendSuccess($property_category->load('icon'), 'Property Category updated successfully.');
+            return $this->sendSuccess($propertyCategory->load('icon'), 'Property Category updated successfully.');
 
-       } catch (\Exception $e) {
+        } catch (\Exception $e) {
 
-        return $this->sendError(
-            'Property update failed.',
-            (array)$e->getMessage()
-        );
+            return $this->sendError(
+                'Property update failed.',
+                (array)$e->getMessage()
+            );
         }
     }
 
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(PropertyCategoryRepository $categoryRepository, $propertyCategories) : JsonResponse
+    public function destroy(PropertyCategoryRepository $categoryRepository, $propertyCategories): JsonResponse
     {
 
         try {
@@ -158,7 +154,7 @@ class PropertyCategoryController extends BaseController
         }
     }
 
-    public function all(PropertyCategoryRepository $propertyCategoryRepository):JsonResponse
+    public function all(PropertyCategoryRepository $propertyCategoryRepository): JsonResponse
     {
         $propertyCategories = $propertyCategoryRepository->get();
 
@@ -169,12 +165,11 @@ class PropertyCategoryController extends BaseController
     }
 
 
-
-    private function deleteImage($property_category) : void
+    private function deleteImage($propertyCategory): void
     {
-        if ($property_category->icon()->exists()) {
-            $this->deleteFile($property_category->icon->name, 'property_icon');
-            $property_category->icon()->delete();
+        if ($propertyCategory->icon()->exists()) {
+            $this->deleteFile($propertyCategory->icon->name, 'property_icon');
+            $propertyCategory->icon()->delete();
         }
     }
 }
