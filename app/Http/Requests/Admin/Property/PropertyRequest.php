@@ -30,8 +30,8 @@ class PropertyRequest extends FormRequest
         return [
             'name'                 => "required|string|max:255|{$uniqueNameRule}",
             'description'          => 'nullable|string|max:255',
-            'lat'                  => 'required|numeric|between:-90,90',
-            'long'                 => 'required|numeric|between:-180,180',
+            'lat'                  => 'nullable|numeric|between:-90,90',
+            'long'                 => 'nullable|numeric|between:-180,180',
             'photo'                => 'nullable|image|max:2048',
             'address'              => 'nullable|string|max:255',
             'zip_code'             => 'nullable|string|max:10',
@@ -44,9 +44,9 @@ class PropertyRequest extends FormRequest
             'phone_number'         => 'nullable|string|max:255',
             'seo_title'            => 'nullable|string|max:255',
             'seo_meta'             => 'nullable|string|max:255',
-            'property_class'       => 'required|in:7 Stars,6 Stars,5 Stars,4 Stars,3 Stars,2 Stars,1 Star,Unrated',
-            'status'               => 'required|in:Pending,Published,Unpublished',
-            'property_category_id' => 'required|exists:property_categories,id',
+            'property_class'       => 'nullable|in:7 Stars,6 Stars,5 Stars,4 Stars,3 Stars,2 Stars,1 Star,Unrated',
+            'status'               => 'nullable|in:Pending,Published,Unpublished',
+            'property_category_id' => 'nullable|exists:property_categories,id',
             'place_id'             => 'nullable|exists:places,id',
             'property_facilities'  => 'nullable|array',
         ];

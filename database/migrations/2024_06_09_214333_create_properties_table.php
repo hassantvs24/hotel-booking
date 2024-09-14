@@ -16,9 +16,9 @@ return new class extends Migration {
         Schema::create('properties', function (Blueprint $table) use ($allowedPropertyClass, $allowedPropertyStatus) {
             $table->id();
             $table->string('name');
-            $table->text('description')->nullable();//description
-            $table->decimal('lat');
-            $table->decimal('long');
+            $table->text('description')->nullable(); //description
+            $table->decimal('lat')->nullable();
+            $table->decimal('long')->nullable();
             $table->string('address')->nullable();
             $table->string('zip_code')->nullable();
             $table->string('total_room')->nullable();
