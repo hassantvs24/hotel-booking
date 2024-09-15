@@ -34,6 +34,9 @@ return new class extends Migration {
             $table->time('check_in_time')->nullable(); // Added check-in time
             $table->time('check_out_time')->nullable(); // Added check-out time
             $table->string('phone_number')->nullable(); // Added phone number
+            $table->string('email')->nullable(); // Added email
+            $table->string('website')->nullable(); // Added website
+            $table->json('meta')->nullable(); // Added meta
 
             $table->foreignId('property_category_id')
                 ->nullable()
