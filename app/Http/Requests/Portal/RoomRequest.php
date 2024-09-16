@@ -26,7 +26,7 @@ class RoomRequest extends FormRequest
             'check_out' => 'required|date',
             'adult' => 'required|integer|min:1',
             'children' => 'nullable|integer|min:0',
-            'room' => 'required|integer|min:1',
+            'rooms' => 'required|integer|min:1',
             'discount_price' => 'nullable|numeric|min:0',
             'room_id' => 'nullable|exists:rooms,id',
             'property_id' => 'nullable|exists:properties,id',
@@ -53,9 +53,9 @@ class RoomRequest extends FormRequest
             'children.integer' => 'The number of children must be an integer.',
             'children.min' => 'The number of children cannot be negative.',
 
-            'room.required' => 'The number of rooms is required.',
-            'room.integer' => 'The number of rooms must be an integer.',
-            'room.min' => 'There must be at least one room.',
+            'rooms.required' => 'The number of rooms is required.',
+            'rooms.integer' => 'The number of rooms must be an integer.',
+            'rooms.min' => 'There must be at least one room.',
 
             'discount_price.numeric' => 'The discount price must be a number.',
             'discount_price.min' => 'The discount price cannot be negative.',

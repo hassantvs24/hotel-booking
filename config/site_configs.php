@@ -23,7 +23,7 @@ return [
     'allowed_offer_for' => ['General', 'Request'],
     'allowed_offer_status' => ['Pending', 'Negotiate', 'Canceled', 'Accepted'],
 
-    'allowed_booking_status' => ['Pending', 'Done', 'Timeout'],
+    'allowed_booking_status' => ['Pending', 'Done', 'Timeout','Approved'],
 
     'allowed_booking_offer_status' => ['Pending', 'Accepted'],
 ];

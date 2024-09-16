@@ -1,9 +1,11 @@
 <?php
 
-namespace App\Http\Controllers\Admin\Booking;
+namespace App\Http\Controllers\API\Admin\Booking;
 
 use App\Http\Controllers\BaseController;
 use App\Models\Booking;
+use App\Repositories\Booking\BookingRepository;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
@@ -12,22 +14,24 @@ class BookingController extends BaseController
     /**
      * Display a listing of the resource.
      */
-    public function index() : View
+    public function index(Request $request,BookingRepository $bookingRepository) : JsonResponse
     {
-        if (!hasPermission('can_view_booking')) {
-            return $this->unauthorized();
-        }
-   
+        $query = array_merge(
+            $request->only(['search', 'filters', 'order_by', 'order', 'per_page', 'page']),
+            [
+                'with'     => ['room', 'user'],
+                'where'    => [],
+                'order_by' => 'id',
+                'order'    => 'DESC',
+            ]
+        );
+        $bookings = $bookingRepository->paginate($query);
 
-        $permissions = [
-            'manage' => 'can_view_booking',
-            'create' => 'can_create_booking',
-            'update' => 'can_update_booking',
-            'delete' => 'can_delete_booking',
+        $data = [
+            'bookings' => $bookings
         ];
 
-
-        return view('admin.booking.booking.index',compact('permissions'));
+        return $this->sendSuccess($data);
     }
     
     /**
@@ -85,8 +89,17 @@ class BookingController extends BaseController
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(string $id)
+    public function destroy(BookingRepository $bookingRepository,$bookingId)
     {
-      
+        try {
+            $bookingId = $bookingRepository->getModel($bookingId);
+
+            $bookingRepository->delete($bookingId->id);
+
+            return $this->sendSuccess(null, 'Booking deleted successfully');
+
+        } catch (\Exception $e) {
+            return $this->sendError($e->getMessage());
+        }
     }
 }

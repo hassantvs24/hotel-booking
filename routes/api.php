@@ -8,6 +8,8 @@ use App\Http\Controllers\API\Admin\Surrounding\SurroundingController;
 use App\Http\Controllers\API\Admin\ACL\PermissionController;
 use App\Http\Controllers\API\Admin\ACL\RoleController;
 use App\Http\Controllers\API\Admin\ACL\UserController;
+use App\Http\Controllers\API\Admin\Booking\BookingController as BookingBookingController;
+use App\Http\Controllers\API\Admin\Booking\RoomRequestController as AdminRoomRequestController;
 use App\Http\Controllers\API\Admin\Location\CityController;
 use App\Http\Controllers\API\Admin\Location\CountryController;
 use App\Http\Controllers\API\Admin\Location\PlaceController;
@@ -58,18 +60,26 @@ Route::prefix('portal')->group(function () {
     Route::post('/booking', [BookingController::class, 'booking']);
 
     // room request
-    Route::prefix('room')->group(function () {
+    Route::prefix('room')->middleware('auth:sanctum')->group(function () {
         Route::post('/request', [RoomRequestController::class, 'roomRequest']);
+        Route::get('/request-notification', [RoomRequestController::class, 'roomRequestNotification']);
+        Route::get('/request-response/{propertyId}', [RoomRequestController::class, 'roomResponselist']);
     });
 
-    Route::prefix('request')->group(function () {
+    Route::prefix('request')->middleware('auth:sanctum')->group(function () {
         Route::post("/", [RequestController::class, 'index']);
         Route::get("/properties", [RequestController::class, 'property_list']);
+        Route::get('/fetchtimer',[RequestController::class, 'fetchTimer']);
     });
 
-    Route::get('/getAllPropertyOption', [VendorController::class, 'allPropertyOption']);
-    Route::post('/property/store', [VendorController::class, 'store']);
-    Route::get('/property/allproperties', [VendorController::class, 'allproperties']);
+    Route::middleware('auth:sanctum')->group(function(){
+        Route::get('/getAllPropertyOption', [VendorController::class, 'allPropertyOption']);
+        Route::post('/property/store', [VendorController::class, 'store']);
+        Route::get('/property/allproperties', [VendorController::class, 'allproperties']);
+    });
+
+
+    
 });
 
 
@@ -154,4 +164,12 @@ Route::middleware('auth:sanctum')->prefix('admin')->group(function () {
 
     Route::apiResource('booking-request',BookingRequestController::class)->except(['create','show','edit']);
     Route::get('booking-request/all',[BookingRequestController::class, 'all']);
+
+    Route::put('booking-request/update/{id}',[BookingRequestController::class, 'updateStatus']);
+
+    Route::apiResource('room-request',AdminRoomRequestController::class)->except(['create','show','edit']);
+    Route::put('room-request/update/{id}',[AdminRoomRequestController::class, 'updateStatus']);
+    
+    Route::apiResource('bookings',BookingBookingController::class)->except(['create','show','edit']);
+
 });

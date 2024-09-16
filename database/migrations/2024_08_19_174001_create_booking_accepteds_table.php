@@ -23,7 +23,8 @@ return new class extends Migration
                 ->constrained()
                 ->onDelete('cascade')
                 ->onUpdate('No Action');
-
+            $table->timestamp('request_expiration_time')->nullable();
+            
             $table->softDeletes();
             $table->timestamps();
         });

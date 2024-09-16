@@ -62,7 +62,7 @@ class PropertyController extends BaseController
     public function availableRooms(Property $property): JsonResponse
     {
         $rooms = Room::query()
-            ->with(['images', 'facilities'])
+            ->with(['images', 'facilities','property'])
             ->where('property_id', $property->id)
             ->get();
         $data = [
