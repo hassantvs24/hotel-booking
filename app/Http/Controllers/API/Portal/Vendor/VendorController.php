@@ -65,20 +65,14 @@ class VendorController extends BaseController
         ], 201);
     }
 
-    public function allproperties(): JsonResponse
+    public function allproperties(Request $request): JsonResponse
     {
-        // Get the authenticated user's ID
-        $userId = Auth::id();
+        $properties = Property::where('user_id', $request->user()->id)->get();
 
-        // Fetch properties for the authenticated user
-        $properties = Property::where('user_id', $userId)->get();
-
-        // Prepare the response data
         $data = [
             'properties' => $properties
         ];
 
-        // Return success response with fetched properties
         return $this->sendSuccess($data, 'Properties fetched successfully!');
     }
 }

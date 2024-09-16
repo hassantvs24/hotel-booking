@@ -10,6 +10,8 @@ use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Carbon;
 
 class BookingRequestController extends BaseController
 {
@@ -18,22 +20,21 @@ class BookingRequestController extends BaseController
      */
     public function index(Request $request, BookingRequestRepository $bookingRequestRepository): JsonResponse
     {
+
         $query = array_merge(
             $request->only(['search', 'filters', 'order_by', 'order', 'per_page', 'page']),
             [
-                'with'     => ['user'],
+                'with'     => [],
                 'where'    => [],
                 'order_by' => 'id',
                 'order'    => 'DESC',
             ]
         );
-
-        $query['where'][] = ['status', 'Pending'];
-
-        $bookingRequests = $bookingRequestRepository->paginate($query);
+        $query['whereIn'] = ['status', ['Pending', 'Approved']];
+        $booking_requests = $bookingRequestRepository->paginate($query);
 
         $data = [
-            'booking_requests' => $bookingRequests
+            'booking_requests' => $booking_requests
         ];
 
         return $this->sendSuccess($data);
@@ -68,22 +69,22 @@ class BookingRequestController extends BaseController
      */
     public function edit(string $id)
     {
-        //
+       //
     }
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, $booking_request): JsonResponse
+    public function update(Request $request, BookingRequestRepository $bookingRequestRepository, $bookingRequestId)
     {
         try {
             if ($request->input('status') === 'Accepted') {
                 BookingAccepted::updateOrCreate(
-                    ['booking_requests_id' => $booking_request],
+                    ['booking_requests_id' => $bookingRequestId],
                     ['property_id' => 1]
                 );
             } else {
-                BookingAccepted::where('booking_requests_id', $booking_request)->delete();
+                BookingAccepted::where('booking_requests_id', $bookingRequestId)->delete();
             }
             return response()->json(['success' => true]);
         } catch (\Exception $e) {
@@ -97,28 +98,51 @@ class BookingRequestController extends BaseController
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(BookingRequestRepository $bookingRequestRepository, $booking_request): JsonResponse
+    public function destroy(BookingRequestRepository $bookingRequestRepository, $bookingRequestId):JsonResponse
     {
         try {
-            $booking_request = $bookingRequestRepository->getModel($booking_request);
+            $bookingRequestId = $bookingRequestRepository->getModel($bookingRequestId);
 
-            $bookingRequestRepository->delete($booking_request->id);
+            $bookingRequestRepository->delete($bookingRequestId->id);
 
-            return $this->sendSuccess(null, 'Booking Request deleted successfully');
+            return $this->sendSuccess(null, 'Request deleted successfully');
+
         } catch (\Exception $e) {
             return $this->sendError($e->getMessage());
         }
     }
-
-    public function all(BookingRequestRepository $bookingRequestRepository): JsonResponse
+    public function updateStatus(Request $request, $bookingRequest): JsonResponse
     {
-
-        $bookingRequests = $bookingRequestRepository->get();
-
-        $data = [
-            'bookingRequests' => $bookingRequests
-        ];
-
-        return $this->sendSuccess($data);
+        DB::beginTransaction();
+        $status = $request->input('status');
+        $requestData = $request->all();
+        try {
+            if ($status === 'Approved') {
+                BookingAccepted::updateOrCreate(
+                    ['booking_requests_id' => $bookingRequest],
+                    [
+                    'property_id' => 1,
+                    'request_expiration_time' => Carbon::now()->addMinutes(6) 
+                    ]
+                );
+                BookingRequest::updateOrCreate(
+                    ['id' => $bookingRequest],
+                    $requestData
+                );
+                DB::commit();
+                return response()->json(['status' => $status]);
+            } else {
+                BookingAccepted::where('booking_requests_id', $bookingRequest)->delete();
+                BookingRequest::updateOrCreate(
+                    ['id' => $bookingRequest],
+                    ['status' => $status]
+                );
+                DB::commit();
+                return $this->sendSuccess($bookingRequest);
+            }
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json(['status' => 'Failed', 'message' => $e->getMessage()], 500);
+        }
     }
 }

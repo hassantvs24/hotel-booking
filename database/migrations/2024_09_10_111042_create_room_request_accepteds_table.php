@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('room_request_accepteds', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('booking_requests_id')
+            $table->foreignId('room_requests_id')
                 ->constrained()
                 ->onDelete('cascade')
                 ->onUpdate('No Action');
@@ -22,6 +22,7 @@ return new class extends Migration
                 ->constrained()
                 ->onDelete('cascade')
                 ->onUpdate('No Action');
+            $table->timestamp('request_expiration_time')->nullable();
 
             $table->softDeletes();
             $table->timestamps();
