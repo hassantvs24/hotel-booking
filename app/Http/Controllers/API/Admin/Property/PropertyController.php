@@ -4,12 +4,16 @@ namespace App\Http\Controllers\API\Admin\Property;
 
 use App\Http\Controllers\BaseController;
 use App\Http\Requests\Admin\Property\PropertyRequest;
+use App\Models\Property;
+use App\Models\User;
 use App\Repositories\Property\PropertyRepository;
 use App\Traits\MediaMan;
 use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Spatie\Permission\Models\Role;
+use Throwable;
 
 class PropertyController extends BaseController
 {
@@ -24,10 +28,10 @@ class PropertyController extends BaseController
         $query = array_merge(
             $request->only(['search', 'filters', 'order_by', 'order', 'per_page', 'page']),
             [
-                'with'     => ['user'],
-                'where'    => [],
+                'with' => ['user'],
+                'where' => [],
                 'order_by' => 'id',
-                'order'    => 'DESC',
+                'order' => 'DESC',
             ]
         );
 
@@ -102,10 +106,11 @@ class PropertyController extends BaseController
      * Update the specified resource in storage.
      */
     public function update(
-        PropertyRequest $request,
+        PropertyRequest    $request,
         PropertyRepository $propertyRepository,
-        $property
-    ): JsonResponse {
+                           $property
+    ): JsonResponse
+    {
 
         try {
 
@@ -157,12 +162,61 @@ class PropertyController extends BaseController
         return $this->sendSuccess($data);
     }
 
-
     private function deleteImage($property): void
     {
         if ($property->primaryImage()->exists()) {
             $this->deleteFile($property->primaryImage->name, 'properties');
             $property->primaryImage()->delete();
+        }
+    }
+
+    public function propertyAction(Property $property, Request $request): JsonResponse
+    {
+        $originalStatus = $property->status;
+        $statusInput = $request->input('status');
+
+        DB::beginTransaction();
+        try {
+
+            if ($originalStatus === $statusInput) {
+                return $this->sendSuccess($property, 'Property status updated successfully');
+            }
+
+            $property->update([
+                'status' => $statusInput
+            ]);
+
+            $propertyOwnerRoleName = config('site.hotelOwnerGroup');
+            $propertyOwner = User::query()->where('id', $property->user_id)->first();
+            $propertyOwnerRole = Role::query()->where('name', $propertyOwnerRoleName)->first();
+
+
+            if ($statusInput === 'Published') {
+
+                $existingRoles = $propertyOwner->roles()->whereNotNull('property_id')->get();
+
+                if ($existingRoles->isNotEmpty()) {
+                    foreach ($existingRoles as $role) {
+                        $propertyOwner->removeRole($role);
+                    }
+                }
+
+                if ($propertyOwnerRole) {
+                    $propertyOwner->assignRole($propertyOwnerRole);
+                }
+
+            } else if ($statusInput === 'Unpublished') {
+                if (!$propertyOwner->isAdmin) {
+                    $propertyOwner->removeRole($propertyOwnerRoleName);
+                }
+            }
+
+            DB::commit();
+            return $this->sendSuccess($property, 'Property status updated successfully');
+
+        } catch (Throwable $e) {
+            DB::rollBack();
+            return $this->sendError($e->getMessage());
         }
     }
 }

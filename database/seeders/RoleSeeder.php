@@ -30,7 +30,7 @@ class RoleSeeder extends Seeder
         $admin = User::query()->where('email', 'admin@gmail.com')->first();
 
         $adminRole = Role::create([
-            'name'        => 'Super Admin',
+            'name'        => 'Administrator',
             'description' => 'Main Administrator',
         ]);
 

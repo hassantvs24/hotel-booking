@@ -29,7 +29,7 @@ class User extends Authenticatable
         'user_type',
     ];
 
-    protected $appends = ['is_admin', 'is_merchant'];
+    protected $appends = ['is_admin', 'is_merchant', 'associated_property'];
 
     /**
      * The attributes that should be hidden for serialization.
@@ -76,6 +76,11 @@ class User extends Authenticatable
     public function getIsMerchantAttribute(): bool
     {
         return $this->hasRole(config('site.hotelOwnerGroup'));
+    }
+
+    public function getAssociatedPropertyAttribute()
+    {
+        return $this->properties()->select('id', 'name')->first();
     }
 
     /*----------------------------------------
