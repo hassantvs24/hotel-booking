@@ -17,7 +17,7 @@ return new class extends Migration {
             $table->date('checkout');
             $table->integer('adult')->default(1);
             $table->integer('children')->default(0);
-            $table->integer('room')->default(1);
+            $table->integer('rooms')->default(1);
             $table->string('reference')->nullable();
             $table->string('notes')->comment('Booking notes')->nullable();
 

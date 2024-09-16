@@ -11,15 +11,17 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('room_requests', function (Blueprint $table) {
+        $allowedStatus = config('site_configs.allowed_booking_status');
+
+        Schema::create('room_requests', function (Blueprint $table) use ($allowedStatus) {
             $table->id();
             $table->date('check_in');
             $table->date('check_out');
             $table->integer('adult')->default(1);
             $table->integer('children')->default(0);
-            $table->integer('room')->default(1);
+            $table->integer('rooms')->default(1);
             $table->double('discount_price');
-            $table->enum('status', ['Pending', 'Done', 'TimeOut'])->default('Pending');
+            $table->enum('status', $allowedStatus)->default('Pending');
             $table->timestamp('request_expiration_time')->nullable();
             $table->foreignId('room_id')
                 ->nullable()

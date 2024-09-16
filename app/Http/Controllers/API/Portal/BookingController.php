@@ -33,7 +33,7 @@ class BookingController extends BaseController
             'checkout' => 'required|date',
             'adult' => 'required|integer',
             'children' => 'required|integer',
-            'room' => 'required|integer',
+            'rooms' => 'required|integer',
             'reference' => 'nullable|string',
             'notes' => 'nullable|string',
             'room_id' => 'required|exists:rooms,id',
