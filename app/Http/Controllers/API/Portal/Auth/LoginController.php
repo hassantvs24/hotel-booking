@@ -23,6 +23,14 @@ class LoginController extends BaseController
             }
 
             $user = auth()->user();
+
+            if ($request->input('login_from') === 'admin') {
+                if (!$user->is_admin && !$user->is_merchant) {
+                    auth()->logout();
+                    return $this->sendError('You are not authorized to login here', [], 401);
+                }
+            }
+
             $token = $user->createToken('auth_token')->plainTextToken;
 
             return $this->sendSuccess([
