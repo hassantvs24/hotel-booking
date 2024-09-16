@@ -10,4 +10,4 @@ Artisan::command('inspire', function () {
 })->purpose('Display an inspiring quote')->hourly();
 
 
-Schedule::command(DeleteExpiredHotelRequests::class)->everyMinute();
+Schedule::command(DeleteExpiredHotelRequests::class)->everyFiveSeconds();
