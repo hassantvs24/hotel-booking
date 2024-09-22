@@ -80,12 +80,13 @@ class RoomRequestController extends BaseController
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(RoomRequestRepository $roomRequestRepository, $roomRequestId): JsonResponse
+    public function destroy(Request $request,$roomRequestId): JsonResponse
     {
         try {
-            $roomRequestId = $roomRequestRepository->getModel($roomRequestId);
 
-            $roomRequestRepository->delete($roomRequestId->id);
+            RoomRequest::where('property_id',$request->user()->associated_property->id)
+            ->where('id',$roomRequestId)
+            ->delete();
 
             return $this->sendSuccess(null, 'Request deleted successfully');
         } catch (\Exception $e) {
@@ -105,7 +106,7 @@ class RoomRequestController extends BaseController
                 RoomRequestAccepted::updateOrCreate(                            // Insert or update RoomRequestAccepted
                     ['room_requests_id' => $roomRequestId],
                     [
-                        'property_id' => 2,
+                        'property_id' =>  $request->user()->associated_property->id,
                         'request_expiration_time' => Carbon::now()->addMinutes(6)
                     ]
                 );
@@ -114,9 +115,10 @@ class RoomRequestController extends BaseController
                 DB::commit();
                 return response()->json(['status' => $status]);
             } else {
-                RoomRequestAccepted::where('room_requests_id', $roomRequestId)->delete();   // Delete RoomRequestAccepted if status is not approved
-                $bookingRequest->update(['status' => $status]);
-
+                RoomRequestAccepted::where('room_requests_id', $roomRequestId)
+                ->where('property_id', $request->user()->associated_property->id)
+                ->delete();
+                $bookingRequest->where('property_id', $request->user()->associated_property->id)->update(['status' => $status]);
                 DB::commit();
                 return $this->sendSuccess($roomRequestId);
             }

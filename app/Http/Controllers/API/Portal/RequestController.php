@@ -44,7 +44,8 @@ class RequestController extends BaseController
             'bookingRequest', 
             'property', 
             'property.facilities', 
-            'property.place.city'
+            'property.place.city',
+            'property.rooms'
         ])
         ->get(['id', 'request_expiration_time', 'property_id']);
     
