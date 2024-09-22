@@ -6,7 +6,7 @@ use App\Http\Controllers\BaseController;
 use App\Http\Requests\Admin\Property\PropertyRequest;
 use App\Models\Property;
 use App\Models\User;
-use App\Repositories\Property\PropertyRepository;
+use App\Repositories\Admin\PropertyRepository;
 use App\Traits\MediaMan;
 use Exception;
 use Illuminate\Http\JsonResponse;

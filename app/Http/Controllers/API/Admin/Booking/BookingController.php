@@ -4,7 +4,7 @@ namespace App\Http\Controllers\API\Admin\Booking;
 
 use App\Http\Controllers\BaseController;
 use App\Models\Booking;
-use App\Repositories\Booking\BookingRepository;
+use App\Repositories\Admin\BookingRepository;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -33,16 +33,16 @@ class BookingController extends BaseController
 
         return $this->sendSuccess($data);
     }
-    
+
     /**
      * Show the form for creating a new resource.
      */
     public function create() : View
     {
-        if (!hasPermission('can_create_booking')) { 
+        if (!hasPermission('can_create_booking')) {
             return $this->unauthorized();
         }
-        
+
 
         return view('admin.booking.booking.create');
     }
@@ -52,7 +52,7 @@ class BookingController extends BaseController
      */
     public function store(Request $request)
     {
-       
+
     }
 
     /**
@@ -60,7 +60,7 @@ class BookingController extends BaseController
      */
     public function show(string $id)
     {
-       
+
     }
 
     /**
@@ -68,11 +68,11 @@ class BookingController extends BaseController
      */
     public function edit(string $id) : View
     {
-        if (!hasPermission('can_edit_booking')) {  
+        if (!hasPermission('can_edit_booking')) {
             return $this->unauthorized();
         }
 
-        
+
         $booking = Booking::find($id);
 
         return view('admin.booking.booking.edit');
@@ -83,7 +83,7 @@ class BookingController extends BaseController
      */
     public function update(Request $request, string $id)
     {
-        
+
     }
 
     /**

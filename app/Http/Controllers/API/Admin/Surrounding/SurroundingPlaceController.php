@@ -4,10 +4,9 @@ namespace App\Http\Controllers\API\Admin\Surrounding;
 
 use App\Http\Controllers\BaseController;
 use App\Http\Requests\Admin\Surrounding\SurroundingPlaceRequest;
-use App\Repositories\Surrounding\SurroundingPlaceRepository;
+use App\Repositories\Admin\SurroundingPlaceRepository;
 use App\Traits\MediaMan;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 
 class SurroundingPlaceController extends BaseController
@@ -18,7 +17,7 @@ class SurroundingPlaceController extends BaseController
      */
     public function index(Request $request, SurroundingPlaceRepository $surroundingPlaceRepository): JsonResponse
     {
-       
+
 
         $query = array_merge(
             $request->only(['search', 'filters', 'order_by', 'order', 'per_page', 'page']),
@@ -43,7 +42,7 @@ class SurroundingPlaceController extends BaseController
     public function create()
     {
       //
-    
+
     }
 
     /**
@@ -64,8 +63,8 @@ class SurroundingPlaceController extends BaseController
                 ]);
             }
            return $this->sendSuccess($surroundingPlace->load('place','surrounding', 'icon'), 'Surrounding Created Successfully');
-        
-        
+
+
         } catch (\Exception $e) {
 
             return $this->sendError('Error creating Surrounding Place.', [$e->getMessage()]);
@@ -84,23 +83,23 @@ class SurroundingPlaceController extends BaseController
      * Show the form for editing the specified resource.
      */
     public function edit(string $id){
-      
+
     }
 
     /**
      * Update the specified resource in storage.
      */
     public function update(
-        SurroundingPlaceRequest $request,SurroundingPlaceRepository $surroundingPlaceRepository, $surroundingPlace): JsonResponse 
+        SurroundingPlaceRequest $request,SurroundingPlaceRepository $surroundingPlaceRepository, $surroundingPlace): JsonResponse
         {
         try {
             $surroundingPlace = $surroundingPlaceRepository->getModel($surroundingPlace);
             $surroundingPlaceRepository->update($request->except('icon'), $surroundingPlace);
-           
+
             if (!$request->hasFile('icon') && $request->input('remove_icon')) {
                 $this->deleteImage($surroundingPlace);
             }
-            
+
             if ($request->hasFile('icon')) {
 
                 if ($surroundingPlace->icon()->exists()) {
@@ -117,9 +116,9 @@ class SurroundingPlaceController extends BaseController
 
             $surroundingPlace->load(['icon', 'surrounding', 'place']);
 
-        return $this->sendSuccess($surroundingPlace, 'Surrounding Place updated successfully.'); 
+        return $this->sendSuccess($surroundingPlace, 'Surrounding Place updated successfully.');
      } catch (\Exception $e) {
-         
+
             return $this->sendError('Surrounding Place update failed.', [$e->getMessage()]);
         }
     }
@@ -129,7 +128,7 @@ class SurroundingPlaceController extends BaseController
      */
     public function destroy(
         SurroundingPlaceRepository $surroundingPlaceRepository, $surroundingPlace): JsonResponse {
-    
+
         try {
             $surroundingPlace = $surroundingPlaceRepository->getModel($surroundingPlace);
 
@@ -140,10 +139,10 @@ class SurroundingPlaceController extends BaseController
             $surroundingPlaceRepository->delete($surroundingPlace->id);
 
             return $this->sendSuccess(null, 'Surrrrounding Place deleted successfully.');
-        
-        } 
+
+        }
         catch (\Exception $e) {
-          
+
             return $this->sendError('Surrdounding deletion failed.', [$e->getMessage()]);
         }
     }

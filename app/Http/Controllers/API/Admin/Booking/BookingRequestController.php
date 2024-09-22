@@ -5,10 +5,8 @@ namespace App\Http\Controllers\API\Admin\Booking;
 use App\Http\Controllers\BaseController;
 use App\Models\BookingAccepted;
 use App\Models\BookingRequest;
-use App\Repositories\Booking\BookingRequestRepository;
-use Illuminate\Contracts\View\View;
+use App\Repositories\Admin\BookingRequestRepository;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Carbon;
@@ -122,7 +120,7 @@ class BookingRequestController extends BaseController
                     ['booking_requests_id' => $bookingRequest],
                     [
                     'property_id' => 1,
-                    'request_expiration_time' => Carbon::now()->addMinutes(6) 
+                    'request_expiration_time' => Carbon::now()->addMinutes(6)
                     ]
                 );
                 BookingRequest::updateOrCreate(

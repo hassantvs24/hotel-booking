@@ -4,7 +4,7 @@ namespace App\Http\Controllers\API\Admin\Review;
 
 use App\Http\Controllers\BaseController;
 use App\Http\Requests\Admin\Review\ReviewCategoryRequest;
-use App\Repositories\Review\ReviewCategoryRepository;
+use App\Repositories\Admin\ReviewCategoryRepository;
 use App\Traits\MediaMan;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -18,7 +18,7 @@ class ReviewCategoryController extends BaseController
      */
     public function index(Request $request, ReviewCategoryRepository $reviewCategory): JsonResponse
     {
-     
+
         $query = array_merge(
             $request->only(['search', 'filters', 'order_by', 'order', 'per_page', 'page']),
             [
@@ -59,7 +59,7 @@ class ReviewCategoryController extends BaseController
             }
 
             return $this->sendSuccess($reviewCategories->load('icon'), 'Review Category created successfully.');
-        } 
+        }
         catch (\Exception $e) {
 
             return $this->sendError(
@@ -79,7 +79,7 @@ class ReviewCategoryController extends BaseController
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(string $id) 
+    public function edit(string $id)
     {
       //
     }
@@ -93,7 +93,7 @@ class ReviewCategoryController extends BaseController
 
             $reviewCategory = $reviewCategoryRepository->getModel($reviewCategory);
             $reviewCategories = $reviewCategoryRepository->update($request->only(['name', 'notes']), $reviewCategory);
-           
+
             if (!$request->hasFile('icon') && $request->input('remove_icon')) {
                 $this->deleteImage($reviewCategories);
             }
@@ -112,7 +112,7 @@ class ReviewCategoryController extends BaseController
             }
 
             return $this->sendSuccess($reviewCategories->load('icon'), 'ReviewCategory updated successfully.');
-        
+
         } catch (\Exception $e) {
 
             return $this->sendError('Review Category update failed.',(array)$e->getMessage());

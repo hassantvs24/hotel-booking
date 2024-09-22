@@ -5,7 +5,7 @@ namespace App\Http\Controllers\API\Admin\Booking;
 use App\Http\Controllers\BaseController;
 use App\Models\RoomRequest;
 use App\Models\RoomRequestAccepted;
-use App\Repositories\Booking\RoomRequestRepository;
+use App\Repositories\Admin\RoomRequestRepository;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -106,9 +106,9 @@ class RoomRequestController extends BaseController
                     ['room_requests_id' => $roomRequestId],
                     [
                         'property_id' => 2,
-                        'request_expiration_time' => Carbon::now()->addMinutes(6) 
+                        'request_expiration_time' => Carbon::now()->addMinutes(6)
                     ]
-                );    
+                );
                 $bookingRequest->update($requestData);                      // Update RoomRequest with additional data
 
                 DB::commit();

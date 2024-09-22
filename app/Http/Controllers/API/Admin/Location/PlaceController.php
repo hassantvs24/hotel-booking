@@ -4,15 +4,11 @@ namespace App\Http\Controllers\API\Admin\Location;
 
 use App\Http\Controllers\BaseController;
 use App\Http\Requests\Admin\Place\PlaceRequest;
-use App\Models\Place;
-use App\Repositories\Place\CityRepository;
-use App\Repositories\Place\PlaceRepository;
+use App\Repositories\Admin\PlaceRepository;
 use App\Traits\MediaMan;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\View\View;
 
 class PlaceController extends BaseController
 {

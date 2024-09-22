@@ -3,10 +3,7 @@
 namespace App\Http\Controllers\API\Admin\Review;
 use App\Http\Controllers\BaseController;
 use App\Http\Requests\Admin\Review\ReviewRequest;
-use App\Repositories\Property\PropertyRepository;
-use App\Repositories\Review\ReviewCategoryRepository;
-use App\Repositories\Review\ReviewRepositroy;
-use Illuminate\Contracts\View\View;
+use App\Repositories\Admin\ReviewRepositroy;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
