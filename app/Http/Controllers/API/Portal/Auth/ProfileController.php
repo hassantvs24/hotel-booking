@@ -9,6 +9,23 @@ use Illuminate\Http\Request;
 
 class ProfileController extends BaseController
 {
+    public function me(Request $request) : JsonResponse
+    {
+        $user = $request->user()->load(['profile']);
+        $permissions = $request->user()->getAllPermissions()->pluck('slug')->toArray();
+        $roles = $request->user()->getRoleNames()->toArray();
+
+        $data = [
+            'user' => $user,
+            'permissions' => $permissions,
+            'roles' => $roles,
+            'is_admin' => $request->user()->is_admin,
+            'is_merchant' => $request->user()->is_merchant,
+        ];
+
+        return $this->sendSuccess($data, 'User profile fetched successfully.');
+    }
+
     public function updatePersonalInfo(ProfileRequest $request): JsonResponse
     {
         try {
