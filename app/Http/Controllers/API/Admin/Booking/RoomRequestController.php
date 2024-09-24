@@ -22,7 +22,7 @@ class RoomRequestController extends BaseController
             $request->only(['search', 'filters', 'order_by', 'order', 'per_page', 'page']),
             [
                 'with'     => ['room', 'user'],
-                'where'    => [],
+                'where'    => [['property_id', '=', $request->user()->associated_property->id]],
                 'order_by' => 'id',
                 'order'    => 'DESC',
             ]

@@ -18,25 +18,41 @@ class BookingRequestController extends BaseController
      */
     public function index(Request $request, BookingRequestRepository $bookingRequestRepository): JsonResponse
     {
-
+        // Merge request parameters with default values for querying
         $query = array_merge(
             $request->only(['search', 'filters', 'order_by', 'order', 'per_page', 'page']),
             [
-                'with'     => [],
+                'with'     => [], // Optionally include related models
                 'where'    => [],
                 'order_by' => 'id',
                 'order'    => 'DESC',
             ]
         );
+        
         $query['whereIn'] = ['status', ['Pending', 'Approved']];
+    
         $booking_requests = $bookingRequestRepository->paginate($query);
-
+    
+        foreach ($booking_requests as $booking_request) {
+    
+            $isAccepted = BookingAccepted::where('booking_requests_id', $booking_request->id)
+                ->where('property_id', $request->user()->associated_property->id) 
+                ->exists();
+    
+            if ($isAccepted) {
+                $booking_request->status = 'Approved';
+            } else {
+                $booking_request->status = 'Pending';
+            }
+        }
+    
         $data = [
             'booking_requests' => $booking_requests
         ];
-
+    
         return $this->sendSuccess($data);
     }
+    
 
     /**
      * Show the form for creating a new resource.
@@ -79,7 +95,7 @@ class BookingRequestController extends BaseController
             if ($request->input('status') === 'Accepted') {
                 BookingAccepted::updateOrCreate(
                     ['booking_requests_id' => $bookingRequestId],
-                    ['property_id' => 1]
+                    ['property_id' => $request->associated_property()->id]
                 );
             } else {
                 BookingAccepted::where('booking_requests_id', $bookingRequestId)->delete();
@@ -116,13 +132,12 @@ class BookingRequestController extends BaseController
         $requestData = $request->all();
         try {
             if ($status === 'Approved') {
-                BookingAccepted::updateOrCreate(
-                    ['booking_requests_id' => $bookingRequest],
-                    [
-                    'property_id' => 1,
-                    'request_expiration_time' => Carbon::now()->addMinutes(6)
-                    ]
-                );
+                BookingAccepted::create([
+                    'booking_requests_id' => $bookingRequest,
+                    'property_id' => $request->user()->associated_property->id,
+                    'request_expiration_time' => Carbon::now()->addMinutes(6),
+                ]);
+    
                 BookingRequest::updateOrCreate(
                     ['id' => $bookingRequest],
                     $requestData
@@ -130,11 +145,10 @@ class BookingRequestController extends BaseController
                 DB::commit();
                 return response()->json(['status' => $status]);
             } else {
-                BookingAccepted::where('booking_requests_id', $bookingRequest)->delete();
-                BookingRequest::updateOrCreate(
-                    ['id' => $bookingRequest],
-                    ['status' => $status]
-                );
+                BookingAccepted::where('booking_requests_id', $bookingRequest)
+                ->where('property_id', $request->user()->associated_property->id)
+                ->delete();
+                
                 DB::commit();
                 return $this->sendSuccess($bookingRequest);
             }
