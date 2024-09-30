@@ -20,7 +20,7 @@ class SearchController extends BaseController
         }
 
         $properties = $properties->where('status', Property::STATUS_PUBLISHED)
-            ->with(['images', 'facilities', 'place.city'])
+            ->with(['images', 'facilities', 'place.city','rooms'])
             ->get();
 
         return $this->sendSuccess($properties);
