@@ -4,7 +4,10 @@ namespace App\Http\Controllers\API\Admin\Property;
 
 use App\Http\Controllers\BaseController;
 use App\Http\Requests\Admin\Property\PropertyRequest;
+use App\Models\Facility;
 use App\Models\Property;
+use App\Models\PropertyCategory;
+use App\Models\PropertyRule;
 use App\Models\User;
 use App\Repositories\Admin\PropertyRepository;
 use App\Traits\MediaMan;
@@ -218,5 +221,28 @@ class PropertyController extends BaseController
             DB::rollBack();
             return $this->sendError($e->getMessage());
         }
+    }
+
+    public function propertyAttributes(): JsonResponse
+    {
+        $categories = PropertyCategory::query()->get(['id', 'name']);
+        $facilities = Facility::with([
+            'subFacilities' => function ($query) {
+                $query->select('id', 'name', 'facility_id');
+            }
+        ])
+            ->whereHas('subFacilities')
+            ->where('facility_for', 'Property')
+            ->get(['id', 'name']);
+
+        $propertyRules = PropertyRule::query()->get();
+
+        $data = [
+            'categories' => $categories,
+            'facilities' => $facilities,
+            'property_rules' => $propertyRules
+        ];
+
+        return $this->sendSuccess($data);
     }
 }
