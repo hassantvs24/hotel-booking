@@ -50,28 +50,35 @@ class RoomRequestController extends BaseController
     }
 
 
-
     public function roomRequestNotification(Request $request): JsonResponse
     {
-        $roomRequests = RoomRequest::where('user_id', $request->user()->id)     // Fetch the room requests with eager-loaded room and property relations
-            ->with('room.property') // Eager load the related property
-            ->get()
-            ->map(function ($roomRequest) {
-                return [
-                    'property_id' => $roomRequest->room->property->id,
-                    'property_name' => $roomRequest->room->property->name, // Replace with your property attributes
+        $roomRequests = RoomRequest::with('room.property')
+            ->where('user_id', $request->user()->id)
+            ->get();
+
+        $uniqueProperties = [];        // Create a list to hold unique properties with the earliest expiration time
+
+        foreach ($roomRequests as $roomRequest) {
+            $propertyId = $roomRequest->room->property->id;
+
+            if (!isset($uniqueProperties[$propertyId])) {                       // If this property is not already in our unique properties list, add it
+                $uniqueProperties[$propertyId] = [
+                    'property_id' => $propertyId,
+                    'property_name' => $roomRequest->room->property->name,
                     'request_expiration_time' => $roomRequest->request_expiration_time,
                 ];
-            });
-        $uniqueProperties = $roomRequests->groupBy('property_id')->map(function ($requests) {   // Group by property_id and fetch the oldest request_expiration_time for each unique property
-            return $requests->sortBy('request_expiration_time')->first(); // Sort ascending to get the oldest
-        });
+            } else {
+                $existingExpirationTime = $uniqueProperties[$propertyId]['request_expiration_time'];     // Update the expiration time if the current one is earlier
+                if ($roomRequest->request_expiration_time < $existingExpirationTime) {
+                    $uniqueProperties[$propertyId]['request_expiration_time'] = $roomRequest->request_expiration_time;
+                }
+            }
+        }
 
         $data = [
-            'properties' => $uniqueProperties->values()->all()        // Prepare response data
+            'properties' => array_values($uniqueProperties)
         ];
-
-        return response()->json($data, 200);
+        return $this->sendSuccess($data);
     }
 
 
