@@ -17,38 +17,27 @@ class RoomRequestController extends BaseController
     {
         $requestData = $request->validated();
 
-        $existingRequest = RoomRequest::where([
+        $existingRequest = RoomRequest::withTrashed()->where([
             'room_id' => $requestData['room_id'],
             'user_id' => $requestData['user_id'],
             'property_id' => $requestData['property_id'],
         ])->first();
 
-        if($existingRequest){
-            $data = RoomRequest::updateOrCreate(
-                [
-                    'room_id' => $requestData['room_id'],
-                    'user_id' => $requestData['user_id'],
-                    'property_id' => $requestData['property_id'],
-
-                ],
-                $requestData
-            );
-        }
-        else{
-            $data = RoomRequest::updateOrCreate(
-                [
-                    'room_id' => $requestData['room_id'],
-                    'user_id' => $requestData['user_id'],
-                    'property_id' => $requestData['property_id'],
-
-                ],
+        if ($existingRequest) {
+            if ($existingRequest->trashed()) {
+                $existingRequest->restore();
+                $existingRequest->update($requestData);
+            } else {
+                $existingRequest->update($requestData);
+            }
+        } else {
+            $data = RoomRequest::create(
                 array_merge($requestData, ['request_expiration_time' => Carbon::now()->addHour(24)])
             );
         }
 
-        return $this->sendSuccess($data, 'Room request has been created or updated successfully.');
+        return $this->sendSuccess($existingRequest ?? $data, 'Room request has been created or updated successfully.');
     }
-
 
     public function roomRequestNotification(Request $request): JsonResponse
     {
@@ -110,11 +99,18 @@ class RoomRequestController extends BaseController
     }
 
 
+    public function removeNotification(Request $request, $propertyId) : JsonResponse
+    {
+        $userId = $request->user()->id;
+        $deletedCount = RoomRequest::where('property_id', $propertyId)
+            ->where('user_id', $userId)
+            ->delete();
+        return $this->sendSuccess($deletedCount);
+    }
 
-
-
-
-
-
+    public function acceptedRoomlist()
+    {
+        RoomRequest::where
+    }
 
 }

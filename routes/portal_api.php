@@ -35,6 +35,7 @@ Route::prefix('portal')->group(function () {
     Route::prefix('room')->middleware('auth:sanctum')->group(function () {
         Route::post('/request', [RoomRequestController::class, 'roomRequest']);
         Route::get('/request-notification', [RoomRequestController::class, 'roomRequestNotification']);
+        Route::delete('request-notification-remove/{propertyId}',[RoomRequestController::class, 'removeNotification']);
         Route::get('/request-response/{propertyId}', [RoomRequestController::class, 'roomResponselist']);
     });
 
