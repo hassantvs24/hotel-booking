@@ -108,9 +108,9 @@ class RoomRequestController extends BaseController
         return $this->sendSuccess($deletedCount);
     }
 
-    public function acceptedRoomlist()
-    {
-        RoomRequest::where
-    }
+    // public function acceptedRoomlist()
+    // {
+    //     RoomRequest::where
+    // }
 
 }

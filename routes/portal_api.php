@@ -5,6 +5,7 @@
 ------------------------------------------*/
 
 use App\Http\Controllers\API\Portal\BookingController;
+use App\Http\Controllers\API\Portal\FilterController;
 use App\Http\Controllers\API\Portal\HomeController;
 use App\Http\Controllers\API\Portal\PropertyController;
 use App\Http\Controllers\API\Portal\RequestController;
@@ -26,6 +27,11 @@ Route::prefix('portal')->group(function () {
 
     Route::prefix('search')->group(function () {
         Route::get('/', [SearchController::class, 'search']);
+    });
+
+    Route::prefix('filter')->group(function () {
+        Route::get('/', [FilterController::class, 'getFilters']);
+        Route::get('/properties', [FilterController::class, 'getFilteredProperties']);
     });
 
     Route::get('/room/{room}/payment', [BookingController::class, 'paymentDetails']);
