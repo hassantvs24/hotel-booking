@@ -245,4 +245,21 @@ class PropertyController extends BaseController
 
         return $this->sendSuccess($data);
     }
+
+    public function details(Property $property) : JsonResponse
+    {
+        $property->load([
+            'primaryImage',
+            'facilities',
+            'rules',
+            'rooms',
+            'propertyCategory',
+            'place',
+            'user',
+            'staffs',
+            'reviews'
+        ]);
+
+        return $this->sendSuccess($property);
+    }
 }
