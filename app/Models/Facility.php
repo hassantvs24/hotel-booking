@@ -16,7 +16,7 @@ class Facility extends Model
 
     public function subFacilities(): HasMany
     {
-        return $this->hasMany(FacilitySub::class);
+        return $this->hasMany(FacilitySub::class, 'facility_id', 'id');
     }
 
     public function icon(): MorphOne
