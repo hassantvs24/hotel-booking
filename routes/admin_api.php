@@ -70,7 +70,7 @@ Route::middleware('auth:sanctum')->prefix('admin')->group(function () {
     Route::apiResource('property-rules', PropertyRuleController::class)->except(['create', 'show', 'edit']);
     Route::get('property-rules/all', [PropertyRuleController::class, 'all']);
 
-    Route::apiResource('properties', PropertyController::class)->except(['create', 'show', 'edit']);
+    Route::apiResource('properties', PropertyController::class)->except(['create', 'show']);
     Route::get('properties/all', [PropertyController::class, 'all']);
     Route::get('property/attributes', [PropertyController::class, 'propertyAttributes']);
     Route::put('properties/{property}/status', [PropertyController::class, 'propertyAction']);
