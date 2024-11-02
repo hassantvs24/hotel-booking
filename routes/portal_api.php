@@ -5,6 +5,7 @@
 ------------------------------------------*/
 
 use App\Http\Controllers\API\Portal\BookingController;
+use App\Http\Controllers\API\Portal\CartController;
 use App\Http\Controllers\API\Portal\FilterController;
 use App\Http\Controllers\API\Portal\HomeController;
 use App\Http\Controllers\API\Portal\PropertyController;
@@ -35,7 +36,14 @@ Route::prefix('portal')->group(function () {
     });
 
     Route::get('/room/{room}/payment', [BookingController::class, 'paymentDetails']);
-    Route::post('/booking', [BookingController::class, 'booking']);
+
+    Route::prefix('booking')->middleware('auth:sanctum')->group(function(){
+        Route::post('/', [BookingController::class, 'bookingStore']);
+        Route::get('/check/{room}/room', [BookingController::class, 'bookingCheck']);
+        Route::get('/cart-list', [BookingController::class, 'cartList']);
+    });
+
+
 
     // room request
     Route::prefix('room')->middleware('auth:sanctum')->group(function () {
@@ -50,6 +58,7 @@ Route::prefix('portal')->group(function () {
         Route::get("/properties", [RequestController::class, 'property_list']);
         Route::get('/fetchtimer',[RequestController::class, 'fetchTimer']);
     });
+
 
     Route::middleware('auth:sanctum')->group(function(){
         Route::get('/getAllPropertyOption', [VendorController::class, 'allPropertyOption']);
