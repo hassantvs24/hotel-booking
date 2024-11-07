@@ -14,18 +14,17 @@ class BookingController extends BaseController
     /**
      * Display a listing of the resource.
      */
-    public function index(Request $request,BookingRepository $bookingRepository) : JsonResponse
+    public function index(Request $request): JsonResponse
     {
-        $query = array_merge(
-            $request->only(['search', 'filters', 'order_by', 'order', 'per_page', 'page']),
-            [
-                'with'     => ['room', 'user'],
-                'where'    => [],
-                'order_by' => 'id',
-                'order'    => 'DESC',
-            ]
-        );
-        $bookings = $bookingRepository->paginate($query);
+        $user = auth()->user();
+
+        if ($user->is_admin) {
+            $bookings = Booking::with(['room', 'room.property', 'room.property.place.city', 'user', 'user.profile'])->paginate();
+        } elseif ($user->is_merchant && $user->associated_property) {
+            $bookings = Booking::whereHas('room', function ($query) use ($request) {
+                $query->where('property_id', $request->user()->associated_property->id);
+            })->with(['room', 'room.property', 'room.property.place', 'user'])->paginate();
+        }
 
         $data = [
             'bookings' => $bookings
@@ -37,7 +36,7 @@ class BookingController extends BaseController
     /**
      * Show the form for creating a new resource.
      */
-    public function create() : View
+    public function create(): View
     {
         if (!hasPermission('can_create_booking')) {
             return $this->unauthorized();
@@ -50,46 +49,34 @@ class BookingController extends BaseController
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request)
-    {
-
-    }
+    public function store(Request $request) {}
 
     /**
      * Display the specified resource.
      */
-    public function show(string $id)
-    {
-
-    }
+    public function show(string $id) {}
 
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(string $id) : View
+    public function edit(string $id)
     {
-        if (!hasPermission('can_edit_booking')) {
-            return $this->unauthorized();
-        }
-
-
-        $booking = Booking::find($id);
-
-        return view('admin.booking.booking.edit');
+        //
     }
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, string $id)
-    {
+    public function update() {}
 
-    }
+
+
+
 
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(BookingRepository $bookingRepository,$bookingId)
+    public function destroy(BookingRepository $bookingRepository, $bookingId)
     {
         try {
             $bookingId = $bookingRepository->getModel($bookingId);
@@ -97,9 +84,27 @@ class BookingController extends BaseController
             $bookingRepository->delete($bookingId->id);
 
             return $this->sendSuccess(null, 'Booking deleted successfully');
-
         } catch (\Exception $e) {
             return $this->sendError($e->getMessage());
+        }
+    }
+    public function updateStatus(Request $request, Booking $bookingId): JsonResponse
+    {
+        try {
+            // Validate that the status input is present
+            $validatedData = $request->validate([
+                'status' => 'required|string' // Add more rules as necessary
+            ]);
+
+            // Update the specific booking's status
+            $bookingId->update([
+                'status' => $validatedData['status']
+            ]);
+
+            return $this->sendSuccess($bookingId);
+        } catch (\Exception $e) {
+            // Handle any errors and return a failure response
+            return $this->sendError($e);
         }
     }
 }

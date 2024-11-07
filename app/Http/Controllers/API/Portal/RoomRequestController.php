@@ -16,27 +16,42 @@ class RoomRequestController extends BaseController
     public function roomRequest(RoomRequestForm $request): JsonResponse
     {
         $requestData = $request->validated();
+        // $existingRequest = RoomRequest::withTrashed()->where([
+        //     'room_id' => $requestData['room_id'],
+        //     'user_id' => $requestData['user_id'],
+        //     'property_id' => $requestData['property_id'],
+        // ])->first();
 
-        $existingRequest = RoomRequest::withTrashed()->where([
+        // if ($existingRequest) {
+        //     if ($existingRequest->trashed()) {
+        //         $existingRequest->restore();
+        //         $existingRequest->update($requestData);
+        //     } else {
+        //         $existingRequest->update($requestData);
+        //     }
+        // } else {
+        //     $data = RoomRequest::create(
+        //         array_merge($requestData, ['request_expiration_time' => Carbon::now()->addHour(24)])
+        //     );
+        // }
+
+        // return $this->sendSuccess($existingRequest ?? $data, 'Room request has been created or updated successfully.');
+        $existingRequest = RoomRequest::where([
             'room_id' => $requestData['room_id'],
             'user_id' => $requestData['user_id'],
             'property_id' => $requestData['property_id'],
         ])->first();
 
         if ($existingRequest) {
-            if ($existingRequest->trashed()) {
-                $existingRequest->restore();
-                $existingRequest->update($requestData);
-            } else {
-                $existingRequest->update($requestData);
-            }
+            $existingRequest->update($requestData);
+            $data = $existingRequest;
         } else {
             $data = RoomRequest::create(
-                array_merge($requestData, ['request_expiration_time' => Carbon::now()->addHour(24)])
+                array_merge($requestData, ['request_expiration_time' => Carbon::now()->addHours(24)])
             );
         }
 
-        return $this->sendSuccess($existingRequest ?? $data, 'Room request has been created or updated successfully.');
+        return $this->sendSuccess($data, 'Room request has been created or updated successfully.');
     }
 
     public function roomRequestNotification(Request $request): JsonResponse
@@ -82,11 +97,19 @@ class RoomRequestController extends BaseController
         $approvedRequests = $roomRequests->where('status', 'Approved')->count();        // Count how many of those requests were approved
 
         $roomRequest = RoomRequestAccepted::whereHas('room_request', function ($query) use ($request, $propertyId) {   // Fetch room responses based on approved room requests
-                $query->where('user_id', $request->user()->id)
-                      ->where('status', 'Approved')
-                      ->where('property_id', $propertyId);
-            })
-            ->with(['room_request', 'room_request.room', 'room_request.room.primaryImage', 'room_request.room.property.facilities', 'room_request.room.property.place.city'])
+            $query->where('user_id', $request->user()->id)
+                ->where('status', 'Approved')
+                ->where('property_id', $propertyId);
+        })
+            ->with(
+                [
+                    'room_request',
+                    'room_request.room',
+                    'room_request.room.primaryImage',
+                    'room_request.room.property.facilities',
+                    'room_request.room.property.place.city'
+                ]
+            )
             ->get();
 
         $data = [
@@ -99,7 +122,7 @@ class RoomRequestController extends BaseController
     }
 
 
-    public function removeNotification(Request $request, $propertyId) : JsonResponse
+    public function removeNotification(Request $request, $propertyId): JsonResponse
     {
         $userId = $request->user()->id;
         $deletedCount = RoomRequest::where('property_id', $propertyId)

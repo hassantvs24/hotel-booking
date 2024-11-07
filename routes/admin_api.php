@@ -6,6 +6,7 @@ use App\Http\Controllers\API\Admin\ACL\UserController;
 use App\Http\Controllers\API\Admin\Booking\BookingController;
 use App\Http\Controllers\API\Admin\Booking\BookingRequestController;
 use App\Http\Controllers\API\Admin\Booking\RoomRequestController;
+use App\Http\Controllers\API\Admin\Dashboard\DashboardController;
 use App\Http\Controllers\API\Admin\Facility\FacilityController;
 use App\Http\Controllers\API\Admin\Facility\SubFacilityController;
 use App\Http\Controllers\API\Admin\Location\CityController;
@@ -15,10 +16,12 @@ use App\Http\Controllers\API\Admin\Location\StateController;
 use App\Http\Controllers\API\Admin\Property\PropertyCategoryController;
 use App\Http\Controllers\API\Admin\Property\PropertyController;
 use App\Http\Controllers\API\Admin\Property\PropertyRuleController;
+use App\Http\Controllers\API\Admin\Property\PropertySettingController;
 use App\Http\Controllers\API\Admin\Review\ReviewCategoryController;
 use App\Http\Controllers\API\Admin\Review\ReviewController;
 use App\Http\Controllers\API\Admin\Room\BedTypeController;
 use App\Http\Controllers\API\Admin\Room\PriceTypeController;
+use App\Http\Controllers\API\Admin\Room\RoomController;
 use App\Http\Controllers\API\Admin\Room\RoomTypeController;
 use App\Http\Controllers\API\Admin\Surrounding\SurroundingController;
 use App\Http\Controllers\API\Admin\Surrounding\SurroundingPlaceController;
@@ -79,23 +82,33 @@ Route::middleware('auth:sanctum')->prefix('admin')->group(function () {
     Route::apiResource('property-categories', PropertyCategoryController::class)->except(['create', 'show', 'edit']);
     Route::get('property-categories/all', [PropertyCategoryController::class, 'all']);
 
-    Route::apiResource('room-types',RoomTypeController::class)->except(['create', 'show', 'edit']);
+    Route::apiResource('room-types', RoomTypeController::class)->except(['create', 'show', 'edit']);
     Route::get('room-types/all', [RoomTypeController::class, 'all']);
 
-    Route::apiResource('bed-types',BedTypeController::class)->except(['create', 'show', 'edit']);
+    Route::apiResource('bed-types', BedTypeController::class)->except(['create', 'show', 'edit']);
     Route::get('bed-types/all', [BedTypeController::class, 'all']);
 
-    Route::apiResource('price-types',PriceTypeController::class)->except(['create', 'show', 'edit']);
+    Route::apiResource('price-types', PriceTypeController::class)->except(['create', 'show', 'edit']);
     Route::get('price-types/all', [PriceTypeController::class, 'all']);
 
-    Route::apiResource('booking-request',BookingRequestController::class)->except(['create','show','edit']);
-    Route::get('booking-request/all',[BookingRequestController::class, 'all']);
+    Route::apiResource('booking-request', BookingRequestController::class)->except(['create', 'show', 'edit']);
+    Route::get('booking-request/all', [BookingRequestController::class, 'all']);
 
-    Route::put('booking-request/update/{id}',[BookingRequestController::class, 'updateStatus']);
+    Route::put('booking-request/update/{id}', [BookingRequestController::class, 'updateStatus']);
 
-    Route::apiResource('room-request',RoomRequestController::class)->except(['create','show','edit']);
-    Route::put('room-request/update/{id}',[RoomRequestController::class, 'updateStatus']);
+    Route::apiResource('room-request', RoomRequestController::class)->except(['create', 'show', 'edit']);
+    Route::put('room-request/update/{id}', [RoomRequestController::class, 'updateStatus']);
 
-    Route::apiResource('bookings',BookingController::class)->except(['create','show','edit']);
+    Route::apiResource('bookings', BookingController::class)->except(['create', 'show', 'edit']);
+    Route::put('bookings/{id}/update', [BookingController::class, 'updateStatus']);
 
+    Route::apiResource('rooms', RoomController::class)->except(['create', 'show', 'edit']);
+    Route::get('rooms/all', [RoomController::class, 'all']);
+    Route::get('rooms/{room}/details', [RoomController::class, 'showDetails']);
+
+    Route::put("properties/{property}/properties-setting", [PropertySettingController::class, 'update']);
+
+    Route::prefix('dashboard')->group(function () {
+        Route::get('/', [DashboardController::class, 'index']);
+    });
 });

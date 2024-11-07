@@ -8,8 +8,10 @@ return new class extends Migration {
     /**
      * Run the migrations.
      */
-    public function up() : void
+    public function up(): void
     {
+        $allowedStatus = config('site_configs.allowed_booking_status');
+
         Schema::create('bookings', function (Blueprint $table) {
             $table->id();
             $table->string('booking_number');
@@ -20,7 +22,8 @@ return new class extends Migration {
             $table->integer('rooms')->default(1);
             $table->string('reference')->nullable();
             $table->string('notes')->comment('Booking notes')->nullable();
-
+            $table->enum('status', ['pending', 'reserve', 'approved'])
+                ->default('Pending');
             $table->foreignId('room_id')
                 ->constrained()
                 ->onDelete('cascade')
@@ -39,7 +42,7 @@ return new class extends Migration {
     /**
      * Reverse the migrations.
      */
-    public function down() : void
+    public function down(): void
     {
         Schema::dropIfExists('bookings');
     }

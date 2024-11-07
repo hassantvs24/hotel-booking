@@ -15,10 +15,10 @@ class RequestController extends BaseController
     public function index(Request $request): JsonResponse
     {
         $requestQuery = $request->all();
-        $existingRequest = BookingRequest::where('user_id', $request->user()->id)->first(); // Find existing booking request by user_id
-    
+        $existingRequest = BookingRequest::where('user_id', $request->user()->id)->first();
+
         if ($existingRequest) {
-            $data = $existingRequest;                   // If the record exists, simply return it without updating
+            $data = $existingRequest;
         } else {
             $data = BookingRequest::create(
                 array_merge($requestQuery, [
@@ -28,29 +28,29 @@ class RequestController extends BaseController
                 ])
             );
         }
-    
+
         return $this->sendSuccess($data);
     }
-    
-    
+
+
 
     public function property_list(Request $request) : JsonResponse
-    {    
+    {
         // Fetch all the accepted booking requests with related data and expiration time
         $acceptedProperties = BookingAccepted::whereHas('bookingRequest', function ($query) use ($request) {
             $query->where('user_id', $request->user()->id)
                   ->where('status', 'Approved');
         })->with([
-            'bookingRequest', 
-            'property', 
-            'property.facilities', 
+            'bookingRequest',
+            'property',
+            'property.facilities',
             'property.place.city',
             'property.rooms'
         ])
         ->get(['id', 'request_expiration_time', 'property_id']);
-    
+
         $propertyCount = $acceptedProperties->count();    // Count the number of properties that have accepted the request
-    
+
         $data = [
             'accepted_properties' => $acceptedProperties,  // This includes the property data along with expiration time
             'accepted_properties_count' => $propertyCount,
@@ -58,8 +58,8 @@ class RequestController extends BaseController
 
         return $this->sendSuccess($data);
     }
-    
-    
+
+
 
     public function fetchTimer(Request $request): JsonResponse
     {

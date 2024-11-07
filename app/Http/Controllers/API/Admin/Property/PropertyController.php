@@ -111,9 +111,8 @@ class PropertyController extends BaseController
     public function update(
         PropertyRequest    $request,
         PropertyRepository $propertyRepository,
-                           $property
-    ): JsonResponse
-    {
+        $property
+    ): JsonResponse {
 
         try {
 
@@ -207,7 +206,6 @@ class PropertyController extends BaseController
                 if ($propertyOwnerRole) {
                     $propertyOwner->assignRole($propertyOwnerRole);
                 }
-
             } else if ($statusInput === 'Unpublished') {
                 if (!$propertyOwner->isAdmin) {
                     $propertyOwner->removeRole($propertyOwnerRoleName);
@@ -216,7 +214,6 @@ class PropertyController extends BaseController
 
             DB::commit();
             return $this->sendSuccess($property, 'Property status updated successfully');
-
         } catch (Throwable $e) {
             DB::rollBack();
             return $this->sendError($e->getMessage());
@@ -246,12 +243,14 @@ class PropertyController extends BaseController
         return $this->sendSuccess($data);
     }
 
-    public function details(Property $property) : JsonResponse
+    public function details(Property $property): JsonResponse
     {
         $property->load([
             'primaryImage',
+            'images',
             'facilities',
-            'rules',
+            'facilities.facility',
+            'rules.propertyRule',
             'rooms',
             'propertyCategory',
             'place',
