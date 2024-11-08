@@ -94,7 +94,7 @@ Route::middleware('auth:sanctum')->prefix('admin')->group(function () {
     Route::apiResource('booking-request', BookingRequestController::class)->except(['create', 'show', 'edit']);
     Route::get('booking-request/all', [BookingRequestController::class, 'all']);
 
-    Route::put('booking-request/update/{id}', [BookingRequestController::class, 'updateStatus']);
+    Route::put('booking-request/{id}/update', [BookingRequestController::class, 'updateStatus']);
 
     Route::apiResource('room-request', RoomRequestController::class)->except(['create', 'show', 'edit']);
     Route::put('room-request/update/{id}', [RoomRequestController::class, 'updateStatus']);

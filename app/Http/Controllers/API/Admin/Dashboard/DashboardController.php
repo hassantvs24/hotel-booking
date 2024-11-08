@@ -17,19 +17,27 @@ class DashboardController extends BaseController
 
         if ($user->is_admin) {
             $bookings = Booking::with(['room', 'room.property', 'room.property.place.city', 'user', 'user.profile'])->latest()->take(3)->get();
+            $bookingCount = Booking::count();
+            $roomCount = Room::count();
+            $reviewCount = Review::count();
+            $bookingCountsByStatus = Booking::selectRaw('status, COUNT(*) as count')
+                ->groupBy('status')
+                ->pluck('count', 'status');
         } elseif ($user->is_merchant && $user->associated_property) {
             $bookings = Booking::whereHas('room', function ($query) use ($request) {
                 $query->where('property_id', $request->user()->associated_property->id);
             })->with(['room', 'room.property', 'room.property.place', 'user'])->latest()->take(3)->get();
+            $bookingCount = Booking::whereHas('room', function ($query) use ($request) {
+                $query->where('property_id', $request->user()->associated_property->id);
+            })->count();
+            $roomCount = Room::where('property_id', $request->user()->associated_property->id)->count();
+            $reviewCount = Review::where('property_id', $request->user()->associated_property->id)->count();
+            $bookingCountsByStatus = Booking::whereHas('room', function ($query) use ($request) {
+                $query->where('property_id', $request->user()->associated_property->id);
+            })->selectRaw('status, COUNT(*) as count')
+                ->groupBy('status')
+                ->pluck('count', 'status');
         }
-
-        $bookingCount = Booking::count();
-        $roomCount = Room::count();
-        $reviewCount = Review::count();
-        $bookingCountsByStatus = Booking::selectRaw('status, COUNT(*) as count')
-            ->groupBy('status')
-            ->pluck('count', 'status');
-
         $data = [
             'bookings' => $bookings,
             'total_bookings' => $bookingCount,
