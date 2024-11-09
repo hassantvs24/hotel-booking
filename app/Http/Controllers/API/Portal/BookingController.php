@@ -43,6 +43,13 @@ class BookingController extends BaseController
 
         try {
             $booking = Booking::create($validated);
+            $room = Room::find($validated['room_id']);
+            if ($room) {
+                $room->booked_date = $validated['checkin'];
+                $room->booked_off_date = $validated['checkout'];
+                $room->status = 'Booked';
+                $room->save();
+            }
             return response()->json(['success' => true, 'data' => $booking], 201);
         } catch (\Exception $e) {
             return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
@@ -54,40 +61,36 @@ class BookingController extends BaseController
         $booking = Booking::where('user_id', $request->user()->id)
             ->where('room_id', $room)
             ->first();
-            if($booking){
-                $existBooking =true;
-            }else{
-                $existBooking =false;
-            }
+        if ($booking) {
+            $existBooking = true;
+        } else {
+            $existBooking = false;
+        }
         $data = [
-            'existBooking'=>$existBooking
+            'existBooking' => $existBooking
         ];
         return $this->sendSuccess($data);
     }
 
 
-    public function cartList(Request $request):JsonResponse
+    public function cartList(Request $request): JsonResponse
     {
-        $roomRequest= RoomRequest::where('user_id',$request->user()->id)
-        ->with([
+        $roomRequest = RoomRequest::where('user_id', $request->user()->id)
+            ->with([
                 'room',
                 'room.property',
                 'room.primaryImage',
                 'room.facilities',
                 'room.property.place.city'
-                ])->get();
+            ])->get();
 
-        $bookingList=Booking::where('user_id',$request->user()->id)
-        ->with(['room','room.property','user','user.profile','room.property.place'])
-                ->get();
+        $bookingList = Booking::where('user_id', $request->user()->id)
+            ->with(['room', 'room.property', 'user', 'user.profile', 'room.property.place'])
+            ->get();
         $data = [
             'roomRequest' => $roomRequest,
             'bookingList' => $bookingList,
         ];
         return $this->sendSuccess($data);
     }
-
-
-
-
 }

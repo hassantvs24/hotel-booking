@@ -4,6 +4,7 @@ namespace App\Http\Controllers\API\Admin\Booking;
 
 use App\Http\Controllers\BaseController;
 use App\Models\Booking;
+use App\Models\Room;
 use App\Repositories\Admin\BookingRepository;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -79,31 +80,35 @@ class BookingController extends BaseController
     public function destroy(BookingRepository $bookingRepository, $bookingId)
     {
         try {
-            $bookingId = $bookingRepository->getModel($bookingId);
-
-            $bookingRepository->delete($bookingId->id);
-
-            return $this->sendSuccess(null, 'Booking deleted successfully');
+            $booking = $bookingRepository->getModel($bookingId);
+            $room = Room::find($booking->room_id);
+            if ($room) {
+                $room->update([
+                    'status' => 'Available',
+                    'booked_date' => null,
+                    'booked_off_date' => null
+                ]);
+            }
+            $bookingRepository->delete($booking->id);
+            return $this->sendSuccess('Booking deleted successfully');
         } catch (\Exception $e) {
             return $this->sendError($e->getMessage());
         }
     }
+
     public function updateStatus(Request $request, Booking $bookingId): JsonResponse
     {
         try {
-            // Validate that the status input is present
             $validatedData = $request->validate([
-                'status' => 'required|string' // Add more rules as necessary
+                'status' => 'required|string'
             ]);
 
-            // Update the specific booking's status
             $bookingId->update([
                 'status' => $validatedData['status']
             ]);
 
             return $this->sendSuccess($bookingId);
         } catch (\Exception $e) {
-            // Handle any errors and return a failure response
             return $this->sendError($e);
         }
     }

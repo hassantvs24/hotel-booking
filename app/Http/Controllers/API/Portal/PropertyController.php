@@ -7,10 +7,13 @@ use App\Models\Place;
 use App\Models\Property;
 use App\Models\Room;
 use App\Models\RoomRequest;
+use App\Traits\MediaMan;
+use Exception;
 use Illuminate\Http\JsonResponse;
 
 class PropertyController extends BaseController
 {
+    use MediaMan;
     public function index(): JsonResponse
     {
         $properties = Property::query()
@@ -62,15 +65,30 @@ class PropertyController extends BaseController
     public function availableRooms(Property $property): JsonResponse
     {
         $rooms = Room::query()
-            ->with(['images', 'facilities','property'])
+            ->with(['images', 'facilities', 'property'])
             ->where('property_id', $property->id)
+            ->where('status', 'Available')
             ->get();
         $data = [
             'rooms' => $rooms
         ];
-
         return $this->sendSuccess($data);
     }
+    public function otherRooms(Property $property): JsonResponse
+    {
+        $rooms = Room::query()
+            ->with(['images', 'facilities', 'property'])
+            ->where('property_id', $property->id)
+            ->where('status', 'Reserved')
+            ->get();
+        $data = [
+            'rooms' => $rooms
+        ];
+        return $this->sendSuccess($data);
+    }
+
+
+
 
     public function bookingRoomCheck($property): JsonResponse
     {
@@ -78,5 +96,23 @@ class PropertyController extends BaseController
         $data = RoomRequest::where('property_id', $property)->exists();
 
         return $this->sendSuccess($data);
+    }
+
+    public function checkBookedDate($propertyId): JsonResponse
+    {
+        try {
+            $bookedDates = [];
+            $rooms = Room::where('property_id', $propertyId)->get();
+            foreach ($rooms as $room) {
+                $bookedDates[] = $room->booked_date;
+                $bookedDates[] = $room->booked_off_date;
+            }
+
+
+
+            return response()->json($bookedDates);
+        } catch (Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
     }
 }

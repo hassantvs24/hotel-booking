@@ -46,7 +46,7 @@ class DeleteExpiredHotelRequests extends Command
             $deletedRoomRequestAcceptances = RoomRequestAccepted::where('request_expiration_time', '<', $now)   // Delete expired RoomRequestAccepted records
                 ->delete();
 
-                RoomRequest::whereIn('id', $expiredRoomRequestAcceptedIds)
+            RoomRequest::whereIn('id', $expiredRoomRequestAcceptedIds)
                 ->whereDoesntHave('room_request_accepteds') // Ensure no active acceptances remain
                 ->update(['status' => 'Timeout']);
 
@@ -62,7 +62,7 @@ class DeleteExpiredHotelRequests extends Command
             $deletedBookRequestAcceptances = BookingAccepted::where('request_expiration_time', '<', $now)   // Delete expired RoomRequestAccepted records
                 ->delete();
 
-                BookingRequest::whereIn('id', $expiredBookingRequestAcceptedIds)
+            BookingRequest::whereIn('id', $expiredBookingRequestAcceptedIds)
                 ->whereDoesntHave('acceptedHotels') // Ensure no active acceptances remain
                 ->update(['status' => 'Timeout']);
 
