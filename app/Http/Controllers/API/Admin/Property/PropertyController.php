@@ -11,6 +11,7 @@ use App\Models\PropertyRule;
 use App\Models\User;
 use App\Repositories\Admin\PropertyRepository;
 use App\Traits\MediaMan;
+use Carbon\Carbon;
 use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -64,21 +65,49 @@ class PropertyController extends BaseController
 
         DB::beginTransaction();
         try {
-            $property = $propertyRepository->create(
-                array_merge(
-                    $request->except(['photo', 'property_facilities']),
-                    ['user_id' => $request->user()->id]
-                )
+            $checkInTime = Carbon::parse($request->input('check_in_time'))->format('H:i:s');
+            $checkOutTime = Carbon::parse($request->input('check_out_time'))->format('H:i:s');
+
+            $data = array_merge(
+                $request->except(['primaryImage', 'facility_sub_ids', 'rules', 'additionalImages']),
+                [
+                    'user_id' => $request->user()->id,
+                    'check_in_time' => $checkInTime,
+                    'check_out_time' => $checkOutTime
+                ]
             );
 
-            if (is_array($request->input('property_facilities'))) {
-                $property->facilities()->attach($request->input('property_facilities'));
+            $property = $propertyRepository->create($data);
+            if (is_array($request->input('facility_sub_ids'))) {
+                $property->facilities()->attach($request->input('facility_sub_ids'));
             }
 
-            if ($request->hasFile('photo')) {
-                $image = $this->storeFile($request->file('photo'), 'properties');
+            if ($request->hasFile('primaryImage')) {
+                $image = $this->storeFile($request->file('primaryImage'), 'properties');
                 $property->primaryImage()->create([...$image, 'media_role' => 'property_image']);
             }
+            if ($request->hasFile('additionalImages')) {
+                foreach ($request->file('additionalImages') as $file) {
+                    $galleryImage = $this->storeFile($file, 'properties');
+                    $property->images()->create(array_merge($galleryImage, ['media_role' => 'property_gallery_image']));
+                }
+            }
+
+            if ($request->input('rules')) {
+                $rules = $request->input('rules');
+                foreach ($rules as $rule) {
+                    $isActive =  $rule['is_active'] === true ? 1 : 0;
+
+                    $property->rules()->updateOrCreate(
+                        ['property_rule_id' => $rule['property_rule_id']],
+                        [
+                            'rule_description' => $rule['description'],
+                            'is_active' => $isActive,
+                        ]
+                    );
+                }
+            }
+
 
             DB::commit();
 
