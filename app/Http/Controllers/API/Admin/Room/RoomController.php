@@ -17,19 +17,16 @@ class RoomController extends BaseController
     /**
      * Display a listing of the resource.
      */
-    public function index(Request $request, RoomRepository $roomRepository)
+    public function index(Request $request)
     {
-        $query = array_merge(
-            $request->only(['search', 'filters', 'order_by', 'order', 'per_page', 'page']),
-            [
-                'with'     => ['property', 'bedType', 'roomType', 'facilities'],
-                'where'    => [],
-                'order_by' => 'id',
-                'order'    => 'DESC',
-            ]
-        );
 
-        $rooms = $roomRepository->paginate($query);
+        $user = auth()->user();
+
+        if ($user->is_admin) {
+            $rooms = Room::with(['property', 'bedType', 'roomType', 'facilities'])->paginate();
+        } elseif ($user->is_merchant && $user->associated_property) {
+            $rooms = Room::where('property_id', $request->user()->associated_property->id)->with(['property', 'bedType', 'roomType', 'facilities'])->paginate();
+        }
 
         $data = [
             'rooms' => $rooms

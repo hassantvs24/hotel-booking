@@ -82,6 +82,14 @@ class User extends Authenticatable
     {
         return $this->properties()->select('id', 'name')->first();
     }
+    public function bookings(): HasMany
+    {
+        return $this->hasMany(Booking::class);
+    }
+    public function roomRequests(): HasMany
+    {
+        return $this->hasMany(RoomRequest::class);
+    }
 
     /*----------------------------------------
     Relations

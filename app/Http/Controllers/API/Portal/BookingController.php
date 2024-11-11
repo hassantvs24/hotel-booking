@@ -6,6 +6,7 @@ use App\Http\Controllers\BaseController;
 use App\Models\Booking;
 use App\Models\Room;
 use App\Models\RoomRequest;
+use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -56,22 +57,34 @@ class BookingController extends BaseController
         }
     }
 
+
     public function bookingCheck(Request $request, $room): JsonResponse
     {
-        $booking = Booking::where('user_id', $request->user()->id)
-            ->where('room_id', $room)
-            ->first();
-        if ($booking) {
-            $existBooking = true;
-        } else {
-            $existBooking = false;
-        }
-        $data = [
-            'existBooking' => $existBooking
-        ];
-        return $this->sendSuccess($data);
-    }
 
+        $request->validate([
+            'check_in' => 'required|date',
+            'check_out' => 'required|date|after_or_equal:check_in',
+        ]);
+
+        $checkIn = Carbon::parse($request->input('check_in'))->format('Y-m-d');
+        $checkOut = Carbon::parse($request->input('check_out'))->format('Y-m-d');
+
+        $user = auth()->user();
+
+        $roomIds = Room::where('id', $room)->pluck('id');
+
+        $bookedRoomIds = Booking::where('user_id', $user->id)
+            ->whereIn('room_id', $roomIds)
+            ->CheckDateOverlap($roomIds, $checkIn, $checkOut)
+            ->pluck('room_id');
+
+        $isBooked = $bookedRoomIds->isNotEmpty();
+
+        // Return the result
+        return $this->sendSuccess([
+            'existBooking' => $isBooked
+        ]);
+    }
 
     public function cartList(Request $request): JsonResponse
     {
