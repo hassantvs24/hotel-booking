@@ -80,7 +80,7 @@ class User extends Authenticatable
 
     public function getAssociatedPropertyAttribute()
     {
-        return $this->properties()->select('id', 'name')->first();
+        return $this->properties()->select('id', 'name', 'address')->first();
     }
     public function bookings(): HasMany
     {
