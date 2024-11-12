@@ -52,9 +52,11 @@ class RequestController extends BaseController
         })->with([
             'bookingRequest',
             'property',
+            'property.images',
             'property.facilities',
             'property.place.city',
-            'property.rooms'
+            'property.rooms',
+            'property.rooms.images'
         ])
             ->get(['id', 'request_expiration_time', 'property_id']);
 
