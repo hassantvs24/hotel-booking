@@ -314,6 +314,7 @@ class PropertyController extends BaseController
         $property->load([
             'primaryImage',
             'images',
+            'logoImage',
             'facilities',
             'facilities.facility',
             'rules.propertyRule',

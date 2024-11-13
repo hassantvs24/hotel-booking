@@ -92,6 +92,7 @@ class BookingController extends BaseController
             ->with([
                 'room',
                 'room.property',
+                'room.property.logoImage',
                 'room.primaryImage',
                 'room.facilities',
                 'room.property.place.city'

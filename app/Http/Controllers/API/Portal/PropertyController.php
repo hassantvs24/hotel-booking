@@ -21,7 +21,7 @@ class PropertyController extends BaseController
         $properties = Property::query()
             ->whereHas('rooms')
             ->where('status', Property::STATUS_PUBLISHED)
-            ->with(['images', 'facilities', 'place.city'])
+            ->with(['images', 'logoImage', 'facilities', 'place.city'])
             ->get();
 
         $data = [
@@ -53,6 +53,7 @@ class PropertyController extends BaseController
     {
         $property->load([
             'images',
+            'logoImage',
             'facilities',
             'rooms.images',
             'rooms.facilities',

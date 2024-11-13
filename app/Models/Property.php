@@ -29,6 +29,10 @@ class Property extends Model
     {
         return $this->morphMany(Media::class, 'media')->where('media_role', 'property_gallery_image');
     }
+    public function logoImage(): MorphOne
+    {
+        return $this->morphOne(Media::class, 'media')->where('media_role', 'property_logo_image');
+    }
 
     public function rooms(): HasMany
     {

@@ -46,6 +46,13 @@ class PropertySettingController extends BaseController
                     'check_in_time' => $checkInTime,
                     'check_out_time' => $checkOutTime,
                 ]);
+                if ($request->hasFile('basicInfo.photo')) {
+                    $this->deleteLogoImage($property);
+
+                    // Store new photo
+                    $image = $this->storeFile($request->file('basicInfo.photo'), 'properties');
+                    $property->logoImage()->create(array_merge($image, ['media_role' => 'property_logo_image']));
+                }
             }
             // Process SEO information updates
             elseif ($request->input('seoInfo')) {
@@ -118,6 +125,14 @@ class PropertySettingController extends BaseController
         }
     }
 
+    private function deleteLogoImage(Property $property): void
+    {
+        if ($property->logoImage()->exists()) {
+            $logoImage = $property->logoImage()->first();
+            $this->deleteFile($logoImage->name, 'properties');
+            $logoImage->delete();
+        }
+    }
     /**
      * Delete all gallery images of the property
      *
