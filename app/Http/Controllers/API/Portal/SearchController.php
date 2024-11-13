@@ -19,8 +19,23 @@ class SearchController extends BaseController
             $location = trim($searchQuery['location']);
             $properties->whereRaw('LOWER(address) LIKE ?', ['%' . strtolower($location) . '%']);
         }
+        if (!empty($searchQuery['check_in']) && !empty($searchQuery['check_out'])) {
+            $checkIn = $searchQuery['check_in'];
+            $checkOut = $searchQuery['check_out'];
 
-        $properties = $properties->where('status', Property::STATUS_PUBLISHED)
+
+            $properties->whereHas('rooms', function ($query) use ($checkIn, $checkOut) {
+                $query->whereDoesntHave('bookings', function ($query) use ($checkIn, $checkOut) {
+                    $query->whereBetween('checkin', [$checkIn, $checkOut])
+                        ->orWhereBetween('checkout', [$checkIn, $checkOut])
+                        ->orWhere(function ($q) use ($checkIn, $checkOut) {
+                            $q->where('checkin', '<=', $checkIn)
+                                ->where('checkout', '>=', $checkOut);
+                        });
+                });
+            });
+        }
+        $properties = $properties->whereHas('rooms')->where('status', Property::STATUS_PUBLISHED)
             ->with(['images', 'facilities', 'place.city', 'rooms'])
             ->get();
 

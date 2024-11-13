@@ -19,8 +19,9 @@ class PropertyController extends BaseController
     public function index(): JsonResponse
     {
         $properties = Property::query()
-            ->with(['images', 'facilities', 'place.city'])
+            ->whereHas('rooms')
             ->where('status', Property::STATUS_PUBLISHED)
+            ->with(['images', 'facilities', 'place.city'])
             ->get();
 
         $data = [
@@ -29,6 +30,7 @@ class PropertyController extends BaseController
 
         return $this->sendSuccess($data);
     }
+
 
     public function placeWiseProperties(Place $place): JsonResponse
     {
