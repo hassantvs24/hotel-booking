@@ -8,7 +8,7 @@ return new class extends Migration {
     /**
      * Run the migrations.
      */
-    public function up() : void
+    public function up(): void
     {
         Schema::create('rooms', function (Blueprint $table) {
             $table->id();
@@ -17,7 +17,7 @@ return new class extends Migration {
             $table->integer('room_number')
                 ->comment('use if applicable')
                 ->nullable();
-            $table->integer('room_size')->nullable();//Square meter
+            $table->integer('room_size')->nullable(); //Square meter
             $table->integer('guest_capacity')->nullable();
             $table->boolean('extra_bed')
                 ->default(1)
@@ -27,6 +27,12 @@ return new class extends Migration {
             $table->integer('total_window')->default(0);
             $table->integer('base_price')->default(0);
             $table->text('notes')->nullable();
+
+            $table->date('booked_date')->nullable()->comment('Date when the room was booked');
+            $table->date('booked_off_date')->nullable()->comment('Date when the booking ends');
+
+            $table->enum('status', ['Available', 'Reserved', 'Booked', 'Unavailable'])->default('Available')->comment('Booking status of the room');
+
 
             $table->foreignId('bed_type_id')
                 ->nullable()
@@ -53,7 +59,7 @@ return new class extends Migration {
     /**
      * Reverse the migrations.
      */
-    public function down() : void
+    public function down(): void
     {
         Schema::dropIfExists('rooms');
     }

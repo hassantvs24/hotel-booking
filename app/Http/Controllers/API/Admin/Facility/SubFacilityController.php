@@ -22,7 +22,7 @@ class SubFacilityController extends BaseController
         $query = array_merge(
             $request->only(['search', 'filters', 'order_by', 'order', 'per_page', 'page']),
             [
-                'with'     => ['facility','icon'],
+                'with'     => ['facility', 'icon'],
                 'where'    => [],
                 'order_by' => 'id',
                 'order'    => 'DESC',
@@ -52,8 +52,7 @@ class SubFacilityController extends BaseController
             }
 
             return $this->sendSuccess($subFacility->load('facility', 'icon'), 'Sub Facility Created Successfully');
-        }
-        catch (Exception $e) {
+        } catch (Exception $e) {
             return $this->sendError('Error creating Sub Facility.', [$e->getMessage()]);
         }
     }
@@ -106,7 +105,7 @@ class SubFacilityController extends BaseController
                 ]);
             }
 
-        return $this->sendSuccess($subFacilityModel->load('facility', 'icon'), 'Sub Facility updated successfully.');
+            return $this->sendSuccess($subFacilityModel->load('facility', 'icon'), 'Sub Facility updated successfully.');
         } catch (Exception $e) {
             return $this->sendError('SubFacility update failed.', [$e->getMessage()]);
         }
@@ -132,6 +131,20 @@ class SubFacilityController extends BaseController
             return $this->sendError('SubFacility deletion failed.', [$e->getMessage()]);
         }
     }
+
+    public function all(SubFacilityRepository $subFacilityRepository): JsonResponse
+    {
+        $subFacilities = $subFacilityRepository->get();
+
+        $data = [
+            'subFacilities' => $subFacilities
+        ];
+
+        return $this->sendSuccess($data);
+    }
+
+
+
 
     /**
      * Delete the icon associated with a sub facility.

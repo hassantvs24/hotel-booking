@@ -513,7 +513,8 @@ return [
         'gallery_image',
         'primary_image',
         'review_icon',
-        'property_logo'
+        'property_logo',
+        'property_gallery_image',
     ],
 
     'settings' => [

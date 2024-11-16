@@ -11,6 +11,7 @@ use App\Models\PropertyRule;
 use App\Models\User;
 use App\Repositories\Admin\PropertyRepository;
 use App\Traits\MediaMan;
+use Carbon\Carbon;
 use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -64,21 +65,49 @@ class PropertyController extends BaseController
 
         DB::beginTransaction();
         try {
-            $property = $propertyRepository->create(
-                array_merge(
-                    $request->except(['photo', 'property_facilities']),
-                    ['user_id' => $request->user()->id]
-                )
+            $checkInTime = Carbon::parse($request->input('check_in_time'))->format('H:i:s');
+            $checkOutTime = Carbon::parse($request->input('check_out_time'))->format('H:i:s');
+
+            $data = array_merge(
+                $request->except(['primaryImage', 'facility_sub_ids', 'rules', 'additionalImages']),
+                [
+                    'user_id' => $request->user()->id,
+                    'check_in_time' => $checkInTime,
+                    'check_out_time' => $checkOutTime
+                ]
             );
 
-            if (is_array($request->input('property_facilities'))) {
-                $property->facilities()->attach($request->input('property_facilities'));
+            $property = $propertyRepository->create($data);
+            if (is_array($request->input('facility_sub_ids'))) {
+                $property->facilities()->attach($request->input('facility_sub_ids'));
             }
 
-            if ($request->hasFile('photo')) {
-                $image = $this->storeFile($request->file('photo'), 'properties');
+            if ($request->hasFile('primaryImage')) {
+                $image = $this->storeFile($request->file('primaryImage'), 'properties');
                 $property->primaryImage()->create([...$image, 'media_role' => 'property_image']);
             }
+            if ($request->hasFile('additionalImages')) {
+                foreach ($request->file('additionalImages') as $file) {
+                    $galleryImage = $this->storeFile($file, 'properties');
+                    $property->images()->create(array_merge($galleryImage, ['media_role' => 'property_gallery_image']));
+                }
+            }
+
+            if ($request->input('rules')) {
+                $rules = $request->input('rules');
+                foreach ($rules as $rule) {
+                    $isActive =  $rule['is_active'] === true ? 1 : 0;
+
+                    $property->rules()->updateOrCreate(
+                        ['property_rule_id' => $rule['property_rule_id']],
+                        [
+                            'rule_description' => $rule['description'],
+                            'is_active' => $isActive,
+                        ]
+                    );
+                }
+            }
+
 
             DB::commit();
 
@@ -111,32 +140,68 @@ class PropertyController extends BaseController
     public function update(
         PropertyRequest    $request,
         PropertyRepository $propertyRepository,
-                           $property
-    ): JsonResponse
-    {
+        $property
+    ): JsonResponse {
 
+        DB::beginTransaction();
         try {
+            // Format check-in and check-out time
+            $checkInTime = Carbon::parse($request->input('check_in_time'))->format('H:i:s');
+            $checkOutTime = Carbon::parse($request->input('check_out_time'))->format('H:i:s');
 
-            $property = $propertyRepository->getModel($property);
-            $propertyRepository->update($request->except(['photo', 'property_facilities']), $property);
+            // Merge request data
+            $data = array_merge(
+                $request->except(['primaryImage', 'facility_sub_ids', 'rules', 'additionalImages']),
+                [
+                    'user_id' => $request->user()->id,
+                    'check_in_time' => $checkInTime,
+                    'check_out_time' => $checkOutTime,
+                ]
+            );
 
-            if (is_array($request->input('property_facilities'))) {
-                $property->facilities()->sync($request->input('property_facilities'));
+            $propertyRepository->update($data);
+
+            if (is_array($request->input('facility_sub_ids'))) {
+                $property->facilities()->sync($request->input('facility_sub_ids'));
             }
 
-            if ($request->hasFile('photo')) {
-
-                $this->deleteImage($property);
-
-                $image = $this->storeFile($request->file('photo'), 'properties');
-                $property->primaryImage()->create([...$image, 'media_role' => 'property_image']);
+            if ($request->hasFile('primaryImage')) {
+                $this->deletePrimaryImage($property);
+                $image = $this->storeFile($request->file('primaryImage'), 'properties');
+                $property->primaryImage()->create(array_merge($image, ['media_role' => 'property_image']));
             }
 
-            return $this->sendSuccess($property->load('facilities', 'primaryImage'));
+            if ($request->hasFile('additionalImages')) {
+                $this->deleteAdditionalImage($property);
+                foreach ($request->file('additionalImages') as $file) {
+                    $galleryImage = $this->storeFile($file, 'properties');
+                    $property->images()->create(array_merge($galleryImage, ['media_role' => 'property_gallery_image']));
+                }
+            }
+
+            if ($request->input('rules')) {
+                $rules = $request->input('rules');
+                foreach ($rules as $rule) {
+                    $isActive = $rule['is_active'] === true ? 1 : 0;
+
+                    $property->rules()->updateOrCreate(
+                        ['property_rule_id' => $rule['property_rule_id']],
+                        [
+                            'rule_description' => $rule['description'],
+                            'is_active' => $isActive,
+                        ]
+                    );
+                }
+            }
+            DB::commit();
+
+            return $this->sendSuccess($property->load('facilities', 'primaryImage', 'images', 'rules'));
         } catch (Exception $e) {
-            return $this->sendError($e->getMessage());
+            DB::rollBack();
+            return $this->sendError('Failed to update property: ' . $e->getMessage());
         }
     }
+
 
     /**
      * Remove the specified resource from storage.
@@ -207,7 +272,6 @@ class PropertyController extends BaseController
                 if ($propertyOwnerRole) {
                     $propertyOwner->assignRole($propertyOwnerRole);
                 }
-
             } else if ($statusInput === 'Unpublished') {
                 if (!$propertyOwner->isAdmin) {
                     $propertyOwner->removeRole($propertyOwnerRoleName);
@@ -216,7 +280,6 @@ class PropertyController extends BaseController
 
             DB::commit();
             return $this->sendSuccess($property, 'Property status updated successfully');
-
         } catch (Throwable $e) {
             DB::rollBack();
             return $this->sendError($e->getMessage());
@@ -246,12 +309,15 @@ class PropertyController extends BaseController
         return $this->sendSuccess($data);
     }
 
-    public function details(Property $property) : JsonResponse
+    public function details(Property $property): JsonResponse
     {
         $property->load([
             'primaryImage',
+            'images',
+            'logoImage',
             'facilities',
-            'rules',
+            'facilities.facility',
+            'rules.propertyRule',
             'rooms',
             'propertyCategory',
             'place',
@@ -261,5 +327,36 @@ class PropertyController extends BaseController
         ]);
 
         return $this->sendSuccess($property);
+    }
+
+    /**
+     * Delete the primary image of the property
+     *
+     * @param Property $property
+     * @return void
+     */
+    private function deletePrimaryImage(Property $property): void
+    {
+        if ($property->primaryImage()->exists()) {
+            $primaryImage = $property->primaryImage()->first();
+            $this->deleteFile($primaryImage->name, 'properties');
+            $primaryImage->delete();
+        }
+    }
+
+    /**
+     * Delete all gallery images of the property
+     *
+     * @param Property $property
+     * @return void
+     */
+    private function deleteAdditionalImage(Property $property): void
+    {
+        if ($property->images()->exists()) {
+            foreach ($property->images as $image) {
+                $this->deleteFile($image->name, 'properties');
+            }
+            $property->images()->delete();
+        }
     }
 }
