@@ -96,18 +96,22 @@ class BookingController extends BaseController
         }
     }
 
-    public function updateStatus(Request $request, Booking $bookingId): JsonResponse
+    public function updateStatus(Request $request, $id): JsonResponse
     {
         try {
             $validatedData = $request->validate([
                 'status' => 'required|string'
             ]);
 
-            $bookingId->update([
+            // Fetch the booking by its ID
+            $booking = Booking::findOrFail($id);
+
+            // Update the status
+            $booking->update([
                 'status' => $validatedData['status']
             ]);
 
-            return $this->sendSuccess($bookingId);
+            return $this->sendSuccess($booking);
         } catch (\Exception $e) {
             return $this->sendError($e);
         }

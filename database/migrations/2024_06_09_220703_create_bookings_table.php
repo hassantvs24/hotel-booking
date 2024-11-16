@@ -22,7 +22,7 @@ return new class extends Migration {
             $table->integer('rooms')->default(1);
             $table->string('reference')->nullable();
             $table->string('notes')->comment('Booking notes')->nullable();
-            $table->enum('status', ['pending', 'reserve', 'approved'])
+            $table->enum('status', ['pending', 'reserved', 'approved'])
                 ->default('Pending');
             $table->foreignId('room_id')
                 ->constrained()
