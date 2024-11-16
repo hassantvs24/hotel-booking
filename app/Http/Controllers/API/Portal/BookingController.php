@@ -91,6 +91,8 @@ class BookingController extends BaseController
         $roomRequest = RoomRequest::where('user_id', $request->user()->id)
             ->with([
                 'room',
+                'user',
+                'user.profile',
                 'room.property',
                 'room.property.logoImage',
                 'room.primaryImage',
@@ -99,7 +101,7 @@ class BookingController extends BaseController
             ])->get();
 
         $bookingList = Booking::where('user_id', $request->user()->id)
-            ->with(['room', 'room.property', 'user', 'user.profile', 'room.property.place'])
+            ->with(['room', 'room.roomType', 'room.property', 'user', 'user.profile', 'room.property.place'])
             ->get();
         $data = [
             'roomRequest' => $roomRequest,
