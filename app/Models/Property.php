@@ -22,12 +22,16 @@ class Property extends Model
      ----------------------------------------*/
     public function primaryImage(): MorphOne
     {
-        return $this->morphOne(Media::class, 'media');
+        return $this->morphOne(Media::class, 'media')->where('media_role', 'property_image');
     }
 
     public function images(): MorphMany
     {
-        return $this->morphMany(Media::class, 'media');
+        return $this->morphMany(Media::class, 'media')->where('media_role', 'property_gallery_image');
+    }
+    public function logoImage(): MorphOne
+    {
+        return $this->morphOne(Media::class, 'media')->where('media_role', 'property_logo_image');
     }
 
     public function rooms(): HasMany
@@ -50,7 +54,7 @@ class Property extends Model
         return $this->belongsTo(User::class);
     }
 
-    public function staffs() : BelongsToMany
+    public function staffs(): BelongsToMany
     {
         return $this->belongsToMany(User::class, 'property_user')
             ->withPivot(['designation', 'is_active'])

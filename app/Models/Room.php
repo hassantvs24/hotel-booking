@@ -19,12 +19,12 @@ class Room extends Model
      ----------------------------------------*/
     public function primaryImage(): MorphOne
     {
-        return $this->morphOne(Media::class, 'media');
+        return $this->morphOne(Media::class, 'media')->where('media_role', 'room_image');
     }
 
     public function images(): MorphMany
     {
-        return $this->morphMany(Media::class, 'media');
+        return $this->morphMany(Media::class, 'media')->where('media_role', 'room_gallery_image');
     }
 
     public function property(): BelongsTo
@@ -52,6 +52,16 @@ class Room extends Model
         return $this->belongsToMany(FacilitySub::class, 'room_facility_setups')->withTimestamps();
     }
 
+    public function bookings(): HasMany
+    {
+        return $this->hasMany(Booking::class);
+    }
+    public function roomRequests(): HasMany
+    {
+        return $this->hasMany(RoomRequest::class);
+    }
+
+
     /*----------------------------------------
      * Accessors
      ----------------------------------------*/
@@ -69,7 +79,7 @@ class Room extends Model
     /*----------------------------------------
      * Attributes
      ----------------------------------------*/
-    public function basePrice() : Attribute
+    public function basePrice(): Attribute
     {
         return new Attribute(
             fn($value) => $value / 100,

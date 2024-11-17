@@ -13,7 +13,7 @@ class BedTypeController extends BaseController
     /**
      * Display a listing of the resource.
      */
-    public function index(Request $request, BedTypeRepository $bedTypeRepository):JsonResponse
+    public function index(Request $request, BedTypeRepository $bedTypeRepository): JsonResponse
     {
 
         $query = array_merge(
@@ -43,18 +43,15 @@ class BedTypeController extends BaseController
     /**
      * Store a newly created resource in storage.
      */
-    public function store(BedTypeRequest $request, BedTypeRepository $bedTypeRepository):JsonResponse
+    public function store(BedTypeRequest $request, BedTypeRepository $bedTypeRepository): JsonResponse
     {
         try {
             $bedTypeRepository->create($request->validated());
 
             return $this->sendSuccess($bedTypeRepository, 'Bed Type created successfully.');
-
-        }
-        catch (\Exception $e) {
+        } catch (\Exception $e) {
 
             return $this->sendError('Bed Type creation failed.', (array)$e->getMessage());
-
         }
     }
 
@@ -71,20 +68,19 @@ class BedTypeController extends BaseController
      */
     public function edit(string $id)
     {
-       //
+        //
     }
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(BedTypeRequest $request, BedTypeRepository $bedTypeRepository, $bedType):JsonResponse
+    public function update(BedTypeRequest $request, BedTypeRepository $bedTypeRepository, $bedType): JsonResponse
     {
         try {
             $bedType = $bedTypeRepository->getModel($bedType);
             $bedTypeRepository->update($request->validated(), $bedType);
 
             return $this->sendSuccess($bedType, 'Bed Type update successfully.');
-
         } catch (\Exception $e) {
 
             return $this->sendError('Bed Type update failed.', (array)$e->getMessage());
@@ -101,10 +97,19 @@ class BedTypeController extends BaseController
             $bedTypeRepository->delete($bedType->id);
 
             return $this->sendSuccess($bedTypeRepository, 'Bed Type deletion successfully.');
-
         } catch (\Exception $e) {
 
             return $this->sendError('Bed Types deletion failed.', (array)$e->getMessage());
         }
+    }
+    public function all(BedTypeRepository $bedTypeRepository): JsonResponse
+    {
+        $bedTypes = $bedTypeRepository->get();
+
+        $data = [
+            'bedTypes' => $bedTypes
+        ];
+
+        return $this->sendSuccess($data);
     }
 }

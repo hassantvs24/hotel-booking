@@ -28,31 +28,35 @@ class BookingRequestController extends BaseController
                 'order'    => 'DESC',
             ]
         );
-        
+
         $query['whereIn'] = ['status', ['Pending', 'Approved']];
-    
-        $booking_requests = $bookingRequestRepository->paginate($query);
-    
-        foreach ($booking_requests as $booking_request) {
-    
-            $isAccepted = BookingAccepted::where('booking_requests_id', $booking_request->id)
-                ->where('property_id', $request->user()->associated_property->id) 
-                ->exists();
-    
-            if ($isAccepted) {
-                $booking_request->status = 'Approved';
-            } else {
-                $booking_request->status = 'Pending';
-            }
+
+        $userProperty = $request->user()->associated_property;
+        $userAddress = $userProperty ? strtolower($userProperty->address) : null;
+
+        if ($userAddress) {
+            $query['where'][] = ['search_name', 'LIKE', '%' . $userAddress . '%'];
         }
-    
+        $booking_requests = $bookingRequestRepository->paginate($query);
+
+        foreach ($booking_requests as $booking_request) {
+            $isAccepted = BookingAccepted::where('booking_requests_id', $booking_request->id)
+                ->where('property_id', $userProperty->id)
+                ->exists();
+
+            $booking_request->status = $isAccepted ? 'Approved' : 'Pending';
+        }
+
         $data = [
             'booking_requests' => $booking_requests
         ];
-    
+
         return $this->sendSuccess($data);
     }
-    
+
+
+
+
 
     /**
      * Show the form for creating a new resource.
@@ -83,7 +87,7 @@ class BookingRequestController extends BaseController
      */
     public function edit(string $id)
     {
-       //
+        //
     }
 
     /**
@@ -112,7 +116,7 @@ class BookingRequestController extends BaseController
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(BookingRequestRepository $bookingRequestRepository, $bookingRequestId):JsonResponse
+    public function destroy(BookingRequestRepository $bookingRequestRepository, $bookingRequestId): JsonResponse
     {
         try {
             $bookingRequestId = $bookingRequestRepository->getModel($bookingRequestId);
@@ -120,7 +124,6 @@ class BookingRequestController extends BaseController
             $bookingRequestRepository->delete($bookingRequestId->id);
 
             return $this->sendSuccess(null, 'Request deleted successfully');
-
         } catch (\Exception $e) {
             return $this->sendError($e->getMessage());
         }
@@ -137,7 +140,7 @@ class BookingRequestController extends BaseController
                     'property_id' => $request->user()->associated_property->id,
                     'request_expiration_time' => Carbon::now()->addMinutes(6),
                 ]);
-    
+
                 BookingRequest::updateOrCreate(
                     ['id' => $bookingRequest],
                     $requestData
@@ -146,9 +149,9 @@ class BookingRequestController extends BaseController
                 return response()->json(['status' => $status]);
             } else {
                 BookingAccepted::where('booking_requests_id', $bookingRequest)
-                ->where('property_id', $request->user()->associated_property->id)
-                ->delete();
-                
+                    ->where('property_id', $request->user()->associated_property->id)
+                    ->delete();
+
                 DB::commit();
                 return $this->sendSuccess($bookingRequest);
             }

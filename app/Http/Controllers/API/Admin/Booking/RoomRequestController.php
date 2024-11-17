@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\API\Admin\Booking;
 
 use App\Http\Controllers\BaseController;
+use App\Models\Room;
 use App\Models\RoomRequest;
 use App\Models\RoomRequestAccepted;
 use App\Repositories\Admin\RoomRequestRepository;
@@ -80,13 +81,24 @@ class RoomRequestController extends BaseController
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(Request $request,$roomRequestId): JsonResponse
+    public function destroy(Request $request, RoomRequestRepository $roomRequestRepository, $roomRequestId): JsonResponse
     {
         try {
+            $roomRequest = $roomRequestRepository->getModel($roomRequestId);
+            // RoomRequest::where('property_id', $request->user()->associated_property->id)
+            //     ->where('id', $roomRequestId)
+            //     ->delete();
 
-            RoomRequest::where('property_id',$request->user()->associated_property->id)
-            ->where('id',$roomRequestId)
-            ->delete();
+            $room = Room::find($roomRequest->room_id);
+            if ($room) {
+                $room->update([
+                    'status' => 'Available',
+                    'booked_date' => null,
+                    'booked_off_date' => null
+                ]);
+            }
+            $roomRequestRepository->delete($roomRequest->id);
+
 
             return $this->sendSuccess(null, 'Request deleted successfully');
         } catch (\Exception $e) {
@@ -98,34 +110,52 @@ class RoomRequestController extends BaseController
     {
         DB::beginTransaction();
         $status = $request->input('status');
+        $base_price = $request->input('base_price');
         $requestData = $request->all();
 
         try {
             $bookingRequest = RoomRequest::find($roomRequestId);
+
             if ($status === 'Approved') {
-                RoomRequestAccepted::updateOrCreate(                            // Insert or update RoomRequestAccepted
+                RoomRequestAccepted::updateOrCreate(
                     ['room_requests_id' => $roomRequestId],
                     [
-                        'property_id' =>  $request->user()->associated_property->id,
-                        'request_expiration_time' => Carbon::now()->addMinutes(6)
+                        'property_id' => $request->user()->associated_property->id,
+                        'request_expiration_time' => Carbon::now()->addMinutes(6),
                     ]
                 );
-                $bookingRequest->update($requestData);                      // Update RoomRequest with additional data
-
+                $bookingRequest->update($requestData);
+            } elseif ($status === 'Counter') {
+                RoomRequestAccepted::updateOrCreate(
+                    ['room_requests_id' => $roomRequestId],
+                    [
+                        'property_id' => $request->user()->associated_property->id,
+                        'request_expiration_time' => Carbon::now()->addMinutes(6),
+                    ]
+                );
+                $bookingRequest->update([
+                    'status' => $status,
+                    'discount_price' => $base_price
+                ]);
                 DB::commit();
-                return response()->json(['status' => $status]);
             } else {
                 RoomRequestAccepted::where('room_requests_id', $roomRequestId)
-                ->where('property_id', $request->user()->associated_property->id)
-                ->delete();
-                $bookingRequest->where('property_id', $request->user()->associated_property->id)->update(['status' => $status]);
-                DB::commit();
-                return $this->sendSuccess($roomRequestId);
+                    ->where('property_id', $request->user()->associated_property->id)
+                    ->delete();
+                $bookingRequest->update(['status' => $status]);
             }
-            return response()->json(['status' => 'Success', 'message' => 'Status updated successfully.'], 200);
+
+            DB::commit();
+            return response()->json([
+                'status' => 'Success',
+                'message' => 'Status updated successfully.',
+            ], 200);
         } catch (\Exception $e) {
             DB::rollBack();
-            return response()->json(['status' => 'Failed', 'message' => $e->getMessage()], 500);
+            return response()->json([
+                'status' => 'Failed',
+                'message' => $e->getMessage(),
+            ], 500);
         }
     }
 }

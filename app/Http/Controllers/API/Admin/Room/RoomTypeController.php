@@ -16,7 +16,7 @@ class RoomTypeController extends BaseController
     /**
      * Display a listing of the resource.
      */
-    public function index(Request $request, RoomTypeRepository $typeRepository):JsonResponse
+    public function index(Request $request, RoomTypeRepository $typeRepository): JsonResponse
     {
 
         $query = array_merge(
@@ -29,7 +29,7 @@ class RoomTypeController extends BaseController
             ]
         );
 
-        $roomTypes= $typeRepository->paginate($query);
+        $roomTypes = $typeRepository->paginate($query);
 
         return $this->sendSuccess(['roomTypes' => $roomTypes]);
     }
@@ -39,13 +39,13 @@ class RoomTypeController extends BaseController
      */
     public function create()
     {
-     //
+        //
     }
 
     /**
      * Store a newly created resource in storage.
      */
-    public function store(RoomTypeRequest $request, RoomTypeRepository $typeRepository):JsonResponse
+    public function store(RoomTypeRequest $request, RoomTypeRepository $typeRepository): JsonResponse
     {
 
         try {
@@ -60,7 +60,6 @@ class RoomTypeController extends BaseController
             }
 
             return $this->sendSuccess($roomTypes->load('icon'), 'Room Type created successfully.');
-
         } catch (\Exception $e) {
             return $this->sendError(
                 'Room Type creation failed.',
@@ -82,17 +81,17 @@ class RoomTypeController extends BaseController
      */
     public function edit(string $id)
     {
-      //
+        //
     }
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(RoomTypeRequest $request, RoomTypeRepository $typeRepository, $roomType):JsonResponse
+    public function update(RoomTypeRequest $request, RoomTypeRepository $typeRepository, $roomType): JsonResponse
     {
         try {
             $roomType = $typeRepository->getModel($roomType);
-            $typeRepository->update( $request->only(['name', 'notes']), $roomType);
+            $typeRepository->update($request->only(['name', 'notes']), $roomType);
 
             if (!$request->hasFile('icon') && $request->input('remove_icon')) {
                 $this->deleteImage($roomType);
@@ -113,17 +112,16 @@ class RoomTypeController extends BaseController
             }
 
             return $this->sendSuccess($roomType->load('icon'), 'Room Type updated successfully.');
-
         } catch (\Exception $e) {
 
-            return $this->sendError('Room Type update failed.',(array)$e->getMessage());
+            return $this->sendError('Room Type update failed.', (array)$e->getMessage());
         }
     }
 
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(RoomTypeRepository $typeRepository, $roomTypes):JsonResponse
+    public function destroy(RoomTypeRepository $typeRepository, $roomTypes): JsonResponse
     {
         try {
             $roomTypes = $typeRepository->getModel($roomTypes);
@@ -136,14 +134,22 @@ class RoomTypeController extends BaseController
             $typeRepository->delete($roomTypes->id);
 
             return $this->sendSuccess(null, 'Room Type deleted successfully.');
-
-
         } catch (\Exception $e) {
 
-            return $this->sendError('Room Type deletion failed.',(array)$e->getMessage());
+            return $this->sendError('Room Type deletion failed.', (array)$e->getMessage());
         }
     }
-    private function deleteImage($roomTypes) : void
+    public function all(RoomTypeRepository $roomTypeRepository): JsonResponse
+    {
+        $roomTypes = $roomTypeRepository->get();
+
+        $data = [
+            'roomTypes' => $roomTypes
+        ];
+
+        return $this->sendSuccess($data);
+    }
+    private function deleteImage($roomTypes): void
     {
         if ($roomTypes->icon()->exists()) {
             $this->deleteFile($roomTypes->icon->name, 'room_types');

@@ -17,7 +17,7 @@ class FacilitySub extends Model
 
     public function facility(): BelongsTo
     {
-        return $this->belongsTo(Facility::class);
+        return $this->belongsTo(Facility::class, 'facility_id', 'id');
     }
 
     public function properties(): BelongsToMany
