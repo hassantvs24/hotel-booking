@@ -4,6 +4,13 @@ use App\Http\Controllers\API\Payment\SslCommerzPaymentController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 
+// test mail
+
+Route::get('test-mail', function () {
+    \Illuminate\Support\Facades\Mail::to('example@gmail.com')->send(new \App\Mail\TestMail());
+    return 'Mail sent';
+});
+
 Route::get('/', static fn() => response('', 200));
 
 Route::get('/dashboard', function () {
