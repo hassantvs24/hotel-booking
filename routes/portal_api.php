@@ -43,6 +43,7 @@ Route::prefix('portal')->group(function () {
 
     Route::prefix('booking')->middleware('auth:sanctum')->group(function () {
         Route::post('/', [BookingController::class, 'bookingStore']);
+        Route::post('/pay-now', [BookingController::class, 'bookNow']);
         Route::get('/check/{room}/room', [BookingController::class, 'bookingCheck']);
         Route::get('/cart-list', [BookingController::class, 'cartList']);
     });

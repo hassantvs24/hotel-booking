@@ -2,10 +2,14 @@
 
 namespace App\Http\Controllers\API\Portal;
 
+use App\Abstract\Payouts\SSLComm\Customer;
+use App\Abstract\Payouts\SSLComm\Payments;
+use App\Abstract\Payouts\SSLComm\SSLCommSession;
 use App\Http\Controllers\BaseController;
 use App\Models\Booking;
 use App\Models\Room;
 use App\Models\RoomRequest;
+use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -108,5 +112,58 @@ class BookingController extends BaseController
             'bookingList' => $bookingList,
         ];
         return $this->sendSuccess($data);
+    }
+
+    public function bookNow()
+    {
+        $booking = Booking::first();
+        $user = User::whereId($booking->user_id)->first();
+
+        $paymentSession = new Payments(SSLCommSession::create([
+            // store config in database or config or env and load it here
+            'store_id' => 'hotel674dd7e831e76',
+            'store_password' => 'hotel674dd7e831e76@ssl',
+            'success_url' => route('payment.success'),
+            'fail_url' => route('payment.fail'),
+            'cancel_url' => route('payment.cancel'),
+            'currency' => 'BDT',
+        ]));
+
+        $customer = Customer::createFromArray([
+            'name' => $user->name,
+            'email' => $user->email,
+            'phone' => '01711111111',
+            'address1' => 'Dhaka',
+            'address2' => 'Dhaka',
+            'city' => 'Dhaka',
+            'state' => 'Dhaka',
+            'postcode' => '1000',
+            'country' => 'Bangladesh',
+            'fax' => '01711111111',
+        ]);
+
+        $paymentItem = \App\Abstract\Payouts\SSLComm\Booking::createFromArray([
+            'transaction_id' => $booking->booking_number,
+            'length_of_stay' => '2days',
+            'hotel_name' => 'noorjahan',
+            'hotel_city' => 'Dhaka',
+            'rooms' => [
+                [
+                    'name' => 'Balcony View',
+                    'price' => 200.00
+                ],
+                [
+                    'name' => '3rd floor beach view',
+                    'price' => 200.00
+                ]
+            ],
+            'amount' => 400,
+            'discount' => 0,
+            'vat' => 0,
+            'fee' => 0,
+            'total' => $booking->amount, // this amount will be charged from customer
+        ]);
+
+        return $paymentSession->create($customer, $paymentItem);
     }
 }

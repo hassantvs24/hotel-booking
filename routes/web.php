@@ -37,3 +37,48 @@ Route::post('/cancel', [SslCommerzPaymentController::class, 'cancel']);
 
 Route::post('/ipn', [SslCommerzPaymentController::class, 'ipn']);
 //SSLCOMMERZ END
+
+Route::prefix('payments')->name('payment.')->group(function () {
+
+    Route::post('/success', function (\Illuminate\Http\Request $request) {
+
+        $originalResponse = $request->all();
+
+        $payments = new \App\Abstract\Payouts\SSLComm\Payments(\App\Abstract\Payouts\SSLComm\SSLCommSession::create([
+            'store_id'       => 'hotel674dd7e831e76',
+            'store_password' => 'hotel674dd7e831e76@ssl',
+            'success_url'    => route('payment.success'),
+            'fail_url'       => route('payment.fail'),
+            'cancel_url'     => route('payment.cancel'),
+            'currency'       => 'BDT',
+        ]));
+
+        $validated = $payments->validate(\Illuminate\Support\Arr::get($originalResponse, 'val_id'));
+
+        $dataToStore = \Illuminate\Support\Arr::only($validated, [
+            'val_id',
+            'status',
+            'amount',
+            'bank_tran_id',
+            'card_no',
+            'card_ref_id',
+            'risk_title',
+            'tran_date'
+        ]);
+
+        return [
+            'original_response'   => $originalResponse,
+            'validation_response' => $validated,
+            'validation_id'       => \Illuminate\Support\Arr::get($originalResponse, 'val_id'),
+        ];
+
+    })->name('success');
+
+    Route::post('/fail', function (\Illuminate\Http\Request $request) {
+        return $request->all();
+    })->name('fail');
+
+    Route::post('/cancel', function (\Illuminate\Http\Request $request) {
+        return $request->all();
+    })->name('cancel');
+});

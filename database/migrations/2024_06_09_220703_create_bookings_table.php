@@ -17,6 +17,7 @@ return new class extends Migration {
             $table->string('booking_number');
             $table->date('checkin');
             $table->date('checkout');
+            $table->decimal('amount', 15, 2)->default(0);
             $table->integer('adult')->default(1);
             $table->integer('children')->default(0);
             $table->integer('rooms')->default(1);
