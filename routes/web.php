@@ -2,7 +2,12 @@
 
 use App\Http\Controllers\API\Payment\SslCommerzPaymentController;
 use App\Http\Controllers\ProfileController;
+use App\Models\Booking;
+use App\Models\Transaction;
+use Illuminate\Routing\Redirector;
+use Illuminate\Support\Facades\Redirect;
 use Illuminate\Support\Facades\Route;
+
 
 // test mail
 
@@ -66,16 +71,47 @@ Route::prefix('payments')->name('payment.')->group(function () {
             'tran_date'
         ]);
 
-        return [
-            'original_response'   => $originalResponse,
-            'validation_response' => $validated,
-            'validation_id'       => \Illuminate\Support\Arr::get($originalResponse, 'val_id'),
-        ];
+        $booking = Booking::where('booking_number',$validated['tran_id'])->first();
+        if($booking){
+            $transaction = $booking->transaction()->updateOrCreate(
+                [
+                    'booking_id' => $booking->booking_number,
+                    'user_id' => $booking->user_id,
+                ],
+                [
+                    'booking_id' => $booking->booking_number,
+                    'user_id' => $booking->user_id,
+                    'amount' => $booking->amount,
+                    'meta' => serialize($validated),
+                    'payment_method' => $validated['card_type'],
+                    'transaction_reference' => $validated['val_id'],
+                    'status' => 'completed',
+                    'notes' => null,
+                ]
+            );
+
+            $updateBooking = Booking::where('booking_number', $transaction->booking_id)->first();
+            $updateBooking->update(['status'=>'approved']);
+        }
+        $redirectUrl = config('app.frontend_url').'/success';
+
+        return Redirect::away($redirectUrl);
+
+        // return [
+        //     'original_response'   => $originalResponse,
+        //     'validation_response' => $validated,
+        //     'validation_id'       => \Illuminate\Support\Arr::get($originalResponse, 'val_id'),
+        // ];
 
     })->name('success');
 
     Route::post('/fail', function (\Illuminate\Http\Request $request) {
-        return $request->all();
+        // return $request->all();
+
+        $redirectUrl = config('app.frontend_url') . '/failed';
+
+        return Redirect::away($redirectUrl);
+
     })->name('fail');
 
     Route::post('/cancel', function (\Illuminate\Http\Request $request) {

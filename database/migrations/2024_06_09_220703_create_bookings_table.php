@@ -14,7 +14,8 @@ return new class extends Migration {
 
         Schema::create('bookings', function (Blueprint $table) {
             $table->id();
-            $table->string('booking_number');
+
+            $table->unsignedBigInteger('booking_number')->unique();
             $table->date('checkin');
             $table->date('checkout');
             $table->decimal('amount', 15, 2)->default(0);

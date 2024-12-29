@@ -37,28 +37,28 @@ class Booking implements Contracts\BookingContracts
      *
      * @throws ValidationException If the validation of the data fails.
      */
-    #[ArrayShape([
-        'transaction_id' => "string",
-        'length_of_stay' => "string",
-        'hotel_name'     => "string",
-        'hotel_city'     => "string",
-        'total'          => "float",
-        'rooms'          => "array",
-        'rooms.*.name'   => "string",
-        'rooms.*.price'  => "float",
-        'amount'         => "float",
-        'discount'       => "float",
-        'vat'            => "float",
-        'fee'            => "float",
-    ])]
+    // #[ArrayShape([
+    //     'transaction_id' => "string",
+    //     'length_of_stay' => "string",
+    //     'hotel_name'     => "string",
+    //     'hotel_city'     => "string",
+    //     'total'          => "float",
+    //     'rooms'          => "array",
+    //     'rooms.*.name'   => "string",
+    //     'rooms.*.price'  => "float",
+    //     'amount'         => "float",
+    //     'discount'       => "float",
+    //     'vat'            => "float",
+    //     'fee'            => "float",
+    // ])]
     public function __construct(array $data = [])
     {
         $validated = Validator::make($data, [
-            'transaction_id' => 'required|string|max:255',
+            'transaction_id' => 'required',
             'length_of_stay' => 'required|string|max:255',
             'hotel_name'     => 'required|string|max:255',
             'hotel_city'     => 'required|string|max:255',
-//            'total'          => 'required|numeric',
+           'total'          => 'required|numeric',
             'rooms'          => 'required|array',
             'rooms.*.name'   => 'required|string|max:255',
             'rooms.*.price'  => 'required|numeric',

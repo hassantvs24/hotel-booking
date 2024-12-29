@@ -38,6 +38,7 @@ class BookingController extends BaseController
             'checkin' => 'required|date',
             'checkout' => 'required|date',
             'adult' => 'required|integer',
+            'amount' =>'required',
             'children' => 'required|integer',
             'rooms' => 'required|integer',
             'reference' => 'nullable|string',
@@ -114,10 +115,12 @@ class BookingController extends BaseController
         return $this->sendSuccess($data);
     }
 
-    public function bookNow()
+    public function bookNow(Request $request)
     {
-        $booking = Booking::first();
+        $booking = Booking::where('user_id', $request->user()->id)->latest()->first();
         $user = User::whereId($booking->user_id)->first();
+
+
 
         $paymentSession = new Payments(SSLCommSession::create([
             // store config in database or config or env and load it here
