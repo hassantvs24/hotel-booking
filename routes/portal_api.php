@@ -46,6 +46,9 @@ Route::prefix('portal')->group(function () {
         Route::post('/pay-now', [BookingController::class, 'bookNow']);
         Route::get('/check/{room}/room', [BookingController::class, 'bookingCheck']);
         Route::get('/cart-list', [BookingController::class, 'cartList']);
+
+        Route::get('/details', [BookingController::class, 'bookingDetails']);
+        Route::post('/retry-payment', [BookingController::class, 'tryToPayAgain']);
     });
 
 

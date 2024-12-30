@@ -36,6 +36,9 @@ return new class extends Migration {
                 ->onDelete('cascade')
                 ->onUpdate('No Action');
 
+            $table->enum('payment_status', ['pending', 'paid', 'failed'])
+                ->default('pending');
+
             $table->softDeletes();
             $table->timestamps();
         });

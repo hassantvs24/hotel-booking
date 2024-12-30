@@ -123,7 +123,6 @@ class BookingController extends BaseController
 
 
         $paymentSession = new Payments(SSLCommSession::create([
-            // store config in database or config or env and load it here
             'store_id' => 'hotel674dd7e831e76',
             'store_password' => 'hotel674dd7e831e76@ssl',
             'success_url' => route('payment.success'),
@@ -133,38 +132,102 @@ class BookingController extends BaseController
         ]));
 
         $customer = Customer::createFromArray([
-            'name' => $user->name,
-            'email' => $user->email,
-            'phone' => '01711111111',
-            'address1' => 'Dhaka',
-            'address2' => 'Dhaka',
-            'city' => 'Dhaka',
-            'state' => 'Dhaka',
-            'postcode' => '1000',
-            'country' => 'Bangladesh',
-            'fax' => '01711111111',
+            'name'      => $user->name,
+            'email'     => $user->email,
+            'phone'     => $user->phone ?? 'N/A',
+            'address1'  => $user->address1 ?? 'Unknown Address',
+            'address2'  => $user->address2 ?? '',
+            'city'      => $user->city ?? 'Unknown City',
+            'state'     => $user->state ?? '',
+            'postcode'  => $user->postcode ?? '',
+            'country'   => $user->country ?? 'Bangladesh',
+            'fax'       => $user->fax ?? '',
         ]);
+
+        $checkin = Carbon::parse($booking->checkin);
+        $checkout = Carbon::parse($booking->checkout);
+
+        $days = $checkin->diffInDays($checkout);
 
         $paymentItem = \App\Abstract\Payouts\SSLComm\Booking::createFromArray([
             'transaction_id' => $booking->booking_number,
-            'length_of_stay' => '2days',
-            'hotel_name' => 'noorjahan',
-            'hotel_city' => 'Dhaka',
+            'length_of_stay' => $days . 'days',
+            'hotel_name' => $booking->room->property->name ?? 'Unknown Hotel',
+            'hotel_city' => $booking->room->property->place->city->name ?? 'Unknown City',
             'rooms' => [
                 [
-                    'name' => 'Balcony View',
-                    'price' => 200.00
-                ],
-                [
-                    'name' => '3rd floor beach view',
-                    'price' => 200.00
+                    'name' => $booking->room->name,
+                    'price' => $booking->room->base_price
                 ]
             ],
-            'amount' => 400,
-            'discount' => 0,
-            'vat' => 0,
-            'fee' => 0,
-            'total' => $booking->amount, // this amount will be charged from customer
+            'amount'   => $booking->amount,
+            'discount' => $booking->discount ?? 0,
+            'vat'      => $booking->vat ?? 0,
+            'fee'      => $booking->fee ?? 0,
+            'total'    => $booking->amount, // this amount will be charged from customer
+        ]);
+
+        return $paymentSession->create($customer, $paymentItem);
+    }
+
+    public function bookingDetails(Request $request) : JsonResponse
+    {
+        $booking = Booking::query()->where('booking_number', $request->booking_number)->first();
+        if (!$booking) {
+            return $this->sendError('Booking not found', [], 404);
+        }
+
+        return $this->sendSuccess($booking);
+    }
+
+    public function tryToPayAgain(Request $request)
+    {
+        $booking = Booking::query()->where('booking_number', $request->booking_number)->first();
+        $user = User::whereId($booking->user_id)->first();
+
+        $paymentSession = new Payments(SSLCommSession::create([
+            'store_id' => 'hotel674dd7e831e76',
+            'store_password' => 'hotel674dd7e831e76@ssl',
+            'success_url' => route('payment.success'),
+            'fail_url' => route('payment.fail'),
+            'cancel_url' => route('payment.cancel'),
+            'currency' => 'BDT',
+        ]));
+
+        $customer = Customer::createFromArray([
+            'name'      => $user->name,
+            'email'     => $user->email,
+            'phone'     => $user->phone ?? 'N/A', // Ensure fallback if phone is missing
+            'address1'  => $user->address1 ?? 'Unknown Address',
+            'address2'  => $user->address2 ?? '',
+            'city'      => $user->city ?? 'Unknown City',
+            'state'     => $user->state ?? '',
+            'postcode'  => $user->postcode ?? '',
+            'country'   => $user->country ?? 'Bangladesh',
+            'fax'       => $user->fax ?? '',
+        ]);
+
+        $checkin = Carbon::parse($booking->checkin);
+        $checkout = Carbon::parse($booking->checkout);
+
+        $days = $checkin->diffInDays($checkout);
+
+        $paymentItem = \App\Abstract\Payouts\SSLComm\Booking::createFromArray([
+            'transaction_id' => $booking->booking_number,
+            'length_of_stay' => $days . 'days',
+            'hotel_name' => $booking->room->property->name ?? 'Unknown Hotel',
+            'hotel_city' => $booking->room->property->place->city->name ?? 'Unknown City',
+            'rooms' => [
+                [
+                    'name' => $booking->room->name,
+                    'price' => $booking->room->base_price
+                ]
+            ],
+            'amount'   => $booking->amount,
+            'discount' => $booking->discount ?? 0,
+            'vat'      => $booking->vat ?? 0,
+            'fee'      => $booking->fee ?? 0,
+            'total'    => $booking->amount,
         ]);
 
         return $paymentSession->create($customer, $paymentItem);
