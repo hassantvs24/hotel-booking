@@ -33,10 +33,10 @@ Route::prefix('portal')->group(function () {
         Route::get('/', [SearchController::class, 'search']);
     });
 
-    Route::prefix('filter')->middleware('auth:sanctum')->group(function () {
+    Route::prefix('filter')->group(function () {
         Route::get('/', [FilterController::class, 'getFilters']);
         Route::get('/search-properties', [FilterController::class, 'getFilteredProperties']);
-        Route::get('/request-properties', [FilterController::class, 'getFilteredPropertiesByRequest']);
+        Route::get('/request-properties', [FilterController::class, 'getFilteredPropertiesByRequest'])->middleware('auth:sanctum');
     });
 
     Route::get('/room/{room}/payment', [BookingController::class, 'paymentDetails']);
