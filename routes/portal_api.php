@@ -33,18 +33,22 @@ Route::prefix('portal')->group(function () {
         Route::get('/', [SearchController::class, 'search']);
     });
 
-    Route::prefix('filter')->middleware('auth:sanctum')->group(function () {
+    Route::prefix('filter')->group(function () {
         Route::get('/', [FilterController::class, 'getFilters']);
         Route::get('/search-properties', [FilterController::class, 'getFilteredProperties']);
-        Route::get('/request-properties', [FilterController::class, 'getFilteredPropertiesByRequest']);
+        Route::get('/request-properties', [FilterController::class, 'getFilteredPropertiesByRequest'])->middleware('auth:sanctum');
     });
 
     Route::get('/room/{room}/payment', [BookingController::class, 'paymentDetails']);
 
     Route::prefix('booking')->middleware('auth:sanctum')->group(function () {
         Route::post('/', [BookingController::class, 'bookingStore']);
+        Route::post('/pay-now', [BookingController::class, 'bookNow']);
         Route::get('/check/{room}/room', [BookingController::class, 'bookingCheck']);
         Route::get('/cart-list', [BookingController::class, 'cartList']);
+
+        Route::get('/details', [BookingController::class, 'bookingDetails']);
+        Route::post('/retry-payment', [BookingController::class, 'tryToPayAgain']);
     });
 
 

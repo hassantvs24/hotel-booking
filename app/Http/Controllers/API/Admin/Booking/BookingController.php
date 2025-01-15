@@ -6,8 +6,10 @@ use App\Http\Controllers\BaseController;
 use App\Models\Booking;
 use App\Models\Room;
 use App\Repositories\Admin\BookingRepository;
+use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\View\View;
 
 class BookingController extends BaseController
@@ -24,7 +26,7 @@ class BookingController extends BaseController
         } elseif ($user->is_merchant && $user->associated_property) {
             $bookings = Booking::whereHas('room', function ($query) use ($request) {
                 $query->where('property_id', $request->user()->associated_property->id);
-            })->with(['room', 'room.property', 'room.property.place', 'user'])->paginate();
+            })->with(['room', 'room.property', 'room.property.place', 'user', 'user.profile'])->paginate();
         }
 
         $data = [
@@ -37,20 +39,18 @@ class BookingController extends BaseController
     /**
      * Show the form for creating a new resource.
      */
-    public function create(): View
+    public function create()
     {
-        if (!hasPermission('can_create_booking')) {
-            return $this->unauthorized();
-        }
-
-
-        return view('admin.booking.booking.create');
+        //
     }
 
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request) {}
+    public function store(Request $request)
+    {
+        //
+    }
 
     /**
      * Display the specified resource.
@@ -68,7 +68,31 @@ class BookingController extends BaseController
     /**
      * Update the specified resource in storage.
      */
-    public function update() {}
+    public function update(Request $request, BookingRepository $bookingRepository, $bookingId): JsonResponse
+    {
+        try {
+            $bookingId = $bookingRepository->getModel($bookingId);
+            $request = $request->all();
+            $booking = $bookingRepository->update([
+                'adult' => $request['adult'],
+                'children' => $request['children'],
+                'room_id' => $request['room_id'],
+                'checkin' => $request['check_in'],
+                'checkout' => $request['check_out'],
+            ], $bookingId);
+
+            $room = Room::find($request['room_id']);
+            if ($room) {
+                $room->booked_date = $request['checkin'];
+                $room->booked_off_date = $request['checkout'];
+                $room->status = 'Booked';
+                $room->save();
+            }
+            return $this->sendSuccess($booking);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+        }
+    }
 
 
 
@@ -115,5 +139,33 @@ class BookingController extends BaseController
         } catch (\Exception $e) {
             return $this->sendError($e);
         }
+    }
+
+    public function bookingCheck(Request $request): JsonResponse
+    {
+        $checkIn = $request->input('params.check_in');
+        $checkOut = $request->input('params.check_out');
+
+
+        $checkInDate = Carbon::parse($checkIn)->toDateString();
+        $checkOutDate = Carbon::parse($checkOut)->toDateString();
+
+        $property = $request->user()->associated_property;
+        if (!$property) {
+            return $this->sendError('User does not have an associated property.');
+        }
+
+        $roomIds = Room::where('property_id', $property->id)->pluck('id')->toArray();
+        $bookedRoomIds = Booking::CheckDateOverlap($roomIds, $checkInDate, $checkOutDate)
+            ->pluck('room_id')
+            ->toArray();
+
+        $availableRooms = Room::where('property_id', $property->id)
+            ->whereNotIn('id', $bookedRoomIds)
+            ->get(['id', 'name']);
+
+        return $this->sendSuccess([
+            'rooms' => $availableRooms
+        ]);
     }
 }

@@ -21,13 +21,18 @@ return Application::configure(basePath: dirname(__DIR__))
         }
     )
     ->withMiddleware(function (Middleware $middleware) {
-        $middleware->validateCsrfTokens(except: [
-            '/success',
-            '/cancel',
-            '/fail',
-            '/ipn',
-            '/pay-via-ajax',
-        ]);
+    // $middleware->validateCsrfTokens(except: [
+    //     '/success',
+    //     '/cancel',
+    //     '/fail',
+    //     '/ipn',
+    //     '/pay-via-ajax',
+    // ]);
+    $middleware->validateCsrfTokens(except: [
+        'payments/cancel',
+        'payments/success',
+        'payments/fail'
+    ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //

@@ -14,9 +14,11 @@ return new class extends Migration {
 
         Schema::create('bookings', function (Blueprint $table) {
             $table->id();
-            $table->string('booking_number');
+
+            $table->unsignedBigInteger('booking_number')->unique();
             $table->date('checkin');
             $table->date('checkout');
+            $table->decimal('amount', 15, 2)->default(0);
             $table->integer('adult')->default(1);
             $table->integer('children')->default(0);
             $table->integer('rooms')->default(1);
@@ -33,6 +35,9 @@ return new class extends Migration {
                 ->constrained()
                 ->onDelete('cascade')
                 ->onUpdate('No Action');
+
+            $table->enum('payment_status', ['pending', 'paid', 'failed'])
+                ->default('pending');
 
             $table->softDeletes();
             $table->timestamps();
