@@ -12,6 +12,7 @@ use App\Http\Controllers\API\Portal\PropertyController;
 use App\Http\Controllers\API\Portal\RequestController;
 use App\Http\Controllers\API\Portal\RoomRequestController;
 use App\Http\Controllers\API\Portal\SearchController;
+use App\Http\Controllers\API\Portal\Vendor\PropertyRequestController;
 use App\Http\Controllers\API\Portal\Vendor\VendorController;
 use Illuminate\Support\Facades\Route;
 
@@ -49,6 +50,11 @@ Route::prefix('portal')->group(function () {
 
         Route::get('/details', [BookingController::class, 'bookingDetails']);
         Route::post('/retry-payment', [BookingController::class, 'tryToPayAgain']);
+    });
+
+    /*----------------- property request -----------------*/
+    Route::prefix('property-request')->group(function () {
+        Route::post('/store', [PropertyRequestController::class, 'store']);
     });
 
 
