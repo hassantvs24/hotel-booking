@@ -20,6 +20,11 @@ class Property extends Model
     /*----------------------------------------
      * Relationships
      ----------------------------------------*/
+    public function request(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(PropertyRequest::class);
+    }
+
     public function primaryImage(): MorphOne
     {
         return $this->morphOne(Media::class, 'media')->where('media_role', 'property_image');
