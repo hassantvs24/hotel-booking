@@ -80,7 +80,7 @@ Route::middleware('auth:sanctum')->prefix('admin')->group(function () {
     Route::put('properties/{property}/status', [PropertyController::class, 'propertyAction']);
     Route::get('property/{property}/details', [PropertyController::class, 'details']);
 
-    Route::get('property/request', [PropertyRequestController::class, 'index']);
+    Route::get('property/requests', [PropertyRequestController::class, 'index']);
 
     Route::apiResource('property-categories', PropertyCategoryController::class)->except(['create', 'show', 'edit']);
     Route::get('property-categories/all', [PropertyCategoryController::class, 'all']);
