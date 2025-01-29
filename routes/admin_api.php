@@ -81,6 +81,7 @@ Route::middleware('auth:sanctum')->prefix('admin')->group(function () {
     Route::get('property/{property}/details', [PropertyController::class, 'details']);
 
     Route::get('property/requests', [PropertyRequestController::class, 'index']);
+    Route::put('property/requests/{id}/update', [PropertyRequestController::class, 'updateStatus']);
 
     Route::apiResource('property-categories', PropertyCategoryController::class)->except(['create', 'show', 'edit']);
     Route::get('property-categories/all', [PropertyCategoryController::class, 'all']);
