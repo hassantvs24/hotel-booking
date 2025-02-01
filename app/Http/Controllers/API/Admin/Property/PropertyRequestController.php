@@ -4,7 +4,10 @@ namespace App\Http\Controllers\API\Admin\Property;
 
 use App\Http\Controllers\BaseController;
 use App\Models\User;
+use App\Notifications\Property\PropertyRequestApproved;
+use App\Notifications\Property\PropertyRequestRejected;
 use App\Repositories\Admin\PropertyRequestRepository;
+use App\Services\MailService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -49,6 +52,21 @@ class PropertyRequestController extends BaseController
 
             if ($request->status === 'approved') {
                 $user = $this->createUser($propertyRequest);
+
+                PropertyRequestApproved::send('sukanta.atcfbd@gmail.com', [
+                    'name' => $propertyRequest->name,
+                    'email' => $propertyRequest->owner_email,
+                    'phone' => $propertyRequest->contact_number,
+                    'user' => $user
+                ]);
+            }
+
+            if ($request->status === 'rejected') {
+                PropertyRequestRejected::send('sukanta.atcfbd@gmail.com', [
+                    'name' => $propertyRequest->name,
+                    'email' => $propertyRequest->owner_email,
+                    'phone' => $propertyRequest->contact_number,
+                ]);
             }
 
             return $this->sendSuccess($propertyRequest, 'Property request status updated successfully');
