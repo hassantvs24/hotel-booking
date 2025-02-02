@@ -47,15 +47,53 @@ class VendorController extends BaseController
         return $this->sendSuccess($data);
     }
 
-    public function store(VerdorRequest $request): JsonResponse
+    public function store(Request $request): JsonResponse
     {
 
-        $property = Property::create(array_merge(
-            $request->except(['photo']),
-            ['status' => 'Pending']
-        ));
+        $requestData = $request->all();
 
-        if ($request->hasFile('photo')) {
+        $dataToStore = array_merge(
+            $request->except(['images', 'facilities', 'rules', 'propertyName']),
+            [
+                'property_type' => $requestData['propertyType'],
+                'address' => [
+                    'address' => $requestData['address'],
+                    'apartment' => $requestData['apartment'],
+                    'country' => $requestData['country'],
+                    'city' => $requestData['city'],
+                ],
+                'zip_code' => $requestData['postCode'],
+                'total_room' => $requestData['rooms'],
+                'bank_details' => [
+                    'bankName' => $requestData['bankName'],
+                    'accountNumber' => $requestData['accountNumber'],
+                    'ifscCode' => $requestData['ifscCode'],
+                    'accountName' => $requestData['accountName'],
+                    'bankBranch' => $requestData['bankBranch'],
+                    'routingNumber' => $requestData['routingNumber'],
+                    'swiftCode' => $requestData['swiftCode'],
+                    'iban' => $requestData['iban']
+                ],
+                'status' => 'Pending'
+            ]
+        );
+
+        $dataToStore['name'] = $requestData['propertyName'];
+        $dataToStore['property_type'] = $requestData['propertyType'];
+
+        $property = Property::create($dataToStore);
+
+        if(is_array($requestData['facilities']))
+        {
+            $property->facilities()->attach($requestData['facilities']);
+        }
+        
+        if(is_array($requestData['rules']))
+        {
+            $property->rules()->attach($requestData['rules']);
+        }
+
+        if ($request->hasFile('images')) {
             $image = $this->storeFile($request->file('photo'), 'properties');
             $property->primaryImage()->create([...$image, 'media_role' => 'property_image']);
         }
@@ -63,7 +101,7 @@ class VendorController extends BaseController
         return response()->json([
             'success' => true,
             'message' => 'Property created successfully!',
-            'property' => $property->load('primaryImage')
+            'property' => $property
         ], 201);
     }
 
@@ -78,10 +116,10 @@ class VendorController extends BaseController
         return $this->sendSuccess($data, 'Properties fetched successfully!');
     }
 
-    public function getRegInfo() :JsonResponse
+    public function getRegInfo(): JsonResponse
     {
-        $rules=PropertyRule::all();
-        $facilities =Facility::all();
+        $rules = PropertyRule::all();
+        $facilities = Facility::all();
 
         $data = [
             'rules' => $rules,
