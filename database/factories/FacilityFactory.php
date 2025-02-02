@@ -16,14 +16,24 @@ class FacilityFactory extends Factory
      *
      * @return array<string, mixed>
      */
-    public function definition() : array
+    private static array $facilities = [
+        [ 'value' => "wifi", 'name' => "Wi-Fi", 'notes' => "High-speed internet available.", 'facility_type' => "amenity" ],
+        [ 'value' => "parking", 'name' => "Parking", 'notes' => "Dedicated parking space available.", 'facility_type' => "feature" ],
+        [ 'value' => "security", 'name' => "Security", 'notes' => "24/7 security surveillance.", 'facility_type' => "service" ],
+        [ 'value' => "pet-friendly", 'name' => "Pet-Friendly", 'notes' => "Pets allowed on the property.", 'facility_type' => "policy" ],
+    ];
+    
+    public function definition(): array
     {
+        $facility = $this->faker->randomElement(self::$facilities);
+    
         return [
-            'name'          => $this->faker->word,
-            'notes'         => $this->faker->sentence,
-            'facility_type' => $this->faker->randomElement(['hospital', 'clinic', 'nursing home']),
+            'name'          => $facility['name'],
+            'notes'         => $facility['notes'],
+            'facility_type' => $facility['facility_type'],
         ];
     }
+    
 
     public function configure() : static
     {

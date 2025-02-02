@@ -78,6 +78,7 @@ Route::prefix('portal')->group(function () {
         Route::get('/getAllPropertyOption', [VendorController::class, 'allPropertyOption']);
         Route::post('/property/store', [VendorController::class, 'store']);
         Route::get('/property/allproperties', [VendorController::class, 'allproperties']);
+        Route::get('/reg-info',[VendorController::class, 'getRegInfo']);
     });
 });
 /*----------------- Portal API -----------------*/

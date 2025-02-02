@@ -9,6 +9,8 @@ use App\Models\PropertyCategory;
 use App\Repositories\Property\PropertyRepository;
 use Illuminate\Http\JsonResponse;
 use App\Http\Requests\Portal\Vendor\VerdorRequest;
+use App\Models\Facility;
+use App\Models\PropertyRule;
 use App\Traits\MediaMan;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -74,5 +76,17 @@ class VendorController extends BaseController
         ];
 
         return $this->sendSuccess($data, 'Properties fetched successfully!');
+    }
+
+    public function getRegInfo() :JsonResponse
+    {
+        $rules=PropertyRule::all();
+        $facilities =Facility::all();
+
+        $data = [
+            'rules' => $rules,
+            'facilities' => $facilities
+        ];
+        return $this->sendSuccess($data);
     }
 }
