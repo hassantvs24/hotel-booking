@@ -10,6 +10,7 @@ use App\Repositories\Property\PropertyRepository;
 use Illuminate\Http\JsonResponse;
 use App\Http\Requests\Portal\Vendor\VerdorRequest;
 use App\Models\Facility;
+use App\Models\PropertyRequest;
 use App\Models\PropertyRule;
 use App\Traits\MediaMan;
 use Illuminate\Http\Request;
@@ -53,7 +54,29 @@ class VendorController extends BaseController
         $requestData = $request->all();
 
         $dataToStore = array_merge(
-            $request->except(['images', 'facilities', 'rules', 'propertyName']),
+            $request->except([
+                'images',
+                'facilities',
+                'rules',
+                'propertyName',
+                'propertyType',
+                'address',
+                'apartment',
+                'country',
+                'city',
+                'bankName',
+                'accountNumber',
+                'ifscCode',
+                'accountName',
+                'bankBranch',
+                'routingNumber',
+                'swiftCode',
+                'iban',
+                'postCode',
+                'rooms',
+                'ref_id',
+                'user_id'
+            ]),
             [
                 'property_type' => $requestData['propertyType'],
                 'address' => [
@@ -74,7 +97,8 @@ class VendorController extends BaseController
                     'swiftCode' => $requestData['swiftCode'],
                     'iban' => $requestData['iban']
                 ],
-                'status' => 'Pending'
+                'status' => 'Pending',
+                'user_id' => Auth::id()
             ]
         );
 
@@ -83,15 +107,18 @@ class VendorController extends BaseController
 
         $property = Property::create($dataToStore);
 
-        if(is_array($requestData['facilities']))
-        {
+        $propertyRequest = PropertyRequest::where('unique_request_number', $requestData['ref_id'])->first();
+        $propertyRequest->update([
+            'user_id' => Auth::id(),
+        ]);
+        if (!empty($requestData['facilities'])) {
             $property->facilities()->attach($requestData['facilities']);
         }
-        
-        if(is_array($requestData['rules']))
-        {
+
+        if (!empty($requestData['rules'])) {
             $property->rules()->attach($requestData['rules']);
         }
+
 
         if ($request->hasFile('images')) {
             $image = $this->storeFile($request->file('photo'), 'properties');
@@ -105,9 +132,11 @@ class VendorController extends BaseController
         ], 201);
     }
 
-    public function allproperties(Request $request): JsonResponse
+    public function requestProperties(Request $request): JsonResponse
     {
-        $properties = Property::where('user_id', $request->user()->id)->get();
+        // $properties = Property::where('user_id', $request->user()->id)->get();
+
+        $properties = PropertyRequest::where('user_id', $request->user()->id)->get();
 
         $data = [
             'properties' => $properties

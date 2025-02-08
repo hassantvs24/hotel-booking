@@ -77,7 +77,7 @@ Route::prefix('portal')->group(function () {
     Route::middleware('auth:sanctum')->group(function () {
         Route::get('/getAllPropertyOption', [VendorController::class, 'allPropertyOption']);
         Route::post('/property/store', [VendorController::class, 'store']);
-        Route::get('/property/allproperties', [VendorController::class, 'allproperties']);
+        Route::get('/property/request-properties', [VendorController::class, 'requestProperties']);
         Route::get('/reg-info',[VendorController::class, 'getRegInfo']);
     });
 });

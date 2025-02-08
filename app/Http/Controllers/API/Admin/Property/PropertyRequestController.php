@@ -57,12 +57,12 @@ class PropertyRequestController extends BaseController
                     'user_id' => $user->id
                 ]);
 
-                PropertyRequestApproved::send('sukanta.atcfbd@gmail.com', [
-                    'name' => $propertyRequest->name,
-                    'email' => $propertyRequest->owner_email,
-                    'phone' => $propertyRequest->contact_number,
-                    'user' => $user
-                ]);
+                // PropertyRequestApproved::send('sukanta.atcfbd@gmail.com', [
+                //     'name' => $propertyRequest->name,
+                //     'email' => $propertyRequest->owner_email,
+                //     'phone' => $propertyRequest->contact_number,
+                //     'user' => $user
+                // ]);
             }
 
             if ($request->status === 'rejected') {
