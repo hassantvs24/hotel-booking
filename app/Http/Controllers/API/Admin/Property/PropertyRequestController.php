@@ -53,6 +53,10 @@ class PropertyRequestController extends BaseController
             if ($request->status === 'approved') {
                 $user = $this->createUser($propertyRequest);
 
+                $propertyRequest->update([
+                    'user_id' => $user->id
+                ]);
+
                 PropertyRequestApproved::send('sukanta.atcfbd@gmail.com', [
                     'name' => $propertyRequest->name,
                     'email' => $propertyRequest->owner_email,
