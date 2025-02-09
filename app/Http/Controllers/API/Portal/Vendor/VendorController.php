@@ -109,20 +109,24 @@ class VendorController extends BaseController
 
         $propertyRequest = PropertyRequest::where('unique_request_number', $requestData['ref_id'])->first();
         $propertyRequest->update([
-            'user_id' => Auth::id(),
+            'property_id' => $property->id,
         ]);
         if (!empty($requestData['facilities'])) {
             $property->facilities()->attach($requestData['facilities']);
         }
 
-        if (!empty($requestData['rules'])) {
-            $property->rules()->attach($requestData['rules']);
+        if(!empty($requestData['rules'])) {
+            $property->rules()->attach($requestData['rules'],[
+                'is_active' => true,
+                'rule_description' => 'make your life easy',
+            ]);
         }
 
-
         if ($request->hasFile('images')) {
-            $image = $this->storeFile($request->file('photo'), 'properties');
-            $property->primaryImage()->create([...$image, 'media_role' => 'property_image']);
+            foreach ($request->file('images') as $file) {
+                $image = $this->storeFile($file, 'properties');
+                $property->images()->create(array_merge($image, ['media_role' => 'property_gallery_image']));
+            }
         }
 
         return response()->json([
