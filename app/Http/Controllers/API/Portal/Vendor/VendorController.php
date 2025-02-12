@@ -105,42 +105,70 @@ class VendorController extends BaseController
         $dataToStore['name'] = $requestData['propertyName'];
         $dataToStore['property_type'] = $requestData['propertyType'];
 
-        $property = Property::create($dataToStore);
-
         $propertyRequest = PropertyRequest::where('unique_request_number', $requestData['ref_id'])->first();
-        $propertyRequest->update([
-            'property_id' => $property->id,
-        ]);
-        if (!empty($requestData['facilities'])) {
-            $property->facilities()->attach($requestData['facilities']);
+
+        if (!$propertyRequest) {
+            return $this->sendError('Invalid request reference number', [], 400);
         }
 
-        if(!empty($requestData['rules'])) {
-            $property->rules()->attach($requestData['rules'],[
-                'is_active' => true,
-                'rule_description' => 'make your life easy',
-            ]);
-        }
+        $property = null;
 
-        if ($request->hasFile('images')) {
-            foreach ($request->file('images') as $file) {
-                $image = $this->storeFile($file, 'properties');
-                $property->images()->create(array_merge($image, ['media_role' => 'property_gallery_image']));
+        if (!$propertyRequest->property_id) {
+            $property = Property::create($dataToStore);
+
+            if (!$property) {
+                return $this->sendError('Failed to create property', [], 400);
             }
+
+            $this->insertRecords($property, $$requestData);
+
+            $this->updateRequest($propertyRequest, $property);
         }
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Property created successfully!',
-            'property' => $property
-        ], 201);
+        if ($propertyRequest->property_id) {
+            $property = Property::find($propertyRequest->property_id);
+
+            if (!$property) {
+                return $this->sendError('Failed to find property', [], 400);
+            }
+
+            $property->update($dataToStore);
+
+            $this->insertOrUpdateRecords($property, $requestData, $request);
+        }
+
+
+        // $propertyRequest->update([
+        //     'property_id' => $property->id,
+        // ]);
+        // if (!empty($requestData['facilities'])) {
+        //     $property->facilities()->attach($requestData['facilities']);
+        // }
+
+        // if(!empty($requestData['rules'])) {
+        //     $property->rules()->attach($requestData['rules'],[
+        //         'is_active' => true,
+        //         'rule_description' => 'make your life easy',
+        //     ]);
+        // }
+
+        // if ($request->hasFile('images')) {
+        //     foreach ($request->file('images') as $file) {
+        //         $image = $this->storeFile($file, 'properties');
+        //         $property->images()->create(array_merge($image, ['media_role' => 'property_gallery_image']));
+        //     }
+        // }
+
+        $actionTitle = $propertyRequest->property_id ? 'updated' : 'created';
+
+        return $this->sendSuccess($property, 'Property ' . $actionTitle . ' successfully');
     }
 
     public function requestProperties(Request $request): JsonResponse
     {
         // $properties = Property::where('user_id', $request->user()->id)->get();
 
-        $properties = PropertyRequest::where('user_id', $request->user()->id)->get();
+        $properties = PropertyRequest::with('property')->where('user_id', $request->user()->id)->get();
 
         $data = [
             'properties' => $properties
@@ -159,5 +187,44 @@ class VendorController extends BaseController
             'facilities' => $facilities
         ];
         return $this->sendSuccess($data);
+    }
+
+    private function insertOrUpdateRecords(Property $property, $requestData, $request)
+    {
+
+
+        if (!empty($requestData['facilities'])) {
+            $property->facilities()->sync($requestData['facilities']);
+        }
+        if (!empty($requestData['rules'])) {
+            $rulesWithPivotData = [];
+            foreach ($requestData['rules'] as $ruleId) {
+                $rulesWithPivotData[$ruleId] = [
+                    'is_active' => true,
+                    'rule_description' => 'make your life easy',
+                ];
+            }
+            $property->rules()->sync($rulesWithPivotData);
+        }
+
+
+        if ($request->hasFile('images')) {
+            $property->images()->delete();
+            foreach ($request->file('images') as $file) {
+                $image = $this->storeFile($file, 'properties');
+                $property->images()->create(array_merge($image, ['media_role' => 'property_gallery_image']));
+            }
+        }
+    }
+
+
+
+
+    private function updateRequest(PropertyRequest $propertyRequest, Property $property)
+    {
+        $propertyRequest->update([
+            'property_id' => $property->id,
+        ]);
+
     }
 }
