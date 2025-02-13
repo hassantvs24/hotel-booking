@@ -80,11 +80,9 @@ class Property extends Model
         return $this->belongsToMany(FacilitySub::class, 'property_facilities')->withTimestamps();
     }
 
-    public function rules(): BelongsToMany
+    public function rules(): HasMany
     {
-        return $this->belongsToMany(PropertyRulesSetup::class,'property_rules_setups','property_id','property_rule_id')
-            ->withPivot(['is_active'])
-            ->withTimestamps();
+        return $this->hasMany(PropertyRulesSetup::class, 'property_id', 'id');
     }
     public function city(): BelongsTo
     {

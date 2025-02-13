@@ -17,9 +17,9 @@ class RoleSeeder extends Seeder
     public function run() : void
     {
         $permissions = Permission::query()
-            ->where('permission_type', 'property')
             ->get()
             ->pluck('id', 'id');
+
         $propertyPermissions = Permission::query()
             ->where('permission_type', 'property')
             ->get()
