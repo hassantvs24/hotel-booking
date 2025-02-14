@@ -6,6 +6,7 @@ use App\Http\Controllers\BaseController;
 use App\Models\BookingAccepted;
 use App\Models\BookingRequest;
 use App\Repositories\Admin\BookingRequestRepository;
+use Dflydev\DotAccessData\Data;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -32,7 +33,7 @@ class BookingRequestController extends BaseController
         $query['whereIn'] = ['status', ['Pending', 'Approved']];
 
         $userProperty = $request->user()->associated_property;
-        $userAddress = $userProperty ? strtolower($userProperty->address) : null;
+        $userAddress = $userProperty ? strtolower($userProperty->address['city']) : null;
 
         if ($userAddress) {
             $query['where'][] = ['search_name', 'LIKE', '%' . $userAddress . '%'];
