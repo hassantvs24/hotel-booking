@@ -608,6 +608,33 @@ return [
                 'permission_type' => 'global',
             ]
         ],
+        'PROPERTY_SETTING' => [
+            [
+                'name' => 'View Property Setting',
+                'slug' => 'can_view_property_setting',
+                'subject' => 'place',
+                'permission_type' => 'global',
+            ],
+            [
+                'name' => 'Create Property Setting',
+                'slug' => 'can_create_property_setting',
+                'subject' => 'place',
+                'permission_type' => 'global',
+            ],
+            [
+                'name' => 'Update Property Setting',
+                'slug' => 'can_update_property_setting',
+                'subject' => 'place',
+                'permission_type' => 'global',
+            ],
+
+            [
+                'name' => 'Delete PProperty Setting',
+                'slug' => 'can_delete_property_setting',
+                'subject' => 'place',
+                'permission_type' => 'global',
+            ]
+        ],
 
         'ACL_GROUP' => [
             [
