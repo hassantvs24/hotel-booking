@@ -799,7 +799,7 @@ return [
             ],
             [
                 'name' => 'View Dashboard',
-                'slug' => 'can_view_dashboard',
+                'slug' => 'can_view_property_dashboard',
                 'subject' => 'ACL',
                 'permission_type' => 'global',
             ],
