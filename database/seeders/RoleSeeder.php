@@ -29,6 +29,8 @@ class RoleSeeder extends Seeder
 
         $admin = User::query()->where('email', 'admin@gmail.com')->first();
 
+        $vendor = User::query()->where('email', 'vendor@gmail.com')->first();
+
         $adminRole = Role::create([
             'name'        => 'Administrator',
             'description' => 'Main Administrator',
@@ -48,6 +50,7 @@ class RoleSeeder extends Seeder
         $propertyOwnerRole->syncPermissions($propertyPermissions);
 
         $admin->assignRole([$adminRole->id]);
+        $vendor->assignRole([$propertyOwnerRole->id]);
 
         foreach ($properties as $property) {
             $role = Role::create([
