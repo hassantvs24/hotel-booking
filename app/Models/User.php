@@ -109,4 +109,9 @@ class User extends Authenticatable
     {
         return $this->hasMany(Review::class);
     }
+
+    public function propertyRequests(): HasMany
+    {
+        return $this->hasMany(PropertyRequest::class);
+    }
 }

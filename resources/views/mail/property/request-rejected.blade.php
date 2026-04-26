@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Property Request Approval</title>
+    <title>Property Request Rejection</title>
     <style>
         /* Global Styles */
         body {
@@ -22,7 +22,7 @@
             overflow: hidden;
         }
         .header {
-            background-color: #007bff;
+            background-color: #d9534f;
             padding: 20px;
             text-align: center;
             color: white;
@@ -36,18 +36,18 @@
             font-size: 16px;
             line-height: 1.6;
         }
-        .property-details, .credentials-section {
-            background-color: #f1f9ff;
-            border-left: 4px solid #007bff;
+        .property-details {
+            background-color: #fbecec;
+            border-left: 4px solid #d9534f;
             padding: 15px;
             margin: 20px 0;
         }
-        .property-details h3, .credentials-section h3 {
+        .property-details h3 {
             margin-top: 0;
         }
         .cta-button {
             display: inline-block;
-            background-color: #007bff;
+            background-color: #d9534f;
             color: white;
             padding: 10px 20px;
             text-decoration: none;
@@ -55,7 +55,7 @@
             margin-top: 20px;
         }
         .cta-button:hover {
-            background-color: #0056b3;
+            background-color: #c9302c;
         }
         .footer {
             background-color: #f0f0f0;
@@ -72,35 +72,24 @@
 <body>
 <div class="email-container">
     <div class="header">
-        <h1>Property Request Approved</h1>
+        <h1>Property Request Rejected</h1>
     </div>
 
     <div class="content">
         <p>Dear {{ $name }},</p>
 
-        <p>We are excited to inform you that your property request has been <strong>approved</strong>. You can now manage your property directly through our platform.</p>
+        <p>We regret to inform you that your property request has been <strong>rejected</strong>. Please review the details below:</p>
 
         <div class="property-details">
             <h3>Property Request Details</h3>
             <p><strong>Name:</strong> {{ $name }}</p>
             <p><strong>Email:</strong> {{ $email }}</p>
             <p><strong>Phone:</strong> {{ $phone }}</p>
-            <p><strong>Assigned Agent:</strong> {{ $user->name ?? 'Not Assigned Yet' }}</p>
         </div>
 
-        <div class="credentials-section">
-            <h3>Access Your Account</h3>
-            <p>You can log in using the following credentials:</p>
-            <p><strong>Email:</strong> {{ $email }}</p>
-            <p><strong>Temporary Password:</strong>password</p>
-            <p>Click the button below to access your property dashboard and manage your listings:</p>
+        <p>If you believe this decision was made in error or have any further questions, please contact us at <a href="mailto:support@example.com">support@example.com</a>.</p>
 
-            <a href="" class="cta-button">Access Property Dashboard</a>
-        </div>
-
-        <p>If you have any questions or need further assistance, feel free to contact us at <a href="mailto:support@example.com">support@example.com</a>.</p>
-
-        <p>Thank you for choosing our platform.</p>
+        <p>We value your interest and look forward to assisting you with future property requests.</p>
     </div>
 
     <div class="footer">

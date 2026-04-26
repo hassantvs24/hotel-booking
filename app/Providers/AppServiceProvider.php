@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Services\MailService;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\ServiceProvider;
@@ -13,7 +14,9 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $this->app->singleton(MailService::class, function ($app) {
+            return new MailService();
+        });
     }
 
     /**

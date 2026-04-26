@@ -17,9 +17,10 @@ return new class extends Migration {
             $table->id();
             $table->string('name');
             $table->text('description')->nullable(); //description
+            $table->string('property_type')->nullable();
             $table->decimal('lat')->nullable();
             $table->decimal('long')->nullable();
-            $table->string('address')->nullable();
+            $table->text('address')->nullable();
             $table->string('zip_code')->nullable();
             $table->string('total_room')->nullable();
             $table->string('currency')->nullable();
@@ -37,7 +38,7 @@ return new class extends Migration {
             $table->string('email')->nullable(); // Added email
             $table->string('website')->nullable(); // Added website
             $table->json('meta')->nullable(); // Added meta
-
+            $table->text('bank_details')->nullable();
             $table->foreignId('property_category_id')
                 ->nullable()
                 ->constrained()

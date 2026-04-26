@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -12,6 +14,8 @@ class Property extends Model
 {
     protected $with = ['primaryImage'];
     protected $appends = ['primary_image_url', 'lowest_room_price'];
+
+    protected $hidden = ['bank_details'];
 
     public const STATUS_PUBLISHED = 'Published';
     public const STATUS_UNPUBLISHED = 'Unpublished';
@@ -78,7 +82,7 @@ class Property extends Model
 
     public function rules(): HasMany
     {
-        return $this->hasMany(PropertyRulesSetup::class);
+        return $this->hasMany(PropertyRulesSetup::class, 'property_id', 'id');
     }
     public function city(): BelongsTo
     {
@@ -89,6 +93,10 @@ class Property extends Model
     {
         return $this->hasMany(BookingAccepted::class);
     }
+
+
+
+
 
     /*----------------------------------------
      * Accessors
@@ -110,4 +118,22 @@ class Property extends Model
     {
         return $this->rooms()->min('base_price');
     }
+
+    /*----------------------------------------
+     * Attributes
+     ----------------------------------------*/
+     public function address() : Attribute
+     {
+         return new Attribute(
+             fn($value) => unserialize($value),
+             fn($value) => serialize($value)
+         );
+     }
+     public function bankDetails() : Attribute
+     {
+         return new Attribute(
+             fn($value) => unserialize($value),
+             fn($value) => serialize($value)
+         );
+     }
 }

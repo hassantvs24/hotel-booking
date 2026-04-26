@@ -17,9 +17,9 @@ class RoleSeeder extends Seeder
     public function run() : void
     {
         $permissions = Permission::query()
-            ->where('permission_type', 'property')
             ->get()
             ->pluck('id', 'id');
+
         $propertyPermissions = Permission::query()
             ->where('permission_type', 'property')
             ->get()
@@ -28,6 +28,8 @@ class RoleSeeder extends Seeder
         $properties = Property::query()->with('user')->get();
 
         $admin = User::query()->where('email', 'admin@gmail.com')->first();
+
+        $vendor = User::query()->where('email', 'vendor@gmail.com')->first();
 
         $adminRole = Role::create([
             'name'        => 'Administrator',
@@ -48,6 +50,7 @@ class RoleSeeder extends Seeder
         $propertyOwnerRole->syncPermissions($propertyPermissions);
 
         $admin->assignRole([$adminRole->id]);
+        $vendor->assignRole([$propertyOwnerRole->id]);
 
         foreach ($properties as $property) {
             $role = Role::create([

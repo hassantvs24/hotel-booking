@@ -26,7 +26,12 @@ class PropertyFactory extends Factory
             'name'                 => $this->faker->company,
             'lat'                  => $this->faker->latitude,
             'long'                 => $this->faker->longitude,
-            'address'              => $this->faker->address,
+            'address' => [
+                'address' => $this->faker->streetAddress, // Generates a fake street address
+                'apartment' => 'Apt ' . $this->faker->randomDigitNotNull, // Random apartment number
+                'country' => $this->faker->country, // Fake country
+                'city' => $this->faker->city, // Fake city
+            ],
             'zip_code'             => $this->faker->postcode,
             'total_room'           => $this->faker->numberBetween(1, 100),
             'currency'             => $this->faker->currencyCode,
@@ -34,6 +39,17 @@ class PropertyFactory extends Factory
             'google_review'        => $this->faker->url,
             'seo_title'            => $this->faker->sentence,
             'seo_meta'             => $this->faker->sentence,
+            'bank_details' => [
+                'bankName' => $this->faker->company, // Use 'company' to generate a fake bank name
+                'accountNumber' => $this->faker->bankAccountNumber, // Generates a fake bank account number
+                'ifscCode' => strtoupper($this->faker->bothify('????########')), // Random IFSC-like code
+                'accountName' => $this->faker->name, // Fake account holder name
+                'bankBranch' => $this->faker->city, // Fake branch location
+                'routingNumber' => $this->faker->numerify('#########'), // Fake routing number
+                'swiftCode' => strtoupper($this->faker->bothify('????US##XXX')), // Fake SWIFT code
+                'iban' => $this->faker->iban('US'), // Fake IBAN for US (change country as needed)
+            ],
+
             'property_class'       => $this->faker->randomElement([
                 '7 Stars',
                 '6 Stars',

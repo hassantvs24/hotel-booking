@@ -13,6 +13,7 @@ return new class extends Migration
     {
         Schema::create('property_requests', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('user_id')->nullable()->constrained()->onDelete('set null');
             $table->foreignId('property_id')->nullable()->constrained()->onDelete('set null');
             $table->string('unique_request_number')->unique();
             $table->string('name');
