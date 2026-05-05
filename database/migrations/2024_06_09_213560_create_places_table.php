@@ -13,15 +13,20 @@ return new class extends Migration
     {
         Schema::create('places', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('city_id')->constrained()->onDelete('cascade')->onUpdate('No Action');
             $table->string('name');
             $table->decimal('lat');
             $table->decimal('long');
+
+            $table->string('external_id')->nullable();
+            $table->string('external_source')->nullable();
+            $table->text('full_address')->nullable();
+
             $table->string('zip_code')->nullable();
             $table->string('description')->nullable();
             $table->string('nearest_police')->nullable();
             $table->string('nearest_hospital')->nullable();
             $table->string('nearest_fire')->nullable();
-            $table->foreignId('city_id')->constrained()->onDelete('cascade')->onUpdate('No Action');
             $table->softDeletes();
             $table->timestamps();
         });
