@@ -31,7 +31,9 @@ Route::prefix('portal')->group(function () {
     });
 
     Route::prefix('search')->group(function () {
-        Route::get('/', [SearchController::class, 'search']);
+        Route::get('/',[SearchController::class, 'search']);
+        Route::get('suggestions',[SearchController::class, 'suggestions']);
+        Route::post('resolve-place',[SearchController::class, 'resolvePlace']);
     });
 
     Route::prefix('filter')->group(function () {

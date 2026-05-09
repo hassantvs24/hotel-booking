@@ -1,6 +1,6 @@
 <?php
 
-use App\Http\Controllers\API\Payment\SslCommerzPaymentController;
+//use App\Http\Controllers\API\Payment\SslCommerzPaymentController;
 use App\Http\Controllers\API\Portal\Auth\LoginController;
 use App\Http\Controllers\API\Portal\Auth\ProfileController;
 use App\Http\Controllers\API\Portal\Auth\RegisterController;
@@ -27,17 +27,17 @@ Route::prefix('auth')->group(function () {
 /*----------------- Auth API -----------------*/
 
 // SSLCOMMERZ Start
-Route::get('/checkout1', [SslCommerzPaymentController::class, 'exampleEasyCheckout']);
+//Route::get('/checkout1', [SslCommerzPaymentController::class, 'exampleEasyCheckout']);
 // Route::get('/checkout2', [SslCommerzPaymentController::class, 'exampleHostedCheckout']);
 
-Route::post('/pay', [SslCommerzPaymentController::class, 'index']);
-Route::post('/pay-via-ajax', [SslCommerzPaymentController::class, 'payViaAjax']);
+//Route::post('/pay', [SslCommerzPaymentController::class, 'index']);
+//Route::post('/pay-via-ajax', [SslCommerzPaymentController::class, 'payViaAjax']);
 
-Route::post('/success', [SslCommerzPaymentController::class, 'success']);
-Route::post('/fail', [SslCommerzPaymentController::class, 'fail']);
-Route::post('/cancel', [SslCommerzPaymentController::class, 'cancel']);
+//Route::post('/success', [SslCommerzPaymentController::class, 'success']);
+//Route::post('/fail', [SslCommerzPaymentController::class, 'fail']);
+//Route::post('/cancel', [SslCommerzPaymentController::class, 'cancel']);
 
-Route::post('/ipn', [SslCommerzPaymentController::class, 'ipn']);
-Route::post('/ipn', [SslCommerzPaymentController::class, 'ipn']);
+//Route::post('/ipn', [SslCommerzPaymentController::class, 'ipn']);
+//Route::post('/ipn', [SslCommerzPaymentController::class, 'ipn']);
 //SSLCOMMERZ END
 

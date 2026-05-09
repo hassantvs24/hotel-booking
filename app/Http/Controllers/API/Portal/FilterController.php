@@ -38,6 +38,8 @@ class FilterController extends BaseController
         return $this->sendSuccess($data);
     }
 
+    // :TODO: Optimize the query and filter logic for better performance and scalability
+
     public function getFilteredProperties(Request $request): JsonResponse
     {
         $params = $request->input('params', []);
@@ -131,7 +133,7 @@ class FilterController extends BaseController
             ->get();
 
         $data = [
-            'properties' => $properties
+            'properties' => Property::get()
         ];
 
         return $this->sendSuccess($data);

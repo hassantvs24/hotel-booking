@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('places', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('city_id')->constrained()->onDelete('cascade')->onUpdate('No Action');
+            $table->foreignId('city_id')->nullable()->constrained()->onDelete('cascade')->onUpdate('No Action');
             $table->string('name');
             $table->decimal('lat');
             $table->decimal('long');
