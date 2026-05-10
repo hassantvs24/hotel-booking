@@ -13,6 +13,22 @@ return new class extends Migration
     {
         Schema::create('faqs', function (Blueprint $table) {
             $table->id();
+            $table->text('question');
+            $table->foreignId('property_id')
+                ->constrained()
+                ->cascadeOnDelete()
+                ->noActionOnUpdate();
+            $table->softDeletes();
+            $table->timestamps();
+        });
+
+        Schema::create('faq_answers', function (Blueprint $table) {
+            $table->id();
+            $table->text('answer');
+            $table->foreignId('faq_id')
+                ->constrained()
+                ->cascadeOnDelete()
+                ->noActionOnUpdate();
             $table->softDeletes();
             $table->timestamps();
         });
