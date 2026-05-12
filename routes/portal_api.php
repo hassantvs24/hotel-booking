@@ -5,13 +5,14 @@
 ------------------------------------------*/
 
 use App\Http\Controllers\API\Portal\BookingController;
-use App\Http\Controllers\API\Portal\CartController;
-use App\Http\Controllers\API\Portal\FilterController;
+//use App\Http\Controllers\API\Portal\CartController;
+use App\Http\Controllers\API\Portal\Property\FilterController;
+use App\Http\Controllers\API\Portal\Property\SearchController;
+
 use App\Http\Controllers\API\Portal\HomeController;
 use App\Http\Controllers\API\Portal\PropertyController;
 use App\Http\Controllers\API\Portal\RequestController;
 use App\Http\Controllers\API\Portal\RoomRequestController;
-use App\Http\Controllers\API\Portal\SearchController;
 use App\Http\Controllers\API\Portal\Vendor\PropertyRequestController;
 use App\Http\Controllers\API\Portal\Vendor\VendorController;
 use Illuminate\Support\Facades\Route;
@@ -19,6 +20,7 @@ use Illuminate\Support\Facades\Route;
 /*----------------- Portal API -----------------*/
 
 Route::prefix('portal')->group(function () {
+
     Route::get('home', [HomeController::class, 'index']);
     Route::prefix('properties')->group(function () {
         Route::get('/', [PropertyController::class, 'index']);
@@ -32,8 +34,6 @@ Route::prefix('portal')->group(function () {
 
     Route::prefix('search')->group(function () {
         Route::get('/',[SearchController::class, 'search']);
-        Route::get('suggestions',[SearchController::class, 'suggestions']);
-        Route::post('resolve-place',[SearchController::class, 'resolvePlace']);
     });
 
     Route::prefix('filter')->group(function () {
@@ -59,8 +59,6 @@ Route::prefix('portal')->group(function () {
         Route::post('/store', [PropertyRequestController::class, 'store']);
     });
 
-
-
     // room request
     Route::prefix('room')->middleware('auth:sanctum')->group(function () {
         Route::post('/request', [RoomRequestController::class, 'roomRequest']);
@@ -75,6 +73,11 @@ Route::prefix('portal')->group(function () {
         Route::get('/fetchtimer', [RequestController::class, 'fetchTimer']);
     });
 
+    // Location Routes
+    Route::prefix('location')->group(function () {
+        Route::get('/suggestions', [\App\Http\Controllers\API\Portal\Location\LocationController::class, 'suggestions']);
+        Route::post('/resolve-place', [\App\Http\Controllers\API\Portal\Location\LocationController::class, 'resolvePlace']);
+    });
 
     Route::middleware('auth:sanctum')->group(function () {
         Route::get('/getAllPropertyOption', [VendorController::class, 'allPropertyOption']);

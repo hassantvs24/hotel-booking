@@ -24,6 +24,8 @@ class SearchController extends BaseController
     //  3. Return merged results (both local + Nominatim)
     // ══════════════════════════════════════════════════════
 
+    // TODO: Implemented
+
     public function suggestions(Request $request): JsonResponse
     {
         $q = trim($request->input('q', ''));
@@ -110,7 +112,7 @@ class SearchController extends BaseController
     //  (id = null). Stores the place locally and returns
     //  the new local place_id so subsequent searches are fast.
     // ══════════════════════════════════════════════════════
-
+// TODO: Implemented
     public function resolvePlace(Request $request): JsonResponse
     {
         $request->validate([
