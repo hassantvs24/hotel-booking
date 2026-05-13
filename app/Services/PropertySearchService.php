@@ -196,9 +196,6 @@ class PropertySearchService
             ->limit(1);
 
         return match ($sortBy) {
-            'nearest' => $hasGeo
-                ? $query->orderBy('distance_km', 'asc')
-                : $query->orderByDesc('rating'),
             'asc'     => $query->orderBy($minPrice('asc'),  'asc'),
             'desc'    => $query->orderBy($minPrice('desc'), 'desc'),
             default   => $hasGeo
