@@ -2,361 +2,226 @@
 
 namespace App\Services;
 
-use App\Models\City;
-use App\Models\Place;
+use App\Models\FacilitySub;
 use App\Models\Property;
+use App\Models\PropertyCategory;
 use App\Models\Room;
-use App\Models\State;
+use Illuminate\Support\Collection;
 
+/**
+ * PropertySearchService
+ *
+ * Handles ALL property query concerns:
+ *   - Building the base query (geo, availability, filters)
+ *   - Applying sort
+ *   - Appending computed fields (min_price, distance_km)
+ *   - Filter options for dropdowns
+ *
+ * Injects LocationService for geo resolution.
+ * Knows nothing about Nominatim or HTTP — that's LocationService's job.
+ *
+ * Used by:
+ *   - SearchController  → search()
+ *   - FilterController  → getFilteredProperties(), getFilteredPropertiesByRequest()
+ */
 class PropertySearchService
 {
     const DEFAULT_RADIUS_KM = 20;
 
-    public function search(array $params)
+    public function __construct(
+        protected LocationService $locationService
+    ) {}
+
+    // ══════════════════════════════════════════════════════
+    //  FILTER OPTIONS  (FilterController → getFilters)
+    // ══════════════════════════════════════════════════════
+
+    public function getFilterOptions(): array
+    {
+        return [
+            'facilities'    => FacilitySub::select('id', 'name')->get(),
+            'hotelClasses'  => ['7 Stars', '6 Stars', '5 Stars', '4 Stars', '3 Stars', '2 Stars', '1 Star', 'Unrated'],
+            'ratings'       => [1, 2, 3, 4, 5],
+            'propertyTypes' => PropertyCategory::select('id', 'name')->get(),
+            'sortOptions'   => [
+                ['value' => 'rating',  'name' => 'Top Rated'],
+                ['value' => 'asc',     'name' => 'Price: Low to High'],
+                ['value' => 'desc',    'name' => 'Price: High to Low'],
+                ['value' => 'nearest', 'name' => 'Nearest First'],
+            ],
+        ];
+    }
+
+    // ══════════════════════════════════════════════════════
+    //  SEARCH PROPERTIES
+    //  Used by SearchController and FilterController.
+    //  Pass $userId to scope to user's approved requests.
+    // ══════════════════════════════════════════════════════
+
+    public function searchProperties(array $params, ?int $userId = null): Collection
+    {
+        $query = $this->buildBaseQuery($params);
+        $query = $this->applySort($query, $params);
+
+        // Request-page scope
+        if ($userId) {
+            $query->whereHas('bookingAccepteds', fn($q) =>
+            $q->whereHas('bookingRequest', fn($sq) =>
+            $sq->where('user_id', $userId)->where('status', 'Approved')
+            )
+            );
+        }
+
+        $eagerLoads = $userId
+            ? ['images', 'facilities', 'place.city', 'rooms', 'rooms.images', 'bookingAccepteds']
+            : ['images', 'facilities', 'place.city', 'rooms'];
+
+        return $query
+            ->with($eagerLoads)
+            ->withAvg('reviews', 'rating')
+            ->withCount('reviews')
+            ->get()
+            ->map(fn($p) => $this->appendComputedFields($p, $params));
+    }
+
+    // ══════════════════════════════════════════════════════
+    //  PRIVATE — BASE QUERY BUILDER
+    // ══════════════════════════════════════════════════════
+
+    private function buildBaseQuery(array $params)
     {
         $query = Property::query()
             ->where('status', Property::STATUS_PUBLISHED)
             ->whereHas('rooms');
 
-        $this->applyLocation($query, $params);
-        $this->applyAvailability($query, $params);
-        $this->applyGuestCapacity($query, $params);
-        $this->applyFacilities($query, $params);
-        $this->applyHotelClass($query, $params);
-        $this->applyRating($query, $params);
-        $this->applyPropertyType($query, $params);
-        $this->applySort($query, $params);
+        $lat    = isset($params['lat'])    && $params['lat']    !== '' ? (float) $params['lat']    : null;
+        $long   = isset($params['long'])   && $params['long']   !== '' ? (float) $params['long']   : null;
+        $radius = isset($params['radius']) && $params['radius'] !== '' ? (float) $params['radius'] : self::DEFAULT_RADIUS_KM;
 
-        return $query
-            ->with([
-                'images',
-                'facilities',
-                'place.city.state',
-                'rooms'
-            ])
-            ->withAvg('reviews', 'rating')
-            ->withCount('reviews')
-            ->get()
-            ->map(function ($property) use ($params) {
-
-                $property->min_price =
-                    $property->rooms->min('base_price');
-
-                if (
-                    !empty($params['lat']) &&
-                    !empty($params['long']) &&
-                    isset($property->distance_km)
-                ) {
-                    $property->distance_km =
-                        round((float) $property->distance_km, 1);
-                }
-
-                return $property;
-            });
-    }
-
-    // =====================================================
-    // LOCATION
-    // =====================================================
-
-    private function applyLocation($query, array $params): void
-    {
-        $lat    = $params['lat'] ?? null;
-        $long   = $params['long'] ?? null;
-        $radius = $params['radius'] ?? self::DEFAULT_RADIUS_KM;
-
+        // ── 1. Geo ────────────────────────────────────────
         if ($lat && $long) {
+            // Haversine — properties within $radius km of coordinates
+            // Backtick on `long` required — reserved MySQL keyword
+            $haversine = "
+                6371 * acos(
+                    cos(radians(?)) * cos(radians(lat))
+                    * cos(radians(`long`) - radians(?))
+                    + sin(radians(?)) * sin(radians(lat))
+                )
+            ";
 
-            $query->whereRaw("
-                (
-                    6371 * acos(
-                        cos(radians(?))
-                        * cos(radians(lat))
-                        * cos(radians(`long`) - radians(?))
-                        + sin(radians(?))
-                        * sin(radians(lat))
-                    )
-                ) <= ?
-            ", [$lat, $long, $lat, $radius]);
+            $query
+                ->selectRaw("properties.*, ({$haversine}) AS distance_km", [$lat, $long, $lat])
+                ->whereRaw("({$haversine}) <= ?", [$lat, $long, $lat, $radius]);
 
-            $query->selectRaw("
-                properties.*,
-                (
-                    6371 * acos(
-                        cos(radians(?))
-                        * cos(radians(lat))
-                        * cos(radians(`long`) - radians(?))
-                        + sin(radians(?))
-                        * sin(radians(lat))
-                    )
-                ) AS distance_km
-            ", [$lat, $long, $lat]);
+        } else {
+            // No coordinates — delegate to LocationService
+            $placeIds = $this->locationService->resolvePlaceIds($params);
 
-            return;
-        }
-
-        $placeIds = $this->resolvePlaceIds($params);
-
-        if (!empty($placeIds)) {
-
-            $query->whereIn('place_id', $placeIds);
-
-        } elseif (!empty($params['location'])) {
-
-            $query->whereRaw(
-                'LOWER(address) LIKE ?',
-                ['%' . strtolower(trim($params['location'])) . '%']
-            );
-        }
-    }
-
-    // =====================================================
-    // AVAILABILITY
-    // =====================================================
-
-    private function applyAvailability($query, array $params): void
-    {
-        if (
-            empty($params['check_in']) ||
-            empty($params['check_out'])
-        ) {
-            return;
-        }
-
-        $checkIn  = $params['check_in'];
-        $checkOut = $params['check_out'];
-
-        $query->whereHas('rooms', function ($q) use ($checkIn, $checkOut) {
-
-            $q->whereDoesntHave('bookings', function ($b)
-            use ($checkIn, $checkOut) {
-
-                $b->where('checkin', '<', $checkOut)
-                    ->where('checkout', '>', $checkIn);
-            });
-        });
-    }
-
-    // =====================================================
-    // GUEST
-    // =====================================================
-
-    private function applyGuestCapacity($query, array $params): void
-    {
-        if (empty($params['adult'])) {
-            return;
-        }
-
-        $adult = (int) $params['adult'];
-
-        $query->whereHas('rooms', function ($q) use ($adult) {
-
-            $q->where('guest_capacity', '>=', $adult);
-        });
-    }
-
-    // =====================================================
-    // FACILITIES
-    // =====================================================
-
-    private function applyFacilities($query, array $params): void
-    {
-        if (empty($params['facilities'])) {
-            return;
-        }
-
-        foreach ((array) $params['facilities'] as $fid) {
-
-            $query->whereHas('facilities', function ($q) use ($fid) {
-
-                $q->where('facility_subs.id', (int) $fid);
-            });
-        }
-    }
-
-    // =====================================================
-    // HOTEL CLASS
-    // =====================================================
-
-    private function applyHotelClass($query, array $params): void
-    {
-        if (empty($params['hotelClass'])) {
-            return;
-        }
-
-        $query->whereIn(
-            'property_class',
-            (array) $params['hotelClass']
-        );
-    }
-
-    // =====================================================
-    // RATING
-    // =====================================================
-
-    private function applyRating($query, array $params): void
-    {
-        if (empty($params['rating'])) {
-            return;
-        }
-
-        $ratings = array_map(
-            'intval',
-            (array) $params['rating']
-        );
-
-        $query->where(function ($q) use ($ratings) {
-
-            foreach ($ratings as $r) {
-
-                $q->orWhereBetween(
-                    'rating',
-                    [$r, $r + 0.99]
+            if (!empty($placeIds)) {
+                $query->whereIn('place_id', $placeIds);
+            } elseif (!empty($params['location'])) {
+                // Last resort — serialized address LIKE
+                $query->whereRaw(
+                    'LOWER(address) LIKE ?',
+                    ['%' . strtolower(trim($params['location'])) . '%']
                 );
             }
-        });
-    }
-
-    // =====================================================
-    // PROPERTY TYPE
-    // =====================================================
-
-    private function applyPropertyType($query, array $params): void
-    {
-        if (empty($params['propertyType'])) {
-            return;
         }
 
-        $query->whereIn(
-            'property_category_id',
-            (array) $params['propertyType']
-        );
+        // ── 2. Availability ───────────────────────────────
+        if (!empty($params['check_in']) && !empty($params['check_out'])) {
+            $ci = $params['check_in'];
+            $co = $params['check_out'];
+            $query->whereHas('rooms', fn($q) =>
+            $q->whereDoesntHave('bookings', fn($b) =>
+            $b->where('checkin', '<', $co)->where('checkout', '>', $ci)
+            )
+            );
+        }
+
+        // ── 3. Guest capacity ─────────────────────────────
+        if (!empty($params['adult']) && (int) $params['adult'] > 0) {
+            $query->whereHas('rooms', fn($q) =>
+            $q->where('guest_capacity', '>=', (int) $params['adult'])
+            );
+        }
+
+        // ── 4. Facilities — AND logic ─────────────────────
+        // Property::facilities() = BelongsToMany via property_facilities
+        if (!empty($params['facilities'])) {
+            foreach ((array) $params['facilities'] as $fid) {
+                $query->whereHas('facilities', fn($q) =>
+                $q->where('facility_subs.id', (int) $fid)
+                );
+            }
+        }
+
+        // ── 5. Hotel class ────────────────────────────────
+        if (!empty($params['hotelClass'])) {
+            $query->whereIn('property_class', (array) $params['hotelClass']);
+        }
+
+        // ── 6. Rating — floor match: "4" = 4.0–4.99 ──────
+        if (!empty($params['rating'])) {
+            $ratings = array_map('intval', (array) $params['rating']);
+            $query->where(function ($q) use ($ratings) {
+                foreach ($ratings as $r) {
+                    $q->orWhereBetween('rating', [$r, $r + 0.99]);
+                }
+            });
+        }
+
+        // ── 7. Property type ──────────────────────────────
+        if (!empty($params['propertyType'])) {
+            $query->whereIn('property_category_id', (array) $params['propertyType']);
+        }
+
+        return $query;
     }
 
-    // =====================================================
-    // SORT
-    // =====================================================
+    // ══════════════════════════════════════════════════════
+    //  PRIVATE — SORT
+    // ══════════════════════════════════════════════════════
 
-    private function applySort($query, array $params): void
+    private function applySort($query, array $params)
     {
-        $sortBy = $params['sortByPrice'] ?? 'rating';
+        $sortBy = $params['sortByPrice'] ?? null;
+        $hasGeo = !empty($params['lat']) && !empty($params['long'])
+            && $params['lat'] !== '' && $params['long'] !== '';
 
-        $hasGeo = !empty($params['lat'])
-            && !empty($params['long']);
+        $minPrice = fn(string $dir) => Room::select('base_price')
+            ->whereColumn('rooms.property_id', 'properties.id')
+            ->orderBy('base_price', $dir)
+            ->limit(1);
 
-        match ($sortBy) {
-
+        return match ($sortBy) {
             'nearest' => $hasGeo
-                ? $query->orderBy('distance_km')
+                ? $query->orderBy('distance_km', 'asc')
                 : $query->orderByDesc('rating'),
-
-            'asc' => $query->orderBy(
-                Room::select('base_price')
-                    ->whereColumn(
-                        'rooms.property_id',
-                        'properties.id'
-                    )
-                    ->orderBy('base_price', 'asc')
-                    ->limit(1),
-                'asc'
-            ),
-
-            'desc' => $query->orderBy(
-                Room::select('base_price')
-                    ->whereColumn(
-                        'rooms.property_id',
-                        'properties.id'
-                    )
-                    ->orderBy('base_price', 'desc')
-                    ->limit(1),
-                'desc'
-            ),
-
-            default => $query->orderByDesc('rating')
+            'asc'     => $query->orderBy($minPrice('asc'),  'asc'),
+            'desc'    => $query->orderBy($minPrice('desc'), 'desc'),
+            default   => $hasGeo
+                ? $query->orderBy('distance_km', 'asc')
+                : $query->orderByDesc('rating'),
         };
     }
 
-    // =====================================================
-    // RESOLVE PLACE IDS
-    // =====================================================
+    // ══════════════════════════════════════════════════════
+    //  PRIVATE — COMPUTED FIELDS
+    // ══════════════════════════════════════════════════════
 
-    private function resolvePlaceIds(array $params): array
+    private function appendComputedFields(Property $property, array $params): Property
     {
-        if (!empty($params['place_id'])) {
+        $property->min_price = $property->rooms->min('base_price');
 
-            $id   = (int) $params['place_id'];
-            $type = $params['place_type'] ?? 'place';
+        $hasGeo = !empty($params['lat']) && !empty($params['long'])
+            && $params['lat'] !== '' && $params['long'] !== '';
 
-            return match ($type) {
-
-                'city' => Place::where('city_id', $id)
-                    ->pluck('id')
-                    ->toArray(),
-
-                'state' => Place::whereHas('city', function ($q)
-                use ($id) {
-
-                    $q->whereHas('state', function ($s)
-                    use ($id) {
-
-                        $s->where('id', $id);
-                    });
-
-                })->pluck('id')->toArray(),
-
-                default => [$id],
-            };
+        if ($hasGeo) {
+            $property->distance_km = round((float) ($property->distance_km ?? 0), 1);
         }
 
-        if (empty($params['location'])) {
-            return [];
-        }
-
-        $location = trim($params['location']);
-
-        $placeIds = Place::where(
-            'name',
-            'like',
-            "%{$location}%"
-        )->pluck('id')->toArray();
-
-        $cityIds = City::where(
-            'name',
-            'like',
-            "%{$location}%"
-        )->pluck('id');
-
-        if ($cityIds->isNotEmpty()) {
-
-            $placeIds = array_merge(
-                $placeIds,
-                Place::whereIn('city_id', $cityIds)
-                    ->pluck('id')
-                    ->toArray()
-            );
-        }
-
-        $stateIds = State::where(
-            'name',
-            'like',
-            "%{$location}%"
-        )->pluck('id');
-
-        if ($stateIds->isNotEmpty()) {
-
-            $stateCityIds = City::whereIn(
-                'state_id',
-                $stateIds
-            )->pluck('id');
-
-            $placeIds = array_merge(
-                $placeIds,
-                Place::whereIn('city_id', $stateCityIds)
-                    ->pluck('id')
-                    ->toArray()
-            );
-        }
-
-        return array_unique(array_values($placeIds));
+        return $property;
     }
 }
