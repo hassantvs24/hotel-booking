@@ -16,22 +16,20 @@ class DatabaseSeeder extends Seeder
         $this->call([
             SettingSeeder::class,
             PermissionSeeder::class,
+            AllPlaceSeeder::class,
             UserSeeder::class,
             //ACLSeeder::class,
-            CountrySeeder::class,
-            StateSeeder::class,
-            CitySeeder::class,
-            PlaceSeeder::class,
-            FacilitySeeder::class,
-            SurroundingSeeder::class,
             PropertyCategorySeeder::class,
-            PropertyRuleSeeder::class,
+            FacilitySeeder::class,
             RoomElementSeeder::class,
             PropertySeeder::class,
+            PropertyRuleSeeder::class,
+
+            SurroundingSeeder::class,
             RoleSeeder::class,
-            RoomSeeder::class,
-            ReviewSeeder::class,
-            OfferSeeder::class
+            //RoomSeeder::class,
+            //ReviewSeeder::class,
+            //OfferSeeder::class
         ]);
     }
 }

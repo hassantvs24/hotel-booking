@@ -18,6 +18,7 @@ return new class extends Migration
             $table->string('country_code')->nullable();
             $table->string('currency')->nullable();
             $table->string('currency_code')->nullable();
+            $table->string('phone_code')->nullable();
             $table->string('language')->nullable();
             $table->string('flag')->nullable();
             $table->softDeletes();
