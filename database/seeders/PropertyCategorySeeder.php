@@ -12,6 +12,14 @@ class PropertyCategorySeeder extends Seeder
      */
     public function run() : void
     {
-        PropertyCategory::factory()->count(10)->create();
+        $categories = [
+            'Hotel', 'Resort', 'Villa', 'Apartment',
+            'Guesthouse', 'Boutique Hotel', 'Hostel',
+            'Eco Lodge', 'Beach House', 'Bungalow',
+        ];
+
+        foreach ($categories as $cat) {
+            PropertyCategory::firstOrCreate(['name' => $cat]);
+        }
     }
 }

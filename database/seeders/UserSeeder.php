@@ -19,6 +19,7 @@ class UserSeeder extends Seeder
                 'name'     => 'Super Admin',
                 'email'    => 'superadmin@gmail.com',
                 'password' => Hash::make('password'),
+                'user_type' => 'hotel_guest',
                 'created_at' => now(),
                 'updated_at' => now()
             ],
@@ -26,6 +27,7 @@ class UserSeeder extends Seeder
                 'name'     => 'Admin',
                 'email'    => 'admin@gmail.com',
                 'password' => Hash::make('password'),
+                'user_type' => 'hotel_guest',
                 'created_at' => now(),
                 'updated_at' => now()
             ],
@@ -33,6 +35,15 @@ class UserSeeder extends Seeder
                 'name'     => 'Vendor',
                 'email'    => 'vendor@gmail.com',
                 'password' => Hash::make('password'),
+                'user_type' => 'hotel_guest',
+                'created_at' => now(),
+                'updated_at' => now()
+            ],
+            [
+                'name'     => 'Hotel Owner',
+                'email'    => 'hotelowner@gmail.com',
+                'password' => Hash::make('password'),
+                'user_type' => 'hotel_owner',
                 'created_at' => now(),
                 'updated_at' => now()
             ]
