@@ -18,17 +18,13 @@ class Booking extends Model
         return $this->belongsTo(Room::class);
     }
 
-    public function scopeCheckDateOverlap($query, $roomIds, $checkIn, $checkOut)
+    public function scopeCheckDateOverlap($query, array $roomIds, string $checkIn, string $checkOut)
     {
-        return $query->whereIn('room_id', $roomIds)
-            ->where(function ($q) use ($checkIn, $checkOut) {
-                $q->whereBetween('checkin', [$checkIn, $checkOut])
-                    ->orWhereBetween('checkout', [$checkIn, $checkOut])
-                    ->orWhere(function ($q) use ($checkIn, $checkOut) {
-                        $q->where('checkin', '<=', $checkIn)
-                            ->where('checkout', '>=', $checkOut);
-                    });
-            });
+        return $query
+            ->whereIn('room_id', $roomIds)
+            ->whereIn('status', ['reserved', 'approved'])
+            ->where('checkin',  '<', $checkOut)
+            ->where('checkout', '>', $checkIn);
     }
 
     public function transaction():HasOne
