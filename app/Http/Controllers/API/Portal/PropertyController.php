@@ -77,7 +77,7 @@ class PropertyController extends BaseController
     //  AVAILABLE ROOMS
     //  GET /portal/properties/{property}/available-rooms
     //      ?check_in=2026-06-01&check_out=2026-06-05&adult=2
-    //
+    // :TODO but now it is giving result based on only status of room not based on booking date from and to, need to fix it.now its giving the same result
     //  Returns two groups:
     //    available_rooms → no conflict → Direct booking (Reserve)
     //    other_rooms     → has conflict → Room request + timer
