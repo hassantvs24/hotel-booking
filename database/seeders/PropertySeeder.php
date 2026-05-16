@@ -113,9 +113,9 @@ class PropertySeeder extends Seeder
 
                 // ── Primary image (media) ──────────────────────────
                 Media::create([
-                    'name'       => $hotelName . ' - Primary',
+                    'name'       => 'default_property.jpg',
                     'type'       => 'image',
-                    'path'       => 'assets/default/default_property.jpg',
+                    'path'       => 'assets/default',
                     'media_type' => 'App\Models\Property',
                     'media_id'   => $property->id,
                     'media_role' => 'property_image',
@@ -126,9 +126,9 @@ class PropertySeeder extends Seeder
                 // ── Gallery images ─────────────────────────────────
                 for ($g = 1; $g <= 4; $g++) {
                     Media::create([
-                        'name'       => $hotelName . " - Gallery {$g}",
+                        'name'       => 'default_property.jpg',
                         'type'       => 'image',
-                        'path'       => 'assets/default/default_property.jpg',
+                        'path'       => 'assets/default',
                         'media_type' => 'App\Models\Property',
                         'media_id'   => $property->id,
                         'media_role' => 'property_gallery_image',
