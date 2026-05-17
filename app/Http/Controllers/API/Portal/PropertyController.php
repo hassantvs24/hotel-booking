@@ -77,7 +77,7 @@ class PropertyController extends BaseController
     //  AVAILABLE ROOMS
     //  GET /portal/properties/{property}/available-rooms
     //      ?check_in=2026-06-01&check_out=2026-06-05&adult=2
-    // :TODO but now it is giving result based on only status of room not based on booking date from and to, need to fix it.now its giving the same result
+    //
     //  Returns two groups:
     //    available_rooms → no conflict → Direct booking (Reserve)
     //    other_rooms     → has conflict → Room request + timer
@@ -116,27 +116,44 @@ class PropertyController extends BaseController
         }
 
         // ── 3. Split + filter by capacity + resolve price ──
+        //
+        // IMPORTANT: We rely ONLY on the booking overlap query (bookedRoomIds)
+        // to determine availability — NOT on rooms.status column.
+        //
+        // rooms.status is a cached/stale value that gets set to 'Booked' when
+        // a booking is created but is never automatically reset after checkout.
+        // A room booked May 12–22 would still have status='Booked' on May 23
+        // even though the guest has checked out.
+        //
+        // The overlap query is the ONLY source of truth for date-based availability.
+        // rooms.status is only used to flag permanently unavailable rooms (maintenance etc).
+
         $availableRooms = collect();
         $otherRooms     = collect();
 
+        $nights = $this->nights($checkIn, $checkOut);
+
         foreach ($allRooms as $room) {
-            // Attach resolved price to each room
-            $room->resolved_price     = $this->resolvePrice($room);
-            $room->nights             = $this->nights($checkIn, $checkOut);
-            $room->total_price        = $room->resolved_price * $room->nights;
+            $room->resolved_price = $this->resolvePrice($room);
+            $room->nights         = $nights;
+            $room->total_price    = $room->resolved_price * $nights;
 
-            $hasConflict  = in_array($room->id, $bookedRoomIds);
-            $isUnavailable = in_array($room->status, ['Booked', 'Reserved']);
-            $hasCapacity  = $room->guest_capacity >= $adult;
+            // A room is conflict-free only based on actual booking overlap
+            $hasConflict = in_array($room->id, $bookedRoomIds);
 
-            if (!$hasConflict && !$isUnavailable && $hasCapacity) {
-                // Room is free for these dates — direct booking
+            // Only permanently offline rooms are blocked regardless of dates
+            // 'Maintenance', 'Disabled', 'Inactive' etc — NOT 'Booked'/'Reserved'
+            // because those are temporary and driven by actual bookings above
+            $isPermanentlyUnavailable = in_array($room->status, ['Maintenance', 'Disabled', 'Inactive']);
+
+            $hasCapacity = $room->guest_capacity >= $adult;
+
+            if (!$hasConflict && !$isPermanentlyUnavailable && $hasCapacity) {
                 $room->booking_type = 'direct';
                 $availableRooms->push($room);
             } else {
-                // Room is occupied — guest can make a request
-                $room->booking_type   = 'request';
-                $room->conflict_reason = $this->conflictReason($hasConflict, $isUnavailable, $hasCapacity, $adult);
+                $room->booking_type    = 'request';
+                $room->conflict_reason = $this->conflictReason($hasConflict, $isPermanentlyUnavailable, $hasCapacity, $adult);
                 $otherRooms->push($room);
             }
         }
@@ -174,11 +191,10 @@ class PropertyController extends BaseController
                 ->toArray();
         }
 
+        // Only use booking overlap as source of truth — NOT rooms.status
+        // rooms.status = 'Booked' is stale after checkout date passes
         $bookedRooms = Room::where('property_id', $propertyId)
-            ->where(function ($q) use ($bookedRoomIds) {
-                $q->whereIn('id', $bookedRoomIds)
-                    ->orWhereIn('status', ['Booked', 'Reserved']);
-            })
+            ->whereIn('id', $bookedRoomIds)
             ->with(['images', 'facilities', 'bedType', 'roomType', 'activePrices'])
             ->get()
             ->map(function ($room) use ($checkIn, $checkOut) {
@@ -272,19 +288,19 @@ class PropertyController extends BaseController
      */
     private function conflictReason(
         bool $hasConflict,
-        bool $isUnavailable,
+        bool $isPermanentlyUnavailable,
         bool $hasCapacity,
         int  $adult
     ): string {
         if (!$hasCapacity) {
-            return "Room capacity too low for {$adult} adults.";
+            return "Room capacity is too low for {$adult} adult(s). Try a different room.";
         }
         if ($hasConflict) {
-            return 'Already booked for selected dates.';
+            return 'Already booked for your selected dates. You can make a price request.';
         }
-        if ($isUnavailable) {
-            return 'Room is currently unavailable.';
+        if ($isPermanentlyUnavailable) {
+            return 'This room is currently offline for maintenance.';
         }
-        return 'Not available.';
+        return 'Not available for the selected dates.';
     }
 }
