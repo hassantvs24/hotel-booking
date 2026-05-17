@@ -114,9 +114,10 @@ class Property extends Model
     }
 
 
-    public function getLowestRoomPriceAttribute()
+    public function getLowestRoomPriceAttribute(): float|int
     {
-        return $this->rooms()->min('base_price');
+        $min = $this->rooms()->min('base_price');
+        return $min ? round($min / 100, 2) : 0;
     }
 
     /*----------------------------------------
