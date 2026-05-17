@@ -114,21 +114,38 @@ class Property extends Model
     }
 
 
-    public function getLowestRoomPriceAttribute()
+    public function getLowestRoomPriceAttribute(): float|int
     {
-        return $this->rooms()->min('base_price');
+        $min = $this->rooms()->min('base_price');
+        return $min ? round($min / 100, 2) : 0;
     }
 
     /*----------------------------------------
      * Attributes
      ----------------------------------------*/
-     public function address() : Attribute
-     {
-         return new Attribute(
-             fn($value) => unserialize($value),
-             fn($value) => serialize($value)
-         );
-     }
+    public function address(): Attribute
+    {
+        return Attribute::make(
+            get: function ($value) {
+                $first = @unserialize($value);  // first level unserialize
+
+                $address = is_string($first) ? @unserialize($first) : $first; // Second level unserialize if the first is a string
+
+                if (!$address || !is_array($address)) {
+                    return null;
+                }
+
+                return collect([
+                    $address['address'] ?? null,
+                    $address['apartment'] ?? null,
+                    $address['city'] ?? null,
+                    $address['country'] ?? null,
+                ])->filter()->implode(', ');
+            },
+
+            set: fn ($value) => serialize($value)
+        );
+    }
      public function bankDetails() : Attribute
      {
          return new Attribute(

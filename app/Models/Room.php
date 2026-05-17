@@ -32,6 +32,19 @@ class Room extends Model
         return $this->belongsTo(Property::class);
     }
 
+    // Relationship: active room prices (is_activated = 1)
+    public function activePrices(): HasMany
+    {
+        return $this->hasMany(RoomPrice::class)
+            ->where('is_activated', 1);
+    }
+
+// Relationship: all room prices
+    public function prices(): HasMany
+    {
+        return $this->hasMany(RoomPrice::class);
+    }
+
     public function roomType(): BelongsTo
     {
         return $this->belongsTo(RoomType::class);
