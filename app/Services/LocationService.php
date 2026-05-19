@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\City;
+use App\Models\Country;
 use App\Models\Place;
 use App\Models\State;
 use Illuminate\Support\Facades\Http;
@@ -13,13 +14,9 @@ use Illuminate\Support\Facades\Log;
  *
  * Handles ALL geo and place concerns:
  *   - Typeahead suggestions (local DB + Nominatim)
- *   - Place ID resolution from place_id / city / state / freetext
+ *   - Place ID resolution: place / city / state / country / freetext
  *   - Nominatim search, store, and deduplication
  *   - Place formatting for API responses
- *
- * Used by:
- *   - SearchController  (suggestions, resolvePlace)
- *   - PropertySearchService (resolvePlaceIds inside query builder)
  */
 class LocationService
 {
@@ -69,10 +66,27 @@ class LocationService
                 'source'      => 'local',
             ]);
 
+        // ── Country match ──────────────────────────────────
+        $countries = Country::where('name', 'like', "%{$q}%")
+            ->limit(2)->get()
+            ->map(fn($c) => [
+                'type'        => 'country',
+                'id'          => $c->id,
+                'external_id' => null,
+                'name'        => $c->name,
+                'city'        => null,
+                'state'       => null,
+                'country'     => $c->name,
+                'lat'         => null,
+                'long'        => null,
+                'source'      => 'local',
+            ]);
+
         $results = array_merge(
             $places->toArray(),
             $cities->toArray(),
-            $states->toArray()
+            $states->toArray(),
+            $countries->toArray()
         );
 
         // Enrich with Nominatim when local results are sparse
@@ -91,8 +105,6 @@ class LocationService
 
     // ══════════════════════════════════════════════════════
     //  RESOLVE & STORE PLACE
-    //  Called when user picks a Nominatim result (no local id).
-    //  Stores in DB so next search hits local instead of Nominatim.
     // ══════════════════════════════════════════════════════
 
     public function resolveAndStorePlace(array $data): Place
@@ -121,26 +133,29 @@ class LocationService
 
     // ══════════════════════════════════════════════════════
     //  RESOLVE PLACE IDs FROM PARAMS
-    //  Used by PropertySearchService inside buildBaseQuery()
     //
-    //  Priority:
-    //   1. place_id param   → direct lookup (fast, from dropdown pick)
-    //   2. location text    → local DB (places, cities, states)
-    //   3. location text    → Nominatim → store → return new id
-    // ══════════════════════════════════════════════════════
-
     public function resolvePlaceIds(array $params): array
     {
-        // Fast path — user picked from dropdown, place already in DB
         if (!empty($params['place_id'])) {
             $id   = (int) $params['place_id'];
             $type = $params['place_type'] ?? 'place';
 
             return match ($type) {
-                'city'  => Place::where('city_id', $id)->pluck('id')->toArray(),
+
+                'city' => Place::where('city_id', $id)
+                    ->pluck('id')->toArray(),
+
                 'state' => Place::whereHas('city', fn($q) =>
                 $q->whereHas('state', fn($s) => $s->where('id', $id))
                 )->pluck('id')->toArray(),
+
+                'country' => Place::whereHas('city', fn($q) =>
+                $q->whereHas('state', fn($s) =>
+                $s->whereHas('country', fn($c) => $c->where('id', $id))
+                )
+                )->pluck('id')->toArray(),
+
+                // Place picked directly
                 default => [$id],
             };
         }
@@ -150,12 +165,10 @@ class LocationService
         $location = trim($params['location']);
         $ids      = [];
 
-        // Direct place name match
         $ids = array_merge($ids,
             Place::where('name', 'like', "%{$location}%")->pluck('id')->toArray()
         );
 
-        // City name match → get all their places
         $cityIds = City::where('name', 'like', "%{$location}%")->pluck('id');
         if ($cityIds->isNotEmpty()) {
             $ids = array_merge($ids,
@@ -163,18 +176,33 @@ class LocationService
             );
         }
 
-        // State name match → cities → places
         $stateIds = State::where('name', 'like', "%{$location}%")->pluck('id');
         if ($stateIds->isNotEmpty()) {
             $stateCityIds = City::whereIn('state_id', $stateIds)->pluck('id');
-            $ids = array_merge($ids,
-                Place::whereIn('city_id', $stateCityIds)->pluck('id')->toArray()
-            );
+            if ($stateCityIds->isNotEmpty()) {
+                $ids = array_merge($ids,
+                    Place::whereIn('city_id', $stateCityIds)->pluck('id')->toArray()
+                );
+            }
+        }
+
+        // Country wise search resolved
+        $countryIds = Country::where('name', 'like', "%{$location}%")->pluck('id');
+        if ($countryIds->isNotEmpty()) {
+            $countryStateIds = State::whereIn('country_id', $countryIds)->pluck('id');
+            if ($countryStateIds->isNotEmpty()) {
+                $countryCityIds = City::whereIn('state_id', $countryStateIds)->pluck('id');
+                if ($countryCityIds->isNotEmpty()) {
+                    $ids = array_merge($ids,
+                        Place::whereIn('city_id', $countryCityIds)->pluck('id')->toArray()
+                    );
+                }
+            }
         }
 
         $ids = array_unique(array_values($ids));
 
-        // Nothing in local DB — call Nominatim, store for next time
+        // ── 5. Nothing in local DB — try Nominatim ─────────
         if (empty($ids)) {
             $stored = $this->nominatimResolve($location);
             if ($stored) {
@@ -187,7 +215,7 @@ class LocationService
     }
 
     // ══════════════════════════════════════════════════════
-    //  FORMAT PLACE  (shared response shape)
+    //  FORMAT PLACE
     // ══════════════════════════════════════════════════════
 
     public function formatPlace(Place $p): array
