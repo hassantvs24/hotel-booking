@@ -44,10 +44,10 @@ class PropertySearchService
             'ratings'       => [1, 2, 3, 4, 5],
             'propertyTypes' => PropertyCategory::select('id', 'name')->get(),
             'sortOptions'   => [
-                ['value' => 'rating',  'name' => 'Top Rated'],
+                //['value' => 'rating',  'name' => 'Top Rated'],
                 ['value' => 'asc',     'name' => 'Price: Low to High'],
                 ['value' => 'desc',    'name' => 'Price: High to Low'],
-                ['value' => 'nearest', 'name' => 'Nearest First'],
+                //['value' => 'nearest', 'name' => 'Nearest First'],
             ],
         ];
     }
@@ -76,12 +76,26 @@ class PropertySearchService
             ? ['images', 'facilities', 'place.city', 'rooms', 'rooms.images', 'bookingAccepteds']
             : ['images', 'facilities', 'place.city', 'rooms'];
 
-        return $query
+        $sortBy = $params['sortByPrice'] ?? null;
+
+        $results = $query
             ->with($eagerLoads)
             ->withAvg('reviews', 'rating')
             ->withCount('reviews')
             ->get()
             ->map(fn($p) => $this->appendComputedFields($p, $params));
+
+        // Price sort — applied on collection after fetch
+        // because lowest_room_price is a computed accessor not a DB column
+        if ($sortBy === 'asc') {
+            return $results->sortBy(fn($p) => $p->min_price ?? $p->lowest_room_price ?? 0)->values();
+        }
+
+        if ($sortBy === 'desc') {
+            return $results->sortByDesc(fn($p) => $p->min_price ?? $p->lowest_room_price ?? 0)->values();
+        }
+
+        return $results;
     }
 
     // ══════════════════════════════════════════════════════
@@ -190,14 +204,14 @@ class PropertySearchService
         $hasGeo = !empty($params['lat']) && !empty($params['long'])
             && $params['lat'] !== '' && $params['long'] !== '';
 
-        $minPrice = fn(string $dir) => Room::select('base_price')
-            ->whereColumn('rooms.property_id', 'properties.id')
-            ->orderBy('base_price', $dir)
-            ->limit(1);
+        // Price sort (asc/desc) is handled AFTER fetch on the collection
+        // because lowest_room_price is a computed accessor not a real DB column.
+        // Returning the query unmodified here — collection sort in searchProperties().
+        if (in_array($sortBy, ['asc', 'desc'])) {
+            return $query;
+        }
 
         return match ($sortBy) {
-            'asc'     => $query->orderBy($minPrice('asc'),  'asc'),
-            'desc'    => $query->orderBy($minPrice('desc'), 'desc'),
             default   => $hasGeo
                 ? $query->orderBy('distance_km', 'asc')
                 : $query->orderByDesc('rating'),
