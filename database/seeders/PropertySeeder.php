@@ -53,6 +53,29 @@ class PropertySeeder extends Seeder
         'Kolkata Grand Hotel',         'Goa Beach Palms Resort',
     ];
 
+    private array $faqs = [
+        [
+            'question' => 'What time is check-in?',
+            'answer' => 'Check-in starts from 2:00 PM.',
+        ],
+        [
+            'question' => 'What time is check-out?',
+            'answer' => 'Check-out time is 11:00 AM.',
+        ],
+        [
+            'question' => 'Is free WiFi available?',
+            'answer' => 'Yes, free high-speed WiFi is available.',
+        ],
+        [
+            'question' => 'Is parking available?',
+            'answer' => 'Yes, free parking is available for guests.',
+        ],
+        [
+            'question' => 'Are pets allowed?',
+            'answer' => 'Pets are not allowed unless stated otherwise.',
+        ],
+    ];
+
     public function run(): void
     {
         $owners      = User::where('user_type', 'hotel_owner')->get();
@@ -110,6 +133,18 @@ class PropertySeeder extends Seeder
                     'place_id'            => $place->id,
                     'user_id'             => $owner->id,
                 ]);
+
+                // ── Property FAQ ──────────────────────────
+
+                foreach ($this->faqs as $item) {
+                    $faq = $property->faqs()->create([
+                        'question' => $item['question'],
+                    ]);
+
+                    $faq->answer()->create([
+                        'answer' => $item['answer'],
+                    ]);
+                }
 
                 // ── Primary image (media) ──────────────────────────
                 Media::create([

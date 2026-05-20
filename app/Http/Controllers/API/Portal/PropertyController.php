@@ -68,6 +68,7 @@ class PropertyController extends BaseController
             'rooms.roomType',
             'place.city.state.country',
             'rules.propertyRule',
+            'faqs.answer',
         ]);
 
         return $this->sendSuccess(['property' => $property]);
