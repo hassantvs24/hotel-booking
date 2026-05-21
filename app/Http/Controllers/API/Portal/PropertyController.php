@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\API\Portal;
 
 use App\Http\Controllers\BaseController;
+use Carbon\Carbon;
 use App\Models\Booking;
 use App\Models\Place;
 use App\Models\Property;
@@ -117,54 +118,28 @@ class PropertyController extends BaseController
         }
 
         // ── 3. Split + filter by capacity + resolve price ──
-        //
-        // IMPORTANT: We rely ONLY on the booking overlap query (bookedRoomIds)
-        // to determine availability — NOT on rooms.status column.
-        //
-        // rooms.status is a cached/stale value that gets set to 'Booked' when
-        // a booking is created but is never automatically reset after checkout.
-        // A room booked May 12–22 would still have status='Booked' on May 23
-        // even though the guest has checked out.
-        //
-        // The overlap query is the ONLY source of truth for date-based availability.
-        // rooms.status is only used to flag permanently unavailable rooms (maintenance etc).
-
-        $availableRooms = collect();
-        $otherRooms     = collect();
 
         $nights = $this->nights($checkIn, $checkOut);
 
-        foreach ($allRooms as $room) {
+        $availableRooms = $allRooms->filter(function ($room) use ($bookedRoomIds, $adult) {
+            $hasConflict              = in_array($room->id, $bookedRoomIds);
+            $isPermanentlyUnavailable = in_array($room->status, ['Maintenance', 'Disabled', 'Inactive']);
+            $hasCapacity              = $room->guest_capacity >= $adult;
+
+            return !$hasConflict && !$isPermanentlyUnavailable && $hasCapacity;
+        })->map(function ($room) use ($nights) {
             $room->resolved_price = $this->resolvePrice($room);
             $room->nights         = $nights;
             $room->total_price    = $room->resolved_price * $nights;
-
-            // A room is conflict-free only based on actual booking overlap
-            $hasConflict = in_array($room->id, $bookedRoomIds);
-
-            // Only permanently offline rooms are blocked regardless of dates
-            // 'Maintenance', 'Disabled', 'Inactive' etc — NOT 'Booked'/'Reserved'
-            // because those are temporary and driven by actual bookings above
-            $isPermanentlyUnavailable = in_array($room->status, ['Maintenance', 'Disabled', 'Inactive']);
-
-            $hasCapacity = $room->guest_capacity >= $adult;
-
-            if (!$hasConflict && !$isPermanentlyUnavailable && $hasCapacity) {
-                $room->booking_type = 'direct';
-                $availableRooms->push($room);
-            } else {
-                $room->booking_type    = 'request';
-                $room->conflict_reason = $this->conflictReason($hasConflict, $isPermanentlyUnavailable, $hasCapacity, $adult);
-                $otherRooms->push($room);
-            }
-        }
+            $room->booking_type   = 'direct';
+            return $room;
+        });
 
         return $this->sendSuccess([
             'available_rooms' => $availableRooms->values(),
-            'other_rooms'     => $otherRooms->values(),
             'check_in'        => $checkIn,
             'check_out'       => $checkOut,
-            'nights'          => $this->nights($checkIn, $checkOut),
+            'nights'          => $nights,
             'adult'           => $adult,
         ]);
     }
@@ -265,10 +240,13 @@ class PropertyController extends BaseController
      */
     private function resolvePrice(Room $room): float|int
     {
-        // activePrices is loaded via Room::activePrices() relationship
-        $activePrice = $room->activePrices->first();
+        // Use active price if loaded and present, fall back to base_price
+        // activePrices relationship: room_prices where is_activated = 1
+        if ($room->relationLoaded('activePrices') && $room->activePrices->isNotEmpty()) {
+            return $room->activePrices->first()->price ?? $room->base_price;
+        }
 
-        return $activePrice?->price ?? $room->base_price;
+        return $room->base_price ?? 0;
     }
 
     /**
@@ -279,9 +257,11 @@ class PropertyController extends BaseController
     {
         if (!$checkIn || !$checkOut) return 1;
 
-        $nights = (int) now()->parse($checkIn)->diffInDays($checkOut);
-
-        return max(1, $nights);
+        try {
+            return max(1, (int) Carbon::parse($checkIn)->diffInDays(Carbon::parse($checkOut)));
+        } catch (\Exception $e) {
+            return 1;
+        }
     }
 
     /**
