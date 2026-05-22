@@ -21,6 +21,9 @@ return new class extends Migration
             $table->integer('children')->default(0);
             $table->integer('rooms')->default(1);
             $table->double('discount_price');
+            $table->double('counter_price')->nullable();
+            $table->text('message')->nullable();
+            $table->unsignedTinyInteger('bid_number')->default(1);
             $table->enum('status', $allowedStatus)->default('Pending');
             $table->timestamp('request_expiration_time')->nullable();
             $table->foreignId('room_id')

@@ -4,6 +4,7 @@
 | Portal API Routes
 ------------------------------------------*/
 
+use App\Http\Controllers\API\Portal\Booking\CartController;
 use App\Http\Controllers\API\Portal\BookingController;
 //use App\Http\Controllers\API\Portal\CartController;
 use App\Http\Controllers\API\Portal\Property\FilterController;
@@ -49,9 +50,25 @@ Route::prefix('portal')->group(function () {
         Route::post('/pay-now', [BookingController::class, 'bookNow']);
         Route::get('/check/{room}/room', [BookingController::class, 'bookingCheck']);
         Route::get('/cart-list', [BookingController::class, 'cartList']);
+        Route::get('/details', [BookingController::class, 'bookingDetails']);
+        Route::post('/retry-payment', [BookingController::class, 'tryToPayAgain']);
+
+        // ── New routes ──
+        Route::post('/store', [BookingController::class, 'bookingStore']);
+        Route::post('/checkout', [BookingController::class, 'checkout']);
+        Route::post('/pay-group', [BookingController::class, 'payGroup']);
+        Route::get('/my-bookings', [BookingController::class, 'myBookings']);
 
         Route::get('/details', [BookingController::class, 'bookingDetails']);
         Route::post('/retry-payment', [BookingController::class, 'tryToPayAgain']);
+    });
+
+    // ── Cart routes
+    Route::prefix('cart')->middleware('auth:sanctum')->controller(CartController::class)->group(function () {
+        Route::get('/', 'index');
+        //Route::post('/add', [BookingController::class, 'cartAdd']);
+        //Route::delete('/{id}', [BookingController::class, 'cartRemove']);
+        //Route::delete('/', [BookingController::class, 'cartClear']);
     });
 
     /*----------------- property request -----------------*/
@@ -73,6 +90,20 @@ Route::prefix('portal')->group(function () {
         Route::get('/fetchtimer', [RequestController::class, 'fetchTimer']);
     });
 
+    // ── Room request bid routes (new) ──
+    Route::prefix('room-request')->middleware('auth:sanctum')->group(function () {
+        Route::post('/store', [RoomRequestController::class, 'store']);
+        Route::get('/bid-count/{roomId}', [RoomRequestController::class, 'bidCount']);
+        Route::get('/my-bids', [RoomRequestController::class, 'myBids']);
+        Route::get('/incoming', [RoomRequestController::class, 'incoming']);
+        Route::post('/{id}/accept', [RoomRequestController::class, 'accept']);
+        Route::post('/{id}/counter', [RoomRequestController::class, 'counter']);
+        Route::post('/{id}/accept-counter', [RoomRequestController::class, 'acceptCounter']);
+        Route::post('/{id}/decline', [RoomRequestController::class, 'decline']);
+        Route::post('/{id}/pay', [RoomRequestController::class, 'payBid']);
+        Route::delete('/notification/{propertyId}', [RoomRequestController::class, 'removeNotification']);
+    });
+
     // Location Routes
     Route::prefix('location')->group(function () {
         Route::get('/suggestions', [\App\Http\Controllers\API\Portal\Location\LocationController::class, 'suggestions']);
@@ -86,4 +117,9 @@ Route::prefix('portal')->group(function () {
         Route::get('/reg-info',[VendorController::class, 'getRegInfo']);
     });
 });
+
+/*----------------- Payment Callbacks (public — no auth) -----------------*/
+Route::post('/payment/success', [BookingController::class, 'paymentSuccess'])->name('payment.success');
+Route::post('/payment/fail',    [BookingController::class, 'paymentFail'])->name('payment.fail');
+Route::post('/payment/cancel',  [BookingController::class, 'paymentCancel'])->name('payment.cancel');
 /*----------------- Portal API -----------------*/

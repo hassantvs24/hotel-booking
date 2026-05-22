@@ -24,6 +24,12 @@ return new class extends Migration {
             $table->integer('rooms')->default(1);
             $table->string('reference')->nullable();
             $table->string('notes')->comment('Booking notes')->nullable();
+
+            $table->foreignId('booking_group_id')
+                ->nullable()
+                ->constrained('booking_groups')
+                ->nullOnDelete();
+
             $table->enum('status', ['pending', 'reserved', 'approved'])
                 ->default('Pending');
             $table->foreignId('room_id')

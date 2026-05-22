@@ -18,12 +18,16 @@ class Booking extends Model
         return $this->belongsTo(Room::class);
     }
 
+    public function group(): BelongsTo
+    {
+        return $this->belongsTo(BookingGroup::class, 'booking_group_id');
+    }
+
     public function scopeCheckDateOverlap($query, array $roomIds, string $checkIn, string $checkOut)
     {
         return $query
-            ->whereIn('room_id', $roomIds)
             ->whereIn('status', ['reserved', 'approved'])
-            ->where('checkin',  '<', $checkOut)
+            ->where('checkin', '<', $checkOut)
             ->where('checkout', '>', $checkIn);
     }
 
