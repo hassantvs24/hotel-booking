@@ -49,8 +49,8 @@ Route::prefix('portal')->group(function () {
         Route::post('/', [BookingController::class, 'bookingStore']);
         Route::post('/pay-now', [BookingController::class, 'bookNow']);
         Route::get('/check/{room}/room', [BookingController::class, 'bookingCheck']);
-        Route::get('/cart-list', [BookingController::class, 'cartList']);
-        Route::get('/details', [BookingController::class, 'bookingDetails']);
+        //Route::get('/cart-list', [BookingController::class, 'cartList']);
+        //Route::get('/details', [BookingController::class, 'bookingDetails']);
         Route::post('/retry-payment', [BookingController::class, 'tryToPayAgain']);
 
         // ── New routes ──
@@ -64,11 +64,14 @@ Route::prefix('portal')->group(function () {
     });
 
     // ── Cart routes
-    Route::prefix('cart')->middleware('auth:sanctum')->controller(CartController::class)->group(function () {
+    Route::prefix('cart')
+        ->middleware('auth:sanctum')
+        ->controller(CartController::class)
+        ->group(function () {
         Route::get('/', 'index');
-        //Route::post('/add', [BookingController::class, 'cartAdd']);
-        //Route::delete('/{id}', [BookingController::class, 'cartRemove']);
-        //Route::delete('/', [BookingController::class, 'cartClear']);
+        Route::post('/add', 'store');
+        Route::delete('/{id}', 'delete');
+        Route::delete('/', 'clearCart');
     });
 
     /*----------------- property request -----------------*/
