@@ -7,8 +7,8 @@ use App\Models\Booking;
 use App\Models\Room;
 use App\Models\RoomRequest;
 use App\Models\RoomRequestAccepted;
-use App\Notifications\BidReceivedNotification;
-use App\Notifications\BidStatusNotification;
+use App\Notifications\BID\BidReceivedNotification;
+use App\Notifications\BID\BidStatusNotification;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -442,5 +442,84 @@ class RoomRequestController extends BaseController
         } while (Booking::where('booking_number', $number)->exists());
 
         return $number;
+    }
+
+    // ADD this method to your existing RoomRequestController
+// It was in the old controller but missing from the new one
+// Add it inside the class — anywhere before the closing }
+
+    // ══════════════════════════════════════════════════════
+    //  ROOM REQUEST NOTIFICATION
+    //  GET /portal/room/request-notification
+    //  Returns unique properties with pending room requests
+    //  for the logged-in user — used by the notification bell
+    // ══════════════════════════════════════════════════════
+
+    public function roomRequestNotification(Request $request): JsonResponse
+    {
+        $roomRequests = RoomRequest::with('room.property')
+            ->where('user_id', $request->user()->id)
+            ->whereIn('status', ['Pending', 'Approved', 'Counter'])
+            ->get();
+
+        $uniqueProperties = [];
+
+        foreach ($roomRequests as $roomRequest) {
+            $property = $roomRequest->room?->property;
+            if (!$property) continue;
+
+            $propertyId = $property->id;
+
+            if (!isset($uniqueProperties[$propertyId])) {
+                $uniqueProperties[$propertyId] = [
+                    'property_id'             => $propertyId,
+                    'property_name'           => $property->name,
+                    'request_expiration_time' => $roomRequest->request_expiration_time,
+                ];
+            } else {
+                // Keep the earliest expiration time
+                if ($roomRequest->request_expiration_time < $uniqueProperties[$propertyId]['request_expiration_time']) {
+                    $uniqueProperties[$propertyId]['request_expiration_time'] = $roomRequest->request_expiration_time;
+                }
+            }
+        }
+
+        return $this->sendSuccess([
+            'properties' => array_values($uniqueProperties),
+        ]);
+    }
+
+    // ══════════════════════════════════════════════════════
+    //  ROOM RESPONSE LIST
+    //  GET /portal/room/request-response/{propertyId}
+    //  Also add this if missing — used by PropertyResponse page
+    // ══════════════════════════════════════════════════════
+
+    public function roomResponselist(Request $request, $propertyId): JsonResponse
+    {
+        $roomRequests = RoomRequest::where('user_id', $request->user()->id)
+            ->where('property_id', $propertyId)
+            ->get();
+
+        $totalRequests    = $roomRequests->count();
+        $approvedRequests = $roomRequests->where('status', 'Approved')->count();
+
+        $roomRequest = RoomRequest::where('user_id', $request->user()->id)
+            ->whereIn('status', ['Approved', 'Counter'])
+            ->where('property_id', $propertyId)
+            ->with([
+                'room',
+                'room.primaryImage',
+                'room.property.facilities',
+                'room.property.place.city',
+                'acceptedRequest',
+            ])
+            ->get();
+
+        return $this->sendSuccess([
+            'total_requests'    => $totalRequests,
+            'approved_requests' => $approvedRequests,
+            'room_request'      => $roomRequest,
+        ]);
     }
 }

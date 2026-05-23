@@ -6,11 +6,11 @@
 
 use App\Http\Controllers\API\Portal\Booking\CartController;
 use App\Http\Controllers\API\Portal\BookingController;
-//use App\Http\Controllers\API\Portal\CartController;
+use App\Http\Controllers\API\Portal\HomeController;
+use App\Http\Controllers\API\Portal\Notification\NotificationController;
+use App\Http\Controllers\API\Portal\Notification\PushController;
 use App\Http\Controllers\API\Portal\Property\FilterController;
 use App\Http\Controllers\API\Portal\Property\SearchController;
-
-use App\Http\Controllers\API\Portal\HomeController;
 use App\Http\Controllers\API\Portal\PropertyController;
 use App\Http\Controllers\API\Portal\RequestController;
 use App\Http\Controllers\API\Portal\RoomRequestController;
@@ -18,11 +18,14 @@ use App\Http\Controllers\API\Portal\Vendor\PropertyRequestController;
 use App\Http\Controllers\API\Portal\Vendor\VendorController;
 use Illuminate\Support\Facades\Route;
 
+//use App\Http\Controllers\API\Portal\NotificationController;
+
 /*----------------- Portal API -----------------*/
 
 Route::prefix('portal')->group(function () {
 
     Route::get('home', [HomeController::class, 'index']);
+
     Route::prefix('properties')->group(function () {
         Route::get('/', [PropertyController::class, 'index']);
         Route::get('/{place}/place', [PropertyController::class, 'placeWiseProperties']);
@@ -34,7 +37,7 @@ Route::prefix('portal')->group(function () {
     });
 
     Route::prefix('search')->group(function () {
-        Route::get('/',[SearchController::class, 'search']);
+        Route::get('/', [SearchController::class, 'search']);
     });
 
     Route::prefix('filter')->group(function () {
@@ -49,8 +52,6 @@ Route::prefix('portal')->group(function () {
         Route::post('/', [BookingController::class, 'bookingStore']);
         Route::post('/pay-now', [BookingController::class, 'bookNow']);
         Route::get('/check/{room}/room', [BookingController::class, 'bookingCheck']);
-        //Route::get('/cart-list', [BookingController::class, 'cartList']);
-        //Route::get('/details', [BookingController::class, 'bookingDetails']);
         Route::post('/retry-payment', [BookingController::class, 'tryToPayAgain']);
 
         // ── New routes ──
@@ -58,9 +59,7 @@ Route::prefix('portal')->group(function () {
         Route::post('/checkout', [BookingController::class, 'checkout']);
         Route::post('/pay-group', [BookingController::class, 'payGroup']);
         Route::get('/my-bookings', [BookingController::class, 'myBookings']);
-
         Route::get('/details', [BookingController::class, 'bookingDetails']);
-        Route::post('/retry-payment', [BookingController::class, 'tryToPayAgain']);
     });
 
     // ── Cart routes
@@ -68,11 +67,11 @@ Route::prefix('portal')->group(function () {
         ->middleware('auth:sanctum')
         ->controller(CartController::class)
         ->group(function () {
-        Route::get('/', 'index');
-        Route::post('/add', 'store');
-        Route::delete('/{id}', 'delete');
-        Route::delete('/', 'clearCart');
-    });
+            Route::get('/', 'index');
+            Route::post('/add', 'store');
+            Route::delete('/{id}', 'delete');
+            Route::delete('/', 'clearCart');
+        });
 
     /*----------------- property request -----------------*/
     Route::prefix('property-request')->group(function () {
@@ -93,7 +92,7 @@ Route::prefix('portal')->group(function () {
         Route::get('/fetchtimer', [RequestController::class, 'fetchTimer']);
     });
 
-    // ── Room request bid routes (new) ──
+    // ── Room request bid routes ──
     Route::prefix('room-request')->middleware('auth:sanctum')->group(function () {
         Route::post('/store', [RoomRequestController::class, 'store']);
         Route::get('/bid-count/{roomId}', [RoomRequestController::class, 'bidCount']);
@@ -117,8 +116,29 @@ Route::prefix('portal')->group(function () {
         Route::get('/getAllPropertyOption', [VendorController::class, 'allPropertyOption']);
         Route::post('/property/store', [VendorController::class, 'store']);
         Route::get('/property/request-properties', [VendorController::class, 'requestProperties']);
-        Route::get('/reg-info',[VendorController::class, 'getRegInfo']);
+        Route::get('/reg-info', [VendorController::class, 'getRegInfo']);
     });
+
+    // ── Notifications (new) ───────────────────────────
+    Route::prefix('notifications')
+        ->middleware('auth:sanctum')
+        ->controller(NotificationController::class)
+        ->group(function () {
+        Route::get('/', 'index');
+        Route::post('/{id}/read', 'markRead');
+        Route::post('/read-all', 'markAllRead');
+    });
+
+    // ── Push subscriptions (new) ──────────────────────
+    Route::prefix('push')
+        ->middleware('auth:sanctum')
+        ->controller(PushController::class)
+        ->group(function () {
+        Route::get('/vapid-key', 'vapidKey');
+        Route::post('/subscribe', 'subscribe');
+        Route::delete('/unsubscribe', 'unsubscribe');
+    });
+
 });
 
 /*----------------- Payment Callbacks (public — no auth) -----------------*/
