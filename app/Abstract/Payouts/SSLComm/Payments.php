@@ -4,6 +4,8 @@ namespace App\Abstract\Payouts\SSLComm;
 
 use App\Abstract\Payouts\SSLComm\Contracts\PaymentsContracts as SSLPayment;
 use App\Abstract\Payouts\SSLComm\Contracts\SessionContracts as SSLSession;
+use Exception;
+use GuzzleHttp\Exception\GuzzleException;
 use Psr\Http\Client\ClientInterface;
 use Illuminate\Support\Arr;
 use GuzzleHttp\Client;
@@ -22,7 +24,7 @@ class Payments
     }
 
     /**
-     * @throws \Exception
+     * @throws Exception
      */
     public function create(Customer $customer, SSLPayment $paymentItems)
     {
@@ -33,7 +35,7 @@ class Payments
     public function setMode(string $mode): static
     {
         if (!in_array($mode, ['sandbox', 'live'])) {
-            throw new \Exception('Invalid Mode');
+            throw new Exception('Invalid Mode');
         }
 
         $this->mode = $mode;
@@ -61,6 +63,10 @@ class Payments
     }
 
 
+    /**
+     * @throws GuzzleException
+     * @throws Exception
+     */
     public function validate($paymentId)
     {
         $storeParams = array_merge($this->session->toArray(), ['format' => 'json']);
@@ -68,12 +74,14 @@ class Payments
         $url = "{$this->getValidationURL()}val_id={$paymentId}&store_id={$storeParams['store_id']}&store_passwd={$storeParams['store_passwd']}&format=json";
 
         $response = $this->httpClient->get($url);
+        $decoded  = json_decode((string) $response->getBody(), true);
 
-        if (!Arr::get(json_decode($response->getBody()->getContents(), true), 'status') === 'VALID') {
-            throw new \Exception('Invalid Transaction');
+        // FIXED — correct operator precedence with parentheses
+        $status = Arr::get($decoded, 'status');
+        if (!in_array($status, ['VALID', 'VALIDATED'])) {
+            throw new Exception('Invalid Transaction — status: ' . ($status ?? 'unknown'));
         }
 
-        $response = (string)$response->getBody();
-        return json_decode($response, true);
+        return $decoded;
     }
 }

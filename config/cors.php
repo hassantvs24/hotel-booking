@@ -15,11 +15,17 @@ return [
     |
     */
 
-    'paths' => ['api/*', 'sanctum/csrf-cookie'],
+    'paths' => [
+        'api/*',
+        'portal/*',
+        'sanctum/csrf-cookie',
+        'broadcasting/auth',
+    ],
 
     'allowed_methods' => ['*'],
 
     'allowed_origins' => [
+        env('APP_FRONTEND_URL', 'http://localhost:5173'),
         'http://hotel-booking.test:5173',
     ],
 
@@ -31,6 +37,6 @@ return [
 
     'max_age' => 0,
 
-    'supports_credentials' => false,
+    'supports_credentials' => true,
 
 ];
