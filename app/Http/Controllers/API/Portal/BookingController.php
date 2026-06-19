@@ -452,20 +452,50 @@ class BookingController extends BaseController
 
     public function bookingDetails(Request $request): JsonResponse
     {
-        $request->validate([
-            'booking_number' => 'required',
-        ]);
+        $userId = $request->user()->id;
 
-        $booking = Booking::where('booking_number', $request->booking_number)
-            ->where('user_id', $request->user()->id)
-            ->with(['room.property.place.city', 'group'])
-            ->first();
+        // ── Multi-room: fetch by group_ref ────────────
+        if ($request->filled('group_ref')) {
+            $group = BookingGroup::where('group_ref', $request->group_ref)
+                ->where('user_id', $userId)
+                ->with([
+                    'bookings.room.primaryImage',
+                    'bookings.room.images',
+                    'bookings.room.property',
+                    'bookings.room.property.place.city',
+                ])
+                ->first();
 
-        if (!$booking) {
-            return $this->sendError('Booking not found.', [], 404);
+            if (!$group) {
+                return $this->sendError('Booking group not found.', [], 404);
+            }
+
+            return $this->sendSuccess([
+                'booking_group' => $group,
+                'bookings'      => $group->bookings,
+            ]);
         }
 
-        return $this->sendSuccess(['booking' => $booking]);
+        // ── Single room: fetch by booking_number ──────
+        if ($request->filled('booking_number')) {
+            $booking = Booking::where('booking_number', $request->booking_number)
+                ->where('user_id', $userId)
+                ->with([
+                    'room.primaryImage',
+                    'room.images',
+                    'room.property',
+                    'room.property.place.city',
+                ])
+                ->first();
+
+            if (!$booking) {
+                return $this->sendError('Booking not found.', [], 404);
+            }
+
+            return $this->sendSuccess(['booking' => $booking]);
+        }
+
+        return $this->sendError('booking_number or group_ref is required.', [], 422);
     }
 
     // ══════════════════════════════════════════════════════

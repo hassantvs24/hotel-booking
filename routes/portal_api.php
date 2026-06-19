@@ -6,6 +6,7 @@
 
 use App\Http\Controllers\API\Portal\Booking\CartController;
 use App\Http\Controllers\API\Portal\BookingController;
+use App\Http\Controllers\API\Portal\PaymentController;
 use App\Http\Controllers\API\Portal\HomeController;
 use App\Http\Controllers\API\Portal\Notification\NotificationController;
 use App\Http\Controllers\API\Portal\Notification\PushController;
@@ -17,8 +18,6 @@ use App\Http\Controllers\API\Portal\RoomRequestController;
 use App\Http\Controllers\API\Portal\Vendor\PropertyRequestController;
 use App\Http\Controllers\API\Portal\Vendor\VendorController;
 use Illuminate\Support\Facades\Route;
-
-//use App\Http\Controllers\API\Portal\NotificationController;
 
 /*----------------- Portal API -----------------*/
 
@@ -50,16 +49,18 @@ Route::prefix('portal')->group(function () {
 
     Route::prefix('booking')->middleware('auth:sanctum')->group(function () {
         Route::post('/', [BookingController::class, 'bookingStore']);
-        Route::post('/pay-now', [BookingController::class, 'bookNow']);
         Route::get('/check/{room}/room', [BookingController::class, 'bookingCheck']);
-        Route::post('/retry-payment', [BookingController::class, 'tryToPayAgain']);
 
-        // ── New routes ──
+        // ── Booking creation ──
         Route::post('/store', [BookingController::class, 'bookingStore']);
         Route::post('/checkout', [BookingController::class, 'checkout']);
-        Route::post('/pay-group', [BookingController::class, 'payGroup']);
         Route::get('/my-bookings', [BookingController::class, 'myBookings']);
         Route::get('/details', [BookingController::class, 'bookingDetails']);
+
+        // ── Payment (moved to PaymentController) ──
+        Route::post('/pay-now', [PaymentController::class, 'bookNow']);
+        Route::post('/pay-group', [PaymentController::class, 'payGroup']);
+        Route::post('/retry-payment', [PaymentController::class, 'tryToPayAgain']);
     });
 
     // ── Cart routes
@@ -119,30 +120,36 @@ Route::prefix('portal')->group(function () {
         Route::get('/reg-info', [VendorController::class, 'getRegInfo']);
     });
 
-    // ── Notifications (new) ───────────────────────────
+
+    // ── LOCAL DEV ONLY — remove before going live ────────
+    // No auth middleware — after SSLCommerz redirect, token may not be
+    // rehydrated in time. LocalConfirmController checks app()->isLocal()
+    Route::post('/booking/confirm-local', [\App\Http\Controllers\API\Portal\LocalConfirmController::class, 'confirm']);
+
+    // ── Notifications ───────────────────────────────────
     Route::prefix('notifications')
         ->middleware('auth:sanctum')
         ->controller(NotificationController::class)
         ->group(function () {
-        Route::get('/', 'index');
-        Route::post('/{id}/read', 'markRead');
-        Route::post('/read-all', 'markAllRead');
-    });
+            Route::get('/', 'index');
+            Route::post('/{id}/read', 'markRead');
+            Route::post('/read-all', 'markAllRead');
+        });
 
-    // ── Push subscriptions (new) ──────────────────────
+    // ── Push subscriptions ───────────────────────────────
     Route::prefix('push')
         ->middleware('auth:sanctum')
         ->controller(PushController::class)
         ->group(function () {
-        Route::get('/vapid-key', 'vapidKey');
-        Route::post('/subscribe', 'subscribe');
-        Route::delete('/unsubscribe', 'unsubscribe');
-    });
+            Route::get('/vapid-key', 'vapidKey');
+            Route::post('/subscribe', 'subscribe');
+            Route::delete('/unsubscribe', 'unsubscribe');
+        });
 
 });
 
-/*----------------- Payment Callbacks (public — no auth) -----------------*/
-Route::post('/payment/success', [BookingController::class, 'paymentSuccess'])->name('payment.success');
-Route::post('/payment/fail',    [BookingController::class, 'paymentFail'])->name('payment.fail');
-Route::post('/payment/cancel',  [BookingController::class, 'paymentCancel'])->name('payment.cancel');
+/*----------------- Payment Callbacks (public — no auth, called by SSLCommerz IPN) -----------------*/
+Route::post('/payment/success', [PaymentController::class, 'paymentSuccess'])->name('payment.success');
+Route::post('/payment/fail',    [PaymentController::class, 'paymentFail'])->name('payment.fail');
+Route::post('/payment/cancel',  [PaymentController::class, 'paymentCancel'])->name('payment.cancel');
 /*----------------- Portal API -----------------*/
