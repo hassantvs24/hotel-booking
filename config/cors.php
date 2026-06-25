@@ -26,7 +26,9 @@ return [
 
     'allowed_origins' => [
         env('APP_FRONTEND_URL', 'http://localhost:5173'),
+        env('APP_ADMIN_URL', 'http://localhost:5174'),
         'http://hotel-booking.test:5173',
+        'http://hotel-booking.test:5174',
     ],
 
     'allowed_origins_patterns' => [],

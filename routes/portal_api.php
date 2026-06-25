@@ -4,17 +4,17 @@
 | Portal API Routes
 ------------------------------------------*/
 
+use App\Http\Controllers\API\Portal\Booking\BookingController;
 use App\Http\Controllers\API\Portal\Booking\CartController;
-use App\Http\Controllers\API\Portal\BookingController;
-use App\Http\Controllers\API\Portal\PaymentController;
+use App\Http\Controllers\API\Portal\Booking\RoomRequestController;
 use App\Http\Controllers\API\Portal\HomeController;
 use App\Http\Controllers\API\Portal\Notification\NotificationController;
 use App\Http\Controllers\API\Portal\Notification\PushController;
+use App\Http\Controllers\API\Portal\PaymentController;
 use App\Http\Controllers\API\Portal\Property\FilterController;
 use App\Http\Controllers\API\Portal\Property\SearchController;
 use App\Http\Controllers\API\Portal\PropertyController;
 use App\Http\Controllers\API\Portal\RequestController;
-use App\Http\Controllers\API\Portal\RoomRequestController;
 use App\Http\Controllers\API\Portal\Vendor\PropertyRequestController;
 use App\Http\Controllers\API\Portal\Vendor\VendorController;
 use Illuminate\Support\Facades\Route;

@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\API\Portal;
+namespace App\Http\Controllers\API\Portal\Booking;
 
 use App\Abstract\Payouts\SSLComm\Customer;
 use App\Abstract\Payouts\SSLComm\Payments;
@@ -10,8 +10,10 @@ use App\Models\Booking;
 use App\Models\BookingCart;
 use App\Models\BookingGroup;
 use App\Models\Room;
+use App\Models\RoomRequest;
 use App\Models\Transaction;
 use App\Models\User;
+use App\Notifications\BID\BidReceivedNotification;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -57,116 +59,149 @@ class BookingController extends BaseController
 
     public function checkout(Request $request): JsonResponse
     {
-        $userId = $request->user()->id;
+        $user = $request->user();
 
-        // Clean expired items first
-        BookingCart::where('user_id', $userId)
+        // Remove stale direct holds before processing
+        BookingCart::where('user_id', $user->id)
+            ->where('is_bid', false)
             ->where('expires_at', '<', now())
             ->delete();
 
-        $cartItems = BookingCart::where('user_id', $userId)
-            ->with('room')
+        $cart = BookingCart::where('user_id', $user->id)
+            ->with('room.property.user')
             ->get();
 
-        if ($cartItems->isEmpty()) {
-            return $this->sendError('Your cart is empty or all items have expired.', [], 422);
+        if ($cart->isEmpty()) {
+            return $this->sendError('Your cart is empty or has expired.', [], 422);
         }
 
-        $notes = $request->input('notes');
+        $direct = $cart->where('is_bid', false)->values();
+        $bids   = $cart->where('is_bid', true)->values();
+        $notes  = $request->input('notes');
 
         try {
-            $result = DB::transaction(function () use ($cartItems, $userId, $notes) {
+            $result = DB::transaction(function () use ($direct, $bids, $user, $notes, $request) {
 
-                $isMultiRoom  = $cartItems->count() > 1;
-                $bookingGroup = null;
-
-                // ── Create booking_group for multi-room ──
-                if ($isMultiRoom) {
-                    $totalAmount = $cartItems->sum(function ($item) {
-                        $nights = max(1, Carbon::parse($item->check_in)->diffInDays($item->check_out));
-                        return $item->price * $nights;
-                    });
-
-                    $bookingGroup = BookingGroup::create([
-                        'user_id'        => $userId,
-                        'group_ref'      => 'GRP-' . strtoupper(Str::random(8)),
-                        'total_amount'   => $totalAmount,
-                        'rooms_count'    => $cartItems->count(),
-                        'payment_status' => 'pending',
-                        'notes'          => $notes,
-                    ]);
-                }
-
+                // ── Direct rooms ──────────────────────────────────
+                $group    = null;
                 $bookings = [];
 
-                foreach ($cartItems as $item) {
-                    // ── Lock row — prevents concurrent double-booking ──
-                    $room = Room::where('id', $item->room_id)
-                        ->lockForUpdate()
-                        ->first();
+                if ($direct->isNotEmpty()) {
 
-                    // ── Re-check availability inside the lock ──
-                    $conflict = Booking::where('room_id', $room->id)
-                        ->whereIn('status', ['reserved', 'approved'])
-                        ->where('checkin',  '<', $item->check_out)
-                        ->where('checkout', '>', $item->check_in)
-                        ->exists();
-
-                    if ($conflict) {
-                        // Throws — entire transaction rolls back
-                        throw new \Exception(
-                            "Room \"{$room->name}\" is no longer available for the selected dates. Please remove it from your cart."
-                        );
+                    // Multi-room: group them for a single payment
+                    if ($direct->count() > 1) {
+                        $group = BookingGroup::create([
+                            'user_id'        => $user->id,
+                            'group_ref'      => 'GRP-' . strtoupper(Str::random(8)),
+                            'total_amount'   => $direct->sum(fn($i) =>
+                                $i->price * max(1, Carbon::parse($i->check_in)->diffInDays($i->check_out))
+                            ),
+                            'rooms_count'    => $direct->count(),
+                            'payment_status' => 'pending',
+                            'notes'          => $notes,
+                        ]);
                     }
 
-                    $nights = max(1, Carbon::parse($item->check_in)->diffInDays($item->check_out));
+                    foreach ($direct as $item) {
+                        // Lock the row — prevents double-booking under concurrent requests
+                        $room = Room::lockForUpdate()->findOrFail($item->room_id);
 
-                    // ── Create booking row ──
-                    $booking = Booking::create([
-                        'booking_number'   => $this->generateBookingNumber(),
-                        'room_id'          => $room->id,
-                        'user_id'          => $userId,
-                        'checkin'          => $item->check_in,
-                        'checkout'         => $item->check_out,
-                        'amount'           => $item->price * $nights,
-                        'adult'            => $item->adult,
-                        'children'         => $item->children,
-                        'rooms'            => $item->rooms,
-                        'status'           => 'reserved',
-                        'payment_status'   => 'pending',
-                        'notes'            => $notes,
-                        'booking_group_id' => $bookingGroup?->id,
-                    ]);
+                        // Re-check availability inside the lock
+                        if (Booking::where('room_id', $room->id)
+                            ->whereIn('status', ['reserved', 'approved'])
+                            ->where('checkin',  '<', $item->check_out)
+                            ->where('checkout', '>', $item->check_in)
+                            ->exists()
+                        ) {
+                            throw new \Exception(
+                                "Room \"{$room->name}\" is no longer available. Remove it from your cart."
+                            );
+                        }
 
-                    // ── Mark room as Reserved ──
-                    $room->update([
-                        'status'         => 'Reserved',
-                        'booked_date'    => $item->check_in,
-                        'booked_off_date'=> $item->check_out,
-                    ]);
+                        $nights   = max(1, Carbon::parse($item->check_in)->diffInDays($item->check_out));
+                        $bookings[] = Booking::create([
+                            'booking_number'   => date('Ymd') . rand(10000000, 99999999),
+                            'room_id'          => $room->id,
+                            'user_id'          => $user->id,
+                            'checkin'          => $item->check_in,
+                            'checkout'         => $item->check_out,
+                            'amount'           => $item->price * $nights,
+                            'adult'            => $item->adult,
+                            'children'         => $item->children,
+                            'rooms'            => $item->rooms ?? 1,
+                            'status'           => 'reserved',
+                            'payment_status'   => 'pending',
+                            'notes'            => $notes,
+                            'booking_group_id' => $group?->id,
+                        ]);
 
-                    $bookings[] = $booking;
+                        $room->update(['status' => 'Reserved']);
+                    }
                 }
 
-                // ── Clear cart after successful booking ──
-                BookingCart::where('user_id', $userId)->delete();
+                // ── Bid rooms ─────────────────────────────────────
+                $createdBids = [];
 
-                return [
-                    'bookings'      => $bookings,
-                    'booking_group' => $bookingGroup,
-                ];
+                foreach ($bids as $item) {
+                    $room = Room::with('property.user')->find($item->room_id);
+                    if (!$room) continue;
+
+                    // Re-check limit at checkout (race condition guard)
+                    if (RoomRequest::where('user_id', $user->id)
+                            ->where('room_id', $room->id)
+                            ->whereIn('status', ['Pending', 'Approved', 'Counter'])
+                            ->count() >= 3
+                    ) { continue; }
+
+                    $bid = RoomRequest::create([
+                        'room_id'                 => $room->id,
+                        'property_id'             => $room->property_id,
+                        'user_id'                 => $user->id,
+                        'check_in'                => $item->check_in,
+                        'check_out'               => $item->check_out,
+                        'adult'                   => $item->adult,
+                        'children'                => $item->children ?? 0,
+                        'discount_price'          => $item->offer_price,
+                        'message'                 => $item->bid_message,
+                        'bid_number'              => RoomRequest::where('user_id', $user->id)
+                                ->where('room_id', $room->id)->count() + 1,
+                        'status'                  => 'Pending',
+                        'request_expiration_time' => Carbon::now()->addHours(24),
+                    ]);
+
+                    $room->property->user?->notify(
+                        new BidReceivedNotification($bid, $room, $request->user())
+                    );
+
+                    $createdBids[] = $bid;
+                }
+
+                // Wipe cart — both direct and bid items processed
+                BookingCart::where('user_id', $user->id)->delete();
+
+                return ['bookings' => $bookings, 'group' => $group, 'bids' => $createdBids];
             });
-
-            return $this->sendSuccess([
-                'message'       => 'Booking confirmed! Proceed to payment.',
-                'bookings'      => $result['bookings'],
-                'booking_group' => $result['booking_group'],
-                'group_ref'     => $result['booking_group']?->group_ref,
-            ], 201);
 
         } catch (\Exception $e) {
             return $this->sendError($e->getMessage(), [], 422);
         }
+
+        $bookings    = $result['bookings']    ?? [];
+        $group       = $result['group']       ?? null;
+        $createdBids = $result['bids']        ?? [];
+
+        $hasDirect = count($bookings) > 0;
+        $hasBids   = count($createdBids) > 0;
+
+        return $this->sendSuccess([
+            'message'       => $this->checkoutMessage($hasDirect, $hasBids),
+            'bookings'      => $bookings,
+            'booking_group' => $group,
+            'group_ref'     => $group?->group_ref,
+            'bids'          => $createdBids,
+            'has_direct'    => $hasDirect,
+            'has_bids'      => $hasBids,
+        ], 201);
     }
 
     // ══════════════════════════════════════════════════════
@@ -575,5 +610,15 @@ class BookingController extends BaseController
         ]);
 
         return $paymentSession->create($customer, $paymentItem);
+    }
+
+    private function checkoutMessage(bool $hasDirect, bool $hasBids): string
+    {
+        return match(true) {
+            $hasDirect && $hasBids => 'Rooms booked! Your offers have also been sent to owners.',
+            $hasDirect             => 'Booking confirmed! Proceed to payment.',
+            $hasBids               => 'Offers sent! You\'ll be notified when owners respond.',
+            default                => 'Checkout complete.',
+        };
     }
 }
