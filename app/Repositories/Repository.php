@@ -175,6 +175,8 @@ abstract class Repository
     private function applyWhere($query, array $conditions)
     {
         foreach ($conditions as $condition) {
+            if (!is_array($condition)) continue; // ← guard against stray strings
+
             if (count($condition) === 2) {
                 $query->where($condition[0], $condition[1]);
             } elseif (count($condition) === 3) {
