@@ -7,112 +7,149 @@ use App\Http\Controllers\API\Admin\Booking\BookingController;
 use App\Http\Controllers\API\Admin\Booking\BookingRequestController;
 use App\Http\Controllers\API\Admin\Booking\RoomRequestController;
 use App\Http\Controllers\API\Admin\Dashboard\DashboardController;
-use App\Http\Controllers\API\Admin\Facility\FacilityController;
-use App\Http\Controllers\API\Admin\Facility\SubFacilityController;
 use App\Http\Controllers\API\Admin\Location\CityController;
 use App\Http\Controllers\API\Admin\Location\CountryController;
 use App\Http\Controllers\API\Admin\Location\PlaceController;
 use App\Http\Controllers\API\Admin\Location\StateController;
+use App\Http\Controllers\API\Admin\Property\Facility\FacilityController;
+use App\Http\Controllers\API\Admin\Property\Facility\SubFacilityController;
 use App\Http\Controllers\API\Admin\Property\PropertyCategoryController;
 use App\Http\Controllers\API\Admin\Property\PropertyController;
 use App\Http\Controllers\API\Admin\Property\PropertyRequestController;
 use App\Http\Controllers\API\Admin\Property\PropertyRuleController;
 use App\Http\Controllers\API\Admin\Property\PropertySettingController;
+use App\Http\Controllers\API\Admin\Property\Room\BedTypeController;
+use App\Http\Controllers\API\Admin\Property\Room\PriceTypeController;
+use App\Http\Controllers\API\Admin\Property\Room\RoomController;
+use App\Http\Controllers\API\Admin\Property\Room\RoomTypeController;
 use App\Http\Controllers\API\Admin\Review\ReviewCategoryController;
 use App\Http\Controllers\API\Admin\Review\ReviewController;
-use App\Http\Controllers\API\Admin\Room\BedTypeController;
-use App\Http\Controllers\API\Admin\Room\PriceTypeController;
-use App\Http\Controllers\API\Admin\Room\RoomController;
-use App\Http\Controllers\API\Admin\Room\RoomTypeController;
 use App\Http\Controllers\API\Admin\Surrounding\SurroundingController;
 use App\Http\Controllers\API\Admin\Surrounding\SurroundingPlaceController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware('auth:sanctum')->prefix('admin')->group(function () {
-    /*------------------- ACL -------------------*/
-    Route::prefix('acl')->group(function () {
-        Route::apiResource('users', UserController::class)->except(['create', 'show']);
-        Route::apiResource('roles', RoleController::class)->except(['create', 'show']);
-        Route::apiResource('permissions', PermissionController::class)->except(['create', 'show']);
 
+    /*----------------------------------------------------------
+    | ACL
+    ----------------------------------------------------------*/
+    Route::prefix('acl')->group(function () {
+        Route::apiResource('users',       UserController::class      )->except(['create', 'show', 'edit']);
+        Route::apiResource('roles',       RoleController::class      )->except(['create', 'show', 'edit']);
+        Route::apiResource('permissions', PermissionController::class)->except(['create', 'show', 'edit']);
 
         Route::get('permissions/all', [PermissionController::class, 'all']);
-        Route::get('roles/all', [RoleController::class, 'all']);
+        Route::get('roles/all',       [RoleController::class,       'all']);
     });
-    /*------------------- ACL -------------------*/
 
+    /*----------------------------------------------------------
+    | Location
+    ----------------------------------------------------------*/
     Route::prefix('location')->group(function () {
         Route::apiResource('countries', CountryController::class)->except(['create', 'show', 'edit']);
-        Route::apiResource('states', StateController::class)->except(['create', 'show', 'edit']);
-        Route::apiResource('cities', CityController::class)->except(['create', 'show', 'edit']);
-        Route::apiResource('places', PlaceController::class)->except(['create', 'show', 'edit']);
+        Route::apiResource('states',    StateController::class  )->except(['create', 'show', 'edit']);
+        Route::apiResource('cities',    CityController::class   )->except(['create', 'show', 'edit']);
+        Route::apiResource('places',    PlaceController::class  )->except(['create', 'show', 'edit']);
 
         Route::get('countries/all', [CountryController::class, 'all']);
-        Route::get('states/all', [StateController::class, 'all']);
-        Route::get('cities/all', [CityController::class, 'all']);
-        Route::get('places/all', [PlaceController::class, 'all']);
+        Route::get('states/all',    [StateController::class,   'all']);
+        Route::get('cities/all',    [CityController::class,    'all']);
+        Route::get('places/all',    [PlaceController::class,   'all']);
     });
 
+    /*----------------------------------------------------------
+    | Surroundings
+    ----------------------------------------------------------*/
     Route::apiResource('surroundings', SurroundingController::class)->except(['create', 'show', 'edit']);
     Route::get('surroundings/all', [SurroundingController::class, 'all']);
 
+    Route::apiResource('surrounding-places', SurroundingPlaceController::class)->except(['create', 'show', 'edit']);
+    Route::get('surrounding-places/all', [SurroundingPlaceController::class, 'all']);
+
+    /*----------------------------------------------------------
+    | Facilities
+    ----------------------------------------------------------*/
     Route::apiResource('facilities', FacilityController::class)->except(['create', 'show', 'edit']);
     Route::get('facilities/all', [FacilityController::class, 'all']);
 
     Route::apiResource('sub-facilities', SubFacilityController::class)->except(['create', 'show', 'edit']);
     Route::get('sub-facilities/all', [SubFacilityController::class, 'all']);
 
-    Route::apiResource('surrounding-places', SurroundingPlaceController::class)->except(['create', 'show', 'edit']);
-    Route::get('surrounding-places/all', [SurroundingPlaceController::class, 'all']);
-
+    /*----------------------------------------------------------
+    | Reviews
+    ----------------------------------------------------------*/
     Route::apiResource('review-categories', ReviewCategoryController::class)->except(['create', 'show', 'edit']);
     Route::get('review-categories/all', [ReviewCategoryController::class, 'all']);
 
     Route::apiResource('reviews', ReviewController::class)->except(['create', 'show', 'edit']);
     Route::get('reviews/all', [ReviewController::class, 'all']);
 
+    /*----------------------------------------------------------
+    | Property rules
+    ----------------------------------------------------------*/
     Route::apiResource('property-rules', PropertyRuleController::class)->except(['create', 'show', 'edit']);
     Route::get('property-rules/all', [PropertyRuleController::class, 'all']);
 
-    Route::apiResource('properties', PropertyController::class)->except(['create', 'show']);
-    Route::get('properties/all', [PropertyController::class, 'all']);
-    Route::get('property/attributes', [PropertyController::class, 'propertyAttributes']);
-    Route::put('properties/{property}/status', [PropertyController::class, 'propertyAction']);
-    Route::get('property/{property}/details', [PropertyController::class, 'details']);
+    /*----------------------------------------------------------
+    | Properties
+    ----------------------------------------------------------*/
+    Route::apiResource('properties', PropertyController::class)->except(['create', 'show', 'edit']);
+    Route::get('properties/all',                          [PropertyController::class, 'all']);
+    Route::get('property/attributes',                     [PropertyController::class, 'propertyAttributes']);
+    Route::put('properties/{property}/status',            [PropertyController::class, 'propertyAction']);
+    Route::get('property/{property}/details',             [PropertyController::class, 'details']);
 
-    Route::get('property/requests', [PropertyRequestController::class, 'index']);
-    Route::put('property/requests/{id}/update', [PropertyRequestController::class, 'updateStatus']);
+    Route::get('property/requests',                       [PropertyRequestController::class, 'index']);
+    Route::put('property/requests/{id}/update',           [PropertyRequestController::class, 'updateStatus']);
 
     Route::apiResource('property-categories', PropertyCategoryController::class)->except(['create', 'show', 'edit']);
     Route::get('property-categories/all', [PropertyCategoryController::class, 'all']);
 
-    Route::apiResource('room-types', RoomTypeController::class)->except(['create', 'show', 'edit']);
-    Route::get('room-types/all', [RoomTypeController::class, 'all']);
+    Route::put('properties/{property}/properties-setting', [PropertySettingController::class, 'update']);
 
-    Route::apiResource('bed-types', BedTypeController::class)->except(['create', 'show', 'edit']);
-    Route::get('bed-types/all', [BedTypeController::class, 'all']);
+    /*----------------------------------------------------------
+    | Rooms
+    ----------------------------------------------------------*/
+    Route::apiResource('rooms', RoomController::class)->except(['create', 'show', 'edit']);
+    Route::get('rooms/all',              [RoomController::class, 'all']);
+    Route::get('rooms/{room}/details',   [RoomController::class, 'showDetails']);
+
+    Route::apiResource('room-types',  RoomTypeController::class )->except(['create', 'show', 'edit']);
+    Route::get('room-types/all',  [RoomTypeController::class,  'all']);
+
+    Route::apiResource('bed-types',   BedTypeController::class  )->except(['create', 'show', 'edit']);
+    Route::get('bed-types/all',   [BedTypeController::class,   'all']);
 
     Route::apiResource('price-types', PriceTypeController::class)->except(['create', 'show', 'edit']);
     Route::get('price-types/all', [PriceTypeController::class, 'all']);
 
-    Route::apiResource('booking-request', BookingRequestController::class)->except(['create', 'show', 'edit']);
-    Route::get('booking-request/all', [BookingRequestController::class, 'all']);
-
-    Route::put('booking-request/{id}/update', [BookingRequestController::class, 'updateStatus']);
-
-    Route::apiResource('room-request', RoomRequestController::class)->except(['create', 'show', 'edit']);
-    Route::put('room-request/update/{id}', [RoomRequestController::class, 'updateStatus']);
-
+    /*----------------------------------------------------------
+    | Bookings
+    ----------------------------------------------------------*/
+    Route::get('bookings/stats',        [BookingController::class, 'stats']);
+    Route::get('booking-check',         [BookingController::class, 'bookingCheck']);
     Route::apiResource('bookings', BookingController::class)->except(['create', 'show', 'edit']);
-    Route::put('bookings/{id}/update', [BookingController::class, 'updateStatus']);
-    Route::get('booking-check',[BookingController::class,'bookingCheck']);
+    Route::get('bookings/{id}/show',    [BookingController::class, 'show']);
+    Route::put('bookings/{id}/update',  [BookingController::class, 'updateStatus']);
 
-    Route::apiResource('rooms', RoomController::class)->except(['create', 'show', 'edit']);
-    Route::get('rooms/all', [RoomController::class, 'all']);
-    Route::get('rooms/{room}/details', [RoomController::class, 'showDetails']);
+    /*----------------------------------------------------------
+    | Booking requests
+    ----------------------------------------------------------*/
+    Route::get('booking-request/all',           [BookingRequestController::class, 'all']);
+    Route::put('booking-request/{id}/update',   [BookingRequestController::class, 'updateStatus']);
+    Route::apiResource('booking-request', BookingRequestController::class)->except(['create', 'show', 'edit']);
 
-    Route::put("properties/{property}/properties-setting", [PropertySettingController::class, 'update']);
+    /*----------------------------------------------------------
+    | Room requests (Bids)
+    ----------------------------------------------------------*/
+    Route::get('room-request/stats',            [RoomRequestController::class, 'stats']);
+    Route::get('room-request/{id}/show',        [RoomRequestController::class, 'show']);
+    Route::put('room-request/update/{id}',      [RoomRequestController::class, 'updateStatus']);
+    Route::apiResource('room-request', RoomRequestController::class)->except(['create', 'show', 'edit']);
 
+    /*----------------------------------------------------------
+    | Dashboard
+    ----------------------------------------------------------*/
     Route::prefix('dashboard')->group(function () {
         Route::get('/', [DashboardController::class, 'index']);
     });

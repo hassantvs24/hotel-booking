@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\API\Admin\Facility;
+namespace App\Http\Controllers\API\Admin\Property\Facility;
 
 use App\Http\Controllers\BaseController;
 use App\Http\Requests\Admin\Facility\SubFacilityRequest;

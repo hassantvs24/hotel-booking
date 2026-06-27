@@ -29,15 +29,18 @@ class PropertyController extends BaseController
     public function index(Request $request, PropertyRepository $propertyRepository): JsonResponse
     {
 
-        $query = array_merge(
-            $request->only(['search', 'filters', 'order_by', 'order', 'per_page', 'page']),
-            [
-                'with' => ['user'],
-                'where' => [],
-                'order_by' => 'id',
-                'order' => 'DESC',
-            ]
-        );
+        $query = [
+            'with'     => ['user'],
+            'where'    => [],
+            'order_by' => 'id',
+            'order'    => 'DESC',
+            'per_page' => (int) $request->input('per_page', 15),
+            'page'     => (int) $request->input('page', 1),
+            'search'   => (string) $request->input('search', ''),
+            'filters'  => array_filter([
+                'status' => $request->input('status'),
+            ]),
+        ];
 
         $properties = $propertyRepository->paginate($query);
 

@@ -9,153 +9,142 @@ use App\Models\RoomRequestAccepted;
 use App\Repositories\Admin\RoomRequestRepository;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 
 class RoomRequestController extends BaseController
 {
-    /**
-     * Display a listing of the resource.
-     */
-    public function index(Request $request, RoomRequestRepository $roomRequestRepository): JsonResponse
+    public function index(Request $request, RoomRequestRepository $repo): JsonResponse
     {
-        $query = array_merge(
-            $request->only(['search', 'filters', 'order_by', 'order', 'per_page', 'page']),
-            [
-                'with'     => ['room', 'user'],
-                'where'    => [['property_id', '=', $request->user()->associated_property->id]],
-                'order_by' => 'id',
-                'order'    => 'DESC',
-            ]
-        );
-        $query['whereIn'] = ['status', ['Pending', 'Approved']];
-        $room_requests = $roomRequestRepository->paginate($query);
+        $user = auth()->user();
 
-        $data = [
-            'room_requests' => $room_requests
+        $query = [
+            'with'     => ['room', 'room.property', 'user', 'property'],
+            'where'    => [],
+            'order_by' => 'id',
+            'order'    => 'DESC',
+            'per_page' => (int) $request->input('per_page', 15),
+            'page'     => (int) $request->input('page', 1),
+            'search'   => (string) $request->input('search', ''),
+            'filters'  => array_filter([
+                'status' => $request->input('status'),
+            ]),
         ];
 
-        return $this->sendSuccess($data);
+        // Merchant only sees their property's bids
+        if ($user->is_merchant && !$user->is_admin) {
+            $query['where'][] = ['property_id', '=', $user->associated_property->id];
+        }
+
+        $roomRequests = $repo->paginate($query);
+
+        return $this->sendSuccess(['room_requests' => $roomRequests]);
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
+    public function show(RoomRequestRepository $repo, $id): JsonResponse
     {
-        //
+        $roomRequest = RoomRequest::with([
+            'room',
+            'room.property',
+            'room.primaryImage',
+            'user',
+            'property',
+            'acceptedRequest',
+        ])->findOrFail($id);
+
+        return $this->sendSuccess($roomRequest);
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request)
+    public function updateStatus(Request $request, $id): JsonResponse
     {
-        //
+        $request->validate([
+            'status'     => 'required|string|in:Approved,Counter,Declined,Done',
+            'base_price' => 'nullable|numeric|min:0',
+        ]);
+
+        DB::beginTransaction();
+        try {
+            $roomRequest = RoomRequest::findOrFail($id);
+            $status      = $request->input('status');
+            $basePrice   = $request->input('base_price');
+
+            if ($status === 'Approved') {
+                RoomRequestAccepted::updateOrCreate(
+                    ['room_requests_id' => $id],
+                    [
+                        'property_id'             => $roomRequest->property_id,
+                        'request_expiration_time' => Carbon::now()->addHours(2),
+                    ]
+                );
+                $roomRequest->update(['status' => $status]);
+
+            } elseif ($status === 'Counter') {
+                RoomRequestAccepted::updateOrCreate(
+                    ['room_requests_id' => $id],
+                    [
+                        'property_id'             => $roomRequest->property_id,
+                        'request_expiration_time' => Carbon::now()->addHours(2),
+                    ]
+                );
+                $roomRequest->update([
+                    'status'         => $status,
+                    'counter_price'  => $basePrice,
+                ]);
+
+            } elseif ($status === 'Declined') {
+                RoomRequestAccepted::where('room_requests_id', $id)->delete();
+                $roomRequest->update(['status' => $status]);
+
+            } elseif ($status === 'Done') {
+                $roomRequest->update(['status' => $status]);
+            }
+
+            DB::commit();
+
+            return $this->sendSuccess(
+                $roomRequest->fresh(['room', 'user', 'acceptedRequest']),
+                'Bid status updated successfully'
+            );
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return $this->sendError($e->getMessage());
+        }
     }
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(string $id)
-    {
-        //
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(string $id)
-    {
-        //
-    }
-
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, string $id)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(Request $request, RoomRequestRepository $roomRequestRepository, $roomRequestId): JsonResponse
+    public function destroy(RoomRequestRepository $repo, $id): JsonResponse
     {
         try {
-            $roomRequest = $roomRequestRepository->getModel($roomRequestId);
-            // RoomRequest::where('property_id', $request->user()->associated_property->id)
-            //     ->where('id', $roomRequestId)
-            //     ->delete();
+            $roomRequest = $repo->getModel($id);
 
+            // Free the room
             $room = Room::find($roomRequest->room_id);
             if ($room) {
                 $room->update([
-                    'status' => 'Available',
-                    'booked_date' => null,
-                    'booked_off_date' => null
+                    'status'          => 'Available',
+                    'booked_date'     => null,
+                    'booked_off_date' => null,
                 ]);
             }
-            $roomRequestRepository->delete($roomRequest->id);
 
+            $repo->delete($roomRequest->id);
 
-            return $this->sendSuccess(null, 'Request deleted successfully');
+            return $this->sendSuccess(null, 'Bid deleted successfully');
         } catch (\Exception $e) {
             return $this->sendError($e->getMessage());
         }
     }
 
-    public function updateStatus(Request $request, $roomRequestId): JsonResponse
+    public function stats(): JsonResponse
     {
-        DB::beginTransaction();
-        $status = $request->input('status');
-        $base_price = $request->input('base_price');
-        $requestData = $request->all();
+        $stats = [
+            'total'    => RoomRequest::count(),
+            'pending'  => RoomRequest::where('status', 'Pending')->count(),
+            'approved' => RoomRequest::where('status', 'Approved')->count(),
+            'counter'  => RoomRequest::where('status', 'Counter')->count(),
+            'declined' => RoomRequest::where('status', 'Declined')->count(),
+            'done'     => RoomRequest::where('status', 'Done')->count(),
+        ];
 
-        try {
-            $bookingRequest = RoomRequest::find($roomRequestId);
-
-            if ($status === 'Approved') {
-                RoomRequestAccepted::updateOrCreate(
-                    ['room_requests_id' => $roomRequestId],
-                    [
-                        'property_id' => $request->user()->associated_property->id,
-                        'request_expiration_time' => Carbon::now()->addMinutes(6),
-                    ]
-                );
-                $bookingRequest->update($requestData);
-            } elseif ($status === 'Counter') {
-                RoomRequestAccepted::updateOrCreate(
-                    ['room_requests_id' => $roomRequestId],
-                    [
-                        'property_id' => $request->user()->associated_property->id,
-                        'request_expiration_time' => Carbon::now()->addMinutes(6),
-                    ]
-                );
-                $bookingRequest->update([
-                    'status' => $status,
-                    'discount_price' => $base_price
-                ]);
-                DB::commit();
-            } else {
-                RoomRequestAccepted::where('room_requests_id', $roomRequestId)
-                    ->where('property_id', $request->user()->associated_property->id)
-                    ->delete();
-                $bookingRequest->update(['status' => $status]);
-            }
-
-            DB::commit();
-            return response()->json([
-                'status' => 'Success',
-                'message' => 'Status updated successfully.',
-            ], 200);
-        } catch (\Exception $e) {
-            DB::rollBack();
-            return response()->json([
-                'status' => 'Failed',
-                'message' => $e->getMessage(),
-            ], 500);
-        }
+        return $this->sendSuccess($stats);
     }
 }

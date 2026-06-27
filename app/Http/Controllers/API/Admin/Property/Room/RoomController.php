@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\API\Admin\Room;
+namespace App\Http\Controllers\API\Admin\Property\Room;
 
 use App\Http\Controllers\BaseController;
 use App\Http\Requests\Admin\Room\RoomRequest;
