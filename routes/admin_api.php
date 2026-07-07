@@ -26,6 +26,7 @@ use App\Http\Controllers\API\Admin\Review\ReviewCategoryController;
 use App\Http\Controllers\API\Admin\Review\ReviewController;
 use App\Http\Controllers\API\Admin\Surrounding\SurroundingController;
 use App\Http\Controllers\API\Admin\Surrounding\SurroundingPlaceController;
+use App\Http\Controllers\API\Portal\Notification\NotificationController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware('auth:sanctum')->prefix('admin')->group(function () {
@@ -146,6 +147,15 @@ Route::middleware('auth:sanctum')->prefix('admin')->group(function () {
     Route::get('room-request/{id}/show',        [RoomRequestController::class, 'show']);
     Route::put('room-request/update/{id}',      [RoomRequestController::class, 'updateStatus']);
     Route::apiResource('room-request', RoomRequestController::class)->except(['create', 'show', 'edit']);
+
+    /*----------------------------------------------------------
+    | Notifications
+    ----------------------------------------------------------*/
+    Route::prefix('notifications')->group(function () {
+        Route::get('/',           [NotificationController::class, 'index']);
+        Route::put('{id}/read',   [NotificationController::class, 'markRead']);
+        Route::put('read-all',    [NotificationController::class, 'markAllRead']);
+    });
 
     /*----------------------------------------------------------
     | Dashboard

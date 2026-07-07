@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
@@ -16,11 +15,7 @@ use Spatie\Permission\Traits\HasRoles;
 class User extends Authenticatable
 {
     use HasFactory, Notifiable, HasRoles, HasApiTokens, HasPushSubscriptions;
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var array<int, string>
-     */
+
     protected $fillable = [
         'name',
         'email',
@@ -32,34 +27,26 @@ class User extends Authenticatable
 
     protected $appends = ['is_admin', 'is_merchant', 'associated_property'];
 
-    /**
-     * The attributes that should be hidden for serialization.
-     *
-     * @var array<int, string>
-     */
     protected $hidden = [
         'password',
         'remember_token',
     ];
 
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
     protected function casts(): array
     {
         return [
             'email_verified_at' => 'datetime',
-            'password' => 'hashed',
+            'password'          => 'hashed',
         ];
     }
 
-
+    /*----------------------------------------
+    | Permission helper
+    ----------------------------------------*/
     public function hasPermission($permission): bool
     {
         return $this->permissions()->where('slug', $permission)
-            ->orWhere('name', $permission)->exists() ||
+                ->orWhere('name', $permission)->exists() ||
             $this->roles()->whereHas('permissions', function ($query) use ($permission) {
                 $query->where('name', $permission);
                 $query->orWhere('slug', $permission);
@@ -67,7 +54,7 @@ class User extends Authenticatable
     }
 
     /*----------------------------------------
-    Accessors
+    | Accessors
     ----------------------------------------*/
     public function getIsAdminAttribute(): bool
     {
@@ -83,19 +70,35 @@ class User extends Authenticatable
     {
         return $this->properties()->select('id', 'name', 'address')->first();
     }
-    public function bookings(): HasMany
+
+    /*----------------------------------------
+    | Notification routing
+    |
+    | Tells Laravel which channel to broadcast
+    | database notifications on — must match
+    | what Echo listens to in NotificationBell.vue
+    ----------------------------------------*/
+    public function receivesBroadcastNotificationsOn(): string
     {
-        return $this->hasMany(Booking::class);
-    }
-    public function roomRequests(): HasMany
-    {
-        return $this->hasMany(RoomRequest::class);
+        return 'App.Models.User.' . $this->id;
     }
 
     /*----------------------------------------
-    Relations
+    | Static helpers
     ----------------------------------------*/
 
+    /**
+     * Get all admin users — use this instead of where('is_admin', true)
+     * since is_admin is an accessor, not a real column.
+     */
+    public static function admins()
+    {
+        return static::role(config('site.adminGroup'));
+    }
+
+    /*----------------------------------------
+    | Relations
+    ----------------------------------------*/
     public function profile(): HasOne
     {
         return $this->hasOne(UserProfile::class);
@@ -104,6 +107,16 @@ class User extends Authenticatable
     public function properties(): HasMany
     {
         return $this->hasMany(Property::class);
+    }
+
+    public function bookings(): HasMany
+    {
+        return $this->hasMany(Booking::class);
+    }
+
+    public function roomRequests(): HasMany
+    {
+        return $this->hasMany(RoomRequest::class);
     }
 
     public function reviews(): HasMany
