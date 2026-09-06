@@ -11,8 +11,11 @@ use App\Models\PropertyCategory;
 use App\Models\PropertyRequest;
 use App\Models\PropertyRule;
 use App\Models\State;
+use App\Models\User;
+use App\Notifications\Admin\AdminNotification;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class PropertyDraftController extends BaseController
 {
@@ -31,10 +34,10 @@ class PropertyDraftController extends BaseController
         $facilities = FacilitySub::with('facility:id,name')
         ->select('id', 'name', 'facility_id')
         ->get();
-        $rules = PropertyRule::select('id', 'name', 'type')->get();
+        $rules = PropertyRule::select('id', 'rule_title', 'rule_note')->get();
 
         return $this->sendSuccess([
-            'propertyTypes' => $propertyTypes,
+            'property_types' => $propertyTypes,
             'countries' => $countries,
             'states' => $states,
             'cities' => $cities,
@@ -112,6 +115,61 @@ class PropertyDraftController extends BaseController
             'message'    => 'Step ' . $step . ' saved.',
             'draft'      => $draft->fresh(),
         ]);
+    }
+
+    /*
+     * Final Submission, Validates required data, marks as submitted
+     */
+
+    public function submit(Request $request, $id) : JsonResponse
+    {
+        $draft = $this->getDraft($request, $id);
+
+        // Minimum validation before submitting
+        if (empty($draft->property_title)) {
+            return $this->sendError('Property name is required.', [], 422);
+        }
+
+        if (empty($draft->address)) {
+            return $this->sendError('Property address is required.', [], 422);
+        }
+
+        DB::transaction(function () use ($draft) {
+            $draft->update([
+                'is_draft' => false,
+                'status'   => 'pending',
+            ]);
+        });
+
+        // Notify all admins
+        User::admins()->each(fn($admin) =>
+            $admin->notify(new AdminNotification(
+                type:    'property',
+                title:   'New property submitted',
+                message: ($draft->property_title ?? 'A property') . ' submitted by ' . $request->user()->name . ' — needs review',
+                icon:    'bx-building',
+                color:   'amber',
+                extra:   ['property_request_id' => $draft->id],
+                channel: 'admin',
+            ))
+        );
+
+        return $this->sendSuccess([
+            'message'               => 'Your property has been submitted for review. We will notify you once it is approved.',
+            'unique_request_number' => $draft->unique_request_number,
+        ]);
+    }
+
+    /*
+     * Discard the draft entirely.
+     */
+
+    public function destroy(Request $request, $id): JsonResponse
+    {
+        $draft = $this->getDraft($request, $id);
+        $draft->delete();
+
+        return $this->sendSuccess(null, 'Draft discarded.');
     }
 
     // Helper Functions

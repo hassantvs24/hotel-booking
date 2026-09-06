@@ -120,6 +120,17 @@ Route::prefix('portal')->group(function () {
         Route::get('/reg-info', [VendorController::class, 'getRegInfo']);
     });
 
+    Route::prefix('property/draft')
+        ->middleware('auth:sanctum')
+        ->controller(\App\Http\Controllers\API\Portal\Vendor\PropertyDraftController::class)
+        ->group(function () {
+            Route::get('/options',           'options');
+            Route::get('/',                  'show');
+            Route::match(['post', 'patch'],'/{id}/step/{step}','saveStep');
+            Route::post('/{id}/submit',      'submit');
+            Route::delete('/{id}',           'destroy');
+        });
+
 
     // ── LOCAL DEV ONLY — remove before going live ────────
     // No auth middleware — after SSLCommerz redirect, token may not be
