@@ -32,6 +32,23 @@ return new class extends Migration
             $table->string('admin_message')
                 ->nullable()
                 ->comment('Admin message for the property owner request approval or rejection');
+
+            $table->json('draft_data')
+                ->nullable()
+                ->comment('Wizard step data stored as JSON');
+            $table->unsignedTinyInteger('draft_step')
+                ->default(1)
+                ->comment('Last completed wizard step (1-8)');
+            $table->boolean('is_draft')
+                ->default(true)
+                ->comment('True while owner is still filling in the wizard');
+
+            $table->decimal('latitude', 10, 7)
+                ->nullable();
+
+            $table->decimal('longitude', 10, 7)
+                ->nullable();
+
             $table->timestamp('approved_at')->nullable();
             $table->timestamps();
         });
