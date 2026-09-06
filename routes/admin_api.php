@@ -26,7 +26,7 @@ use App\Http\Controllers\API\Admin\Review\ReviewCategoryController;
 use App\Http\Controllers\API\Admin\Review\ReviewController;
 use App\Http\Controllers\API\Admin\Surrounding\SurroundingController;
 use App\Http\Controllers\API\Admin\Surrounding\SurroundingPlaceController;
-use App\Http\Controllers\API\Portal\Notification\NotificationController;
+use App\Http\Controllers\API\Admin\Notification\NotificationController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware('auth:sanctum')->prefix('admin')->group(function () {

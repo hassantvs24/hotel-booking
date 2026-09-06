@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\API\Admin\Booking;
 
+use App\Events\Booking\BidStatusUpdated;
 use App\Http\Controllers\BaseController;
 use App\Models\Room;
 use App\Models\RoomRequest;
@@ -31,7 +32,6 @@ class RoomRequestController extends BaseController
             ]),
         ];
 
-        // Merchant only sees their property's bids
         if ($user->is_merchant && !$user->is_admin) {
             $query['where'][] = ['property_id', '=', $user->associated_property->id];
         }
@@ -64,7 +64,7 @@ class RoomRequestController extends BaseController
 
         DB::beginTransaction();
         try {
-            $roomRequest = RoomRequest::findOrFail($id);
+            $roomRequest = RoomRequest::with(['room', 'room.property', 'user'])->findOrFail($id);
             $status      = $request->input('status');
             $basePrice   = $request->input('base_price');
 
@@ -87,8 +87,8 @@ class RoomRequestController extends BaseController
                     ]
                 );
                 $roomRequest->update([
-                    'status'         => $status,
-                    'counter_price'  => $basePrice,
+                    'status'        => $status,
+                    'counter_price' => $basePrice,
                 ]);
 
             } elseif ($status === 'Declined') {
@@ -101,8 +101,14 @@ class RoomRequestController extends BaseController
 
             DB::commit();
 
+            // ── Fire real-time event — notifies guest + admin ──
+            $fresh = $roomRequest->fresh(['room', 'room.property', 'user']);
+            $event = new BidStatusUpdated($fresh);
+            event($event);
+            $event->notifyAll();
+
             return $this->sendSuccess(
-                $roomRequest->fresh(['room', 'user', 'acceptedRequest']),
+                $fresh->load(['acceptedRequest']),
                 'Bid status updated successfully'
             );
         } catch (\Exception $e) {
@@ -116,7 +122,6 @@ class RoomRequestController extends BaseController
         try {
             $roomRequest = $repo->getModel($id);
 
-            // Free the room
             $room = Room::find($roomRequest->room_id);
             if ($room) {
                 $room->update([

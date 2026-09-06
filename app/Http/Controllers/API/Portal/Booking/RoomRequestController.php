@@ -21,11 +21,6 @@ class RoomRequestController extends BaseController
     private const PAYMENT_HOURS   = 2;
     private const ACTIVE_STATUSES = ['Pending', 'Approved', 'Counter'];
 
-    // ─────────────────────────────────────────────────────
-    //  GUEST — bid count for a room
-    //  GET /portal/room-request/bid-count/{roomId}
-    // ─────────────────────────────────────────────────────
-
     public function bidCount(Request $request, $roomId): JsonResponse
     {
         $count = RoomRequest::where('user_id', $request->user()->id)
@@ -39,11 +34,6 @@ class RoomRequestController extends BaseController
             'limit_reached'  => $count >= self::MAX_BIDS,
         ]);
     }
-
-    // ─────────────────────────────────────────────────────
-    //  GUEST — all my bids
-    //  GET /portal/room-request/my-bids
-    // ─────────────────────────────────────────────────────
 
     public function myBids(Request $request): JsonResponse
     {
@@ -60,11 +50,6 @@ class RoomRequestController extends BaseController
 
         return $this->sendSuccess(['bids' => $bids]);
     }
-
-    // ─────────────────────────────────────────────────────
-    //  OWNER — incoming bids
-    //  GET /portal/room-request/incoming
-    // ─────────────────────────────────────────────────────
 
     public function incoming(Request $request): JsonResponse
     {
@@ -83,21 +68,16 @@ class RoomRequestController extends BaseController
             ->map(fn($bid) => $this->formatBidForOwner($bid));
 
         return $this->sendSuccess([
-            'bids'     => $bids,
-            'pending'  => $bids->where('status', 'Pending')->count(),
-            'approved' => $bids->where('status', 'Approved')->count(),
-            'countered'=> $bids->where('status', 'Counter')->count(),
+            'bids'      => $bids,
+            'pending'   => $bids->where('status', 'Pending')->count(),
+            'approved'  => $bids->where('status', 'Approved')->count(),
+            'countered' => $bids->where('status', 'Counter')->count(),
         ]);
     }
 
-    // ─────────────────────────────────────────────────────
-    //  OWNER — accept
-    //  POST /portal/room-request/{id}/accept
-    // ─────────────────────────────────────────────────────
-
     public function accept(Request $request, $id): JsonResponse
     {
-        $bid = $this->ownerBid($request->user(), $id, 'Pending');
+        $bid       = $this->ownerBid($request->user(), $id, 'Pending');
         $expiresAt = Carbon::now()->addHours(self::PAYMENT_HOURS);
 
         DB::transaction(function () use ($bid, $expiresAt) {
@@ -119,11 +99,6 @@ class RoomRequestController extends BaseController
             'bid'     => $this->formatBidForOwner($bid->fresh()),
         ]);
     }
-
-    // ─────────────────────────────────────────────────────
-    //  OWNER — counter
-    //  POST /portal/room-request/{id}/counter
-    // ─────────────────────────────────────────────────────
 
     public function counter(Request $request, $id): JsonResponse
     {
@@ -149,20 +124,15 @@ class RoomRequestController extends BaseController
         ]);
     }
 
-    // ─────────────────────────────────────────────────────
-    //  GUEST — accept counter
-    //  POST /portal/room-request/{id}/accept-counter
-    // ─────────────────────────────────────────────────────
-
     public function acceptCounter(Request $request, $id): JsonResponse
     {
-        $bid = $this->guestBid($request->user(), $id, 'Counter');
+        $bid       = $this->guestBid($request->user(), $id, 'Counter');
         $expiresAt = Carbon::now()->addHours(self::PAYMENT_HOURS);
 
         DB::transaction(function () use ($bid, $expiresAt) {
             $bid->update([
                 'status'                  => 'Approved',
-                'discount_price'          => $bid->counter_price,
+                'discount_price'          => $bid->counter_price, // agreed price = counter
                 'request_expiration_time' => $expiresAt,
             ]);
 
@@ -182,11 +152,6 @@ class RoomRequestController extends BaseController
         ]);
     }
 
-    // ─────────────────────────────────────────────────────
-    //  OWNER or GUEST — decline
-    //  POST /portal/room-request/{id}/decline
-    // ─────────────────────────────────────────────────────
-
     public function decline(Request $request, $id): JsonResponse
     {
         $user = $request->user();
@@ -202,11 +167,8 @@ class RoomRequestController extends BaseController
         $bid->update(['status' => 'Declined']);
 
         $isGuest = $bid->user_id === $user->id;
-
         if ($isGuest) {
-            $bid->room?->property?->user?->notify(
-                new BidStatusNotification($bid, 'declined')
-            );
+            $bid->room?->property?->user?->notify(new BidStatusNotification($bid, 'declined'));
         } else {
             $bid->user?->notify(new BidStatusNotification($bid, 'declined'));
         }
@@ -214,11 +176,12 @@ class RoomRequestController extends BaseController
         return $this->sendSuccess(['message' => 'Offer declined.']);
     }
 
-    // ─────────────────────────────────────────────────────
-    //  GUEST — pay accepted bid
-    //  POST /portal/room-request/{id}/pay
-    // ─────────────────────────────────────────────────────
-
+    /**
+     * Guest pays an approved bid.
+     * Creates a reservation booking linked to the bid via room_request_id.
+     * The bid is marked 'Done' in LocalConfirmController / PaymentController
+     * after payment succeeds.
+     */
     public function payBid(Request $request, $id): JsonResponse
     {
         $bid = $this->guestBid($request->user(), $id, 'Approved');
@@ -231,6 +194,7 @@ class RoomRequestController extends BaseController
             );
         }
 
+        // Check room is still available
         $taken = Booking::where('room_id', $bid->room_id)
             ->whereIn('status', ['reserved', 'approved'])
             ->where('checkin',  '<', $bid->check_out)
@@ -245,30 +209,35 @@ class RoomRequestController extends BaseController
             );
         }
 
-        $nights  = max(1, Carbon::parse($bid->check_in)->diffInDays($bid->check_out));
+        // Refresh to get latest discount_price (updated by acceptCounter)
+        $bid->refresh();
+
+        $nights      = max(1, Carbon::parse($bid->check_in)->diffInDays($bid->check_out));
+        $agreedPrice = (float) $bid->discount_price; // = counter_price after acceptCounter
+        $totalAmount = $agreedPrice * $nights;
+
         $booking = Booking::create([
-            'booking_number' => date('Ymd') . rand(10000000, 99999999),
-            'room_id'        => $bid->room_id,
-            'user_id'        => $request->user()->id,
-            'checkin'        => $bid->check_in,
-            'checkout'       => $bid->check_out,
-            'amount'         => $bid->discount_price * $nights,
-            'adult'          => $bid->adult,
-            'children'       => $bid->children ?? 0,
-            'rooms'          => 1,
-            'status'         => 'reserved',
-            'payment_status' => 'pending',
+            'booking_number'  => date('Ymd') . rand(10000000, 99999999),
+            'room_id'         => $bid->room_id,
+            'user_id'         => $request->user()->id,
+            'checkin'         => $bid->check_in,
+            'checkout'        => $bid->check_out,
+            'amount'          => $totalAmount,
+            'adult'           => $bid->adult,
+            'children'        => $bid->children ?? 0,
+            'rooms'           => 1,
+            'status'          => 'reserved',
+            'payment_status'  => 'pending',
+            'room_request_id' => $bid->id, // links back so bid marked Done after payment
         ]);
 
-        // Use the BookingController in the same namespace
-        return app(BookingController::class)->bookNow(
-            $request->merge(['booking_number' => $booking->booking_number])
-        );
-    }
+        // Lock the room
+        $bid->room?->update(['status' => 'Reserved']);
 
-    // ─────────────────────────────────────────────────────
-    //  EXISTING NOTIFICATION METHODS (kept intact)
-    // ─────────────────────────────────────────────────────
+        // Initiate SSLComm payment
+        return app(\App\Http\Controllers\API\Portal\PaymentController::class)
+            ->bookNow($request->merge(['booking_number' => $booking->booking_number]));
+    }
 
     public function roomRequestNotification(Request $request): JsonResponse
     {
@@ -301,7 +270,7 @@ class RoomRequestController extends BaseController
 
     public function roomResponselist(Request $request, $propertyId): JsonResponse
     {
-        $all = RoomRequest::where('user_id', $request->user()->id)
+        $all    = RoomRequest::where('user_id', $request->user()->id)
             ->where('property_id', $propertyId)
             ->get();
 
@@ -317,10 +286,6 @@ class RoomRequestController extends BaseController
             ]),
         ]);
     }
-
-    // ─────────────────────────────────────────────────────
-    //  PRIVATE HELPERS
-    // ─────────────────────────────────────────────────────
 
     private function ownerBid($user, $id, string $status): RoomRequest
     {
@@ -342,6 +307,8 @@ class RoomRequestController extends BaseController
 
     private function formatBidForGuest(RoomRequest $bid): array
     {
+        $nights = max(1, Carbon::parse($bid->check_in)->diffInDays($bid->check_out));
+
         return [
             'id'                      => $bid->id,
             'status'                  => $bid->status,
@@ -350,14 +317,14 @@ class RoomRequestController extends BaseController
             'check_out'               => $bid->check_out,
             'adult'                   => $bid->adult,
             'children'                => $bid->children,
-            'nights'                  => $bid->nights,           // model accessor
+            'nights'                  => $nights,
             'discount_price'          => $bid->discount_price,
             'counter_price'           => $bid->counter_price,
             'message'                 => $bid->message,
             'bid_number'              => $bid->bid_number,
-            'total_offered'           => $bid->total_offered,    // model accessor
-            'room_base_total'         => ($bid->room?->base_price ?? 0) * $bid->nights,
-            'is_active'               => $bid->isActive(),
+            'total_offered'           => $bid->discount_price * $nights,
+            'room_base_total'         => ($bid->room?->base_price ?? 0) * $nights,
+            'is_active'               => in_array($bid->status, self::ACTIVE_STATUSES),
             'request_expiration_time' => $bid->request_expiration_time,
             'seconds_left'            => $bid->request_expiration_time
                 ? max(0, now()->diffInSeconds($bid->request_expiration_time, false))

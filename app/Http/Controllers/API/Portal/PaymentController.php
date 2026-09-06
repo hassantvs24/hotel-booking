@@ -10,6 +10,8 @@ use App\Models\Booking;
 use App\Models\BookingGroup;
 use App\Models\Transaction;
 use App\Models\User;
+use App\Events\Booking\BookingCreated;
+use App\Events\Booking\PaymentReceived;
 use App\Notifications\Booking\PaymentConfirmedNotification;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
@@ -248,23 +250,36 @@ class PaymentController extends BaseController
 
             $booking->room->update(['status' => 'Booked']);
 
-            Transaction::create([
-                'booking_id'            => $booking->booking_number,
-                'user_id'               => $booking->user_id,
-                'amount'                => $booking->amount,
-                'payment_method'        => 'SSLComm',
-                'transaction_reference' => $request->input('bank_tran_id'),
-                'status'                => 'completed',
-                'meta'                  => json_encode($request->all()),
-            ]);
-
-            // Notify guest
-            $booking->user?->notify(new PaymentConfirmedNotification($booking, 'guest'));
-
-            // Notify owner
-            $owner = $booking->room->property->user ?? null;
-            $owner?->notify(new PaymentConfirmedNotification($booking, 'owner'));
+            // updateOrCreate prevents duplicate transaction on IPN retry
+            Transaction::updateOrCreate(
+                ['booking_id' => $booking->booking_number],
+                [
+                    'user_id'               => $booking->user_id,
+                    'amount'                => $booking->amount,
+                    'payment_method'        => 'SSLComm',
+                    'transaction_reference' => $request->input('bank_tran_id'),
+                    'status'                => 'completed',
+                    'meta'                  => json_encode($request->all()),
+                ]
+            );
         });
+
+        $booking->load(['room', 'room.property', 'user', 'transaction']);
+
+        // If this booking was created from a bid, mark the bid as Done
+        if ($booking->room_request_id) {
+            \App\Models\RoomRequest::where('id', $booking->room_request_id)
+                ->update(['status' => 'Done']);
+        }
+
+        // Fire events AFTER transaction — real-time broadcast to admin bell
+        $bookingEvent = new BookingCreated($booking);
+        event($bookingEvent);
+        $bookingEvent->notifyAll();
+
+        $paymentEvent = new PaymentReceived($booking);
+        event($paymentEvent);
+        $paymentEvent->notifyAll();
 
         return $this->sendSuccess(['message' => 'Payment confirmed.']);
     }
@@ -291,29 +306,63 @@ class PaymentController extends BaseController
 
                 $booking->room->update(['status' => 'Booked']);
 
-                Transaction::create([
-                    'booking_id'            => $booking->booking_number,
-                    'user_id'               => $booking->user_id,
-                    'amount'                => $booking->amount,
-                    'payment_method'        => 'SSLComm',
-                    'transaction_reference' => $request->input('bank_tran_id'),
-                    'status'                => 'completed',
-                    'meta'                  => json_encode($request->all()),
-                ]);
-
-                // Notify owner per room
-                $owner = $booking->room->property->user ?? null;
-                $owner?->notify(new PaymentConfirmedNotification($booking, 'owner'));
+                Transaction::updateOrCreate(
+                    ['booking_id' => $booking->booking_number],
+                    [
+                        'user_id'               => $booking->user_id,
+                        'amount'                => $booking->amount,
+                        'payment_method'        => 'SSLComm',
+                        'transaction_reference' => $request->input('bank_tran_id'),
+                        'status'                => 'completed',
+                        'meta'                  => json_encode($request->all()),
+                    ]
+                );
             }
 
             $group->update(['payment_status' => 'paid']);
-
-            // Notify guest once for the whole group
-            $firstBooking = $group->bookings->first();
-            $firstBooking?->user?->notify(new PaymentConfirmedNotification($firstBooking, 'guest'));
         });
 
+        $group->load('bookings.room.property.user');
+        $firstBooking = $group->bookings->first()->load(['room', 'room.property', 'user', 'transaction']);
+
+        // ONE grouped notification for admin — not one per room
+        $this->notifyGroupPayment($group, $firstBooking);
+
         return $this->sendSuccess(['message' => 'Group payment confirmed.']);
+    }
+
+    private function notifyGroupPayment(BookingGroup $group, Booking $firstBooking): void
+    {
+        $roomCount = $group->bookings->count();
+        $property  = $firstBooking->room?->property;
+        $guestName = $firstBooking->user?->name ?? 'Guest';
+        $total     = number_format($group->total_amount);
+
+        $title   = "{$roomCount} room" . ($roomCount > 1 ? 's' : '') . ' booked — ' . ($property?->name ?? 'property');
+        $message = "By {$guestName} · BDT {$total} · Ref: {$group->group_ref}";
+
+        // Real-time broadcast (uses first booking as carrier)
+        $event = new BookingCreated($firstBooking);
+        event($event);
+
+        // ONE admin DB notification — shouldSend() dedupes by group_ref
+        \App\Models\User::admins()->each(fn($admin) =>
+        $admin->notify(new \App\Notifications\Admin\AdminNotification(
+            type:    'booking',
+            title:   $title,
+            message: $message,
+            icon:    'bx-calendar-check',
+            color:   'teal',
+            extra:   ['group_ref' => $group->group_ref, 'rooms_count' => $roomCount],
+            channel: 'admin',
+        ))
+        );
+
+        // Guest — once for the whole group
+        $firstBooking->user?->notify(new PaymentConfirmedNotification($firstBooking, 'guest'));
+
+        // Owner — once
+        $property?->user?->notify(new PaymentConfirmedNotification($firstBooking, 'owner'));
     }
 
     /**
@@ -366,7 +415,7 @@ class PaymentController extends BaseController
         // happens via SSLComm's server-to-server IPN call to
         // /payment/success which is registered separately in routes
         // and is NOT the same as this success_url.
-        $frontendUrl = rtrim(env('APP_FRONTEND_URL', 'http://localhost:5173'), '/');
+        $frontendUrl = rtrim(env('APP_FRONTEND_URL', 'http://hotel-booking.test:5173'), '/');
 
         $paymentSession = new Payments(SSLCommSession::create([
             'store_id'       => $this->storeId(),

@@ -30,6 +30,10 @@ return new class extends Migration {
                 ->constrained('booking_groups')
                 ->nullOnDelete();
 
+            $table->unsignedBigInteger('room_request_id')
+                ->nullable()
+                ->comment('Links bid-created bookings back to their RoomRequest');
+
             $table->enum('status', ['pending', 'reserved', 'approved'])
                 ->default('Pending');
             $table->foreignId('room_id')

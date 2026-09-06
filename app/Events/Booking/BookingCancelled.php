@@ -35,12 +35,10 @@ class BookingCancelled implements ShouldBroadcastNow
 
     public function broadcastAs(): string { return 'booking.cancelled'; }
 
+    // broadcastWith ONLY returns the payload — NO DB saves here
     public function broadcastWith(): array
     {
-        $property   = $this->booking->room?->property;
-        $propertyId = $this->booking->room?->property_id ?? 0;
-
-        $data = [
+        return [
             'id'             => $this->booking->id,
             'type'           => 'booking',
             'title'          => 'Booking cancelled',
@@ -50,20 +48,28 @@ class BookingCancelled implements ShouldBroadcastNow
             'booking_number' => $this->booking->booking_number,
             'created_at'     => now()->toISOString(),
         ];
+    }
 
-        // Admin DB — admin.notifications channel
+    // Call this ONCE from the controller after event()
+    public function notifyAll(): void
+    {
+        $property   = $this->booking->room?->property;
+        $propertyId = $this->booking->room?->property_id ?? 0;
+
+        // Admin DB
         User::admins()->each(fn($admin) =>
         $admin->notify(new AdminNotification(
             type:    'booking',
-            title:   $data['title'],
-            message: $data['message'],
+            title:   'Booking cancelled',
+            message: '# ' . $this->booking->booking_number . ' has been cancelled',
             icon:    'bx-calendar-x',
             color:   'red',
+            extra:   ['booking_number' => $this->booking->booking_number],
             channel: 'admin',
         ))
         );
 
-        // Owner DB — property channel
+        // Owner DB
         if ($property?->user) {
             $property->user->notify(new AdminNotification(
                 type:    'booking',
@@ -71,11 +77,12 @@ class BookingCancelled implements ShouldBroadcastNow
                 message: '# ' . $this->booking->booking_number . ' was cancelled, room is now available',
                 icon:    'bx-calendar-x',
                 color:   'red',
-                channel: 'property:' . $propertyId,
+                extra:   ['booking_number' => $this->booking->booking_number],
+                channel: 'admin',
             ));
         }
 
-        // Guest DB — user channel
+        // Guest DB
         if ($this->booking->user) {
             $this->booking->user->notify(new AdminNotification(
                 type:    'booking',
@@ -83,11 +90,9 @@ class BookingCancelled implements ShouldBroadcastNow
                 message: 'Your booking # ' . $this->booking->booking_number . ' has been cancelled',
                 icon:    'bx-calendar-x',
                 color:   'red',
-                extra:   ['user_id' => $this->booking->user_id],
+                extra:   ['booking_number' => $this->booking->booking_number],
                 channel: 'user',
             ));
         }
-
-        return $data;
     }
 }
