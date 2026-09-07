@@ -84,6 +84,19 @@ class PropertyDraftController extends BaseController
     }
 
     /*
+     *  Used when owner clicks "Continue" from their property list.
+     */
+
+    public function showByRef(Request $request): JsonResponse
+    {
+        $draft = PropertyRequest::query()->where('user_id', $request->user()->id)
+            ->where('unique_request_number', $request->input('ref'))
+            ->firstOrFail();
+
+        return $this->sendSuccess(['draft' => $draft]);
+    }
+
+    /*
      * Save one wizard step when owner clicks continue
      */
 

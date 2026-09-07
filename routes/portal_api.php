@@ -125,6 +125,7 @@ Route::prefix('portal')->group(function () {
         ->controller(\App\Http\Controllers\API\Portal\Vendor\PropertyDraftController::class)
         ->group(function () {
             Route::get('/options',           'options');
+            Route::get('/by-ref',            'showByRef');
             Route::get('/',                  'show');
             Route::match(['post', 'patch'],'/{id}/step/{step}','saveStep');
             Route::post('/{id}/submit',      'submit');
