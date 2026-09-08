@@ -6,7 +6,6 @@ use App\Http\Controllers\BaseController;
 use App\Models\Transaction;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 
 class TransactionController extends BaseController
 {
@@ -15,30 +14,38 @@ class TransactionController extends BaseController
         $user  = auth()->user();
         $query = Transaction::with(['user:id,name,email,phone']);
 
-        // Merchant scope — only their property transactions
+        // Merchant scope — only transactions for their property's bookings
         if ($user->is_merchant && !$user->is_admin) {
-            $query->whereHas('booking.room', function ($q) use ($user) {
-                $q->where('property_id', $user->associated_property->id);
-            });
+            $propertyId = $user->associated_property?->id;
+            if ($propertyId) {
+                $query->whereHas('booking.room', fn($q) =>
+                $q->where('property_id', $propertyId)
+                );
+            }
         }
 
-        // Search
+        // Search — booking_id, transaction_reference, or guest name/email
         if ($search = $request->input('search')) {
             $query->where(function ($q) use ($search) {
-                $q->where('booking_id',            'LIKE', "%{$search}%")
-                    ->orWhere('transaction_reference','LIKE', "%{$search}%")
-                    ->orWhereHas('user', fn($q) => $q->where('name', 'LIKE', "%{$search}%")
-                        ->orWhere('email','LIKE', "%{$search}%"));
+                $q->where('booking_id',             'LIKE', "%{$search}%")
+                    ->orWhere('transaction_reference', 'LIKE', "%{$search}%")
+                    ->orWhereHas('user', fn($uq) =>
+                    $uq->where('name',  'LIKE', "%{$search}%")
+                        ->orWhere('email','LIKE', "%{$search}%")
+                    );
             });
         }
 
-        // Status filter
-        if ($status = $request->input('status')) {
+        // Status filter — skip 'all' and empty values
+        $status = $request->input('status');
+        $allowedStatuses = ['pending', 'completed', 'failed', 'refunded'];
+        if ($status && $status !== 'all' && in_array($status, $allowedStatuses)) {
             $query->where('status', $status);
         }
 
-        // Sort
-        $sortBy  = in_array($request->input('sort_by'), ['id', 'amount', 'status', 'created_at'])
+        // Sort — whitelist to prevent injection
+        $allowedSorts = ['id', 'amount', 'status', 'created_at'];
+        $sortBy  = in_array($request->input('sort_by'), $allowedSorts)
             ? $request->input('sort_by')
             : 'id';
         $sortDir = $request->input('sort_dir') === 'asc' ? 'asc' : 'desc';
@@ -46,10 +53,10 @@ class TransactionController extends BaseController
         $transactions = $query
             ->orderBy($sortBy, $sortDir)
             ->paginate(
-                $request->input('per_page', 15),
+                (int) $request->input('per_page', 15),
                 ['*'],
                 'page',
-                $request->input('page', 1)
+                (int) $request->input('page', 1)
             );
 
         return $this->sendSuccess([
@@ -59,24 +66,24 @@ class TransactionController extends BaseController
 
     public function stats(): JsonResponse
     {
-        $user = auth()->user();
-
+        $user  = auth()->user();
         $query = Transaction::query();
 
         if ($user->is_merchant && !$user->is_admin) {
-            $query->whereHas('booking.room', function ($q) use ($user) {
-                $q->where('property_id', $user->associated_property->id);
-            });
+            $propertyId = $user->associated_property?->id;
+            if ($propertyId) {
+                $query->whereHas('booking.room', fn($q) =>
+                $q->where('property_id', $propertyId)
+                );
+            }
         }
 
-        $stats = [
+        return $this->sendSuccess([
             'total'     => (clone $query)->count(),
             'completed' => (clone $query)->where('status', 'completed')->count(),
             'pending'   => (clone $query)->where('status', 'pending')->count(),
             'failed'    => (clone $query)->where('status', 'failed')->count(),
             'revenue'   => (clone $query)->where('status', 'completed')->sum('amount'),
-        ];
-
-        return $this->sendSuccess($stats);
+        ]);
     }
 }
