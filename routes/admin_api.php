@@ -133,6 +133,10 @@ Route::middleware('auth:sanctum')->prefix('admin')->group(function () {
     Route::get('bookings/{id}/show',    [BookingController::class, 'show']);
     Route::put('bookings/{id}/update',  [BookingController::class, 'updateStatus']);
 
+    // ── Transactions ──────────────────────────────────────────────
+    Route::get('transactions',        [\App\Http\Controllers\API\Admin\Booking\TransactionController::class, 'index']);
+    Route::get('transactions/stats',  [\App\Http\Controllers\API\Admin\Booking\TransactionController::class, 'stats']);
+
     /*----------------------------------------------------------
     | Booking requests
     ----------------------------------------------------------*/
