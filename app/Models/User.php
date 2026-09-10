@@ -114,6 +114,16 @@ class User extends Authenticatable
         return $this->hasMany(Booking::class);
     }
 
+    public function refundRequests(): HasMany
+    {
+        return $this->hasMany(RefundRequest::class);
+    }
+
+    public function processedRefunds(): HasMany
+    {
+        return $this->hasMany(RefundRequest::class, 'processed_by');
+    }
+
     public function roomRequests(): HasMany
     {
         return $this->hasMany(RoomRequest::class);

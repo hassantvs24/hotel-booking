@@ -6,6 +6,7 @@
 
 use App\Http\Controllers\API\Portal\Booking\BookingController;
 use App\Http\Controllers\API\Portal\Booking\CartController;
+use App\Http\Controllers\API\Portal\Booking\RefundController;
 use App\Http\Controllers\API\Portal\Booking\RoomRequestController;
 use App\Http\Controllers\API\Portal\HomeController;
 use App\Http\Controllers\API\Portal\Notification\NotificationController;
@@ -62,6 +63,17 @@ Route::prefix('portal')->group(function () {
         Route::post('/pay-group', [PaymentController::class, 'payGroup']);
         Route::post('/retry-payment', [PaymentController::class, 'tryToPayAgain']);
     });
+
+    Route::prefix('refunds')
+        ->middleware('auth:sanctum')
+        ->controller(RefundController::class)
+        ->group(function () {
+            Route::get('/quote/{booking:booking_number}', 'quote');
+            Route::post('/', 'store');
+            Route::get('/', 'index');
+            Route::get('/{refund:refund_number}', 'show');
+            Route::post('/{refund:refund_number}/cancel', 'cancel');
+        });
 
     // ── Cart routes
     Route::prefix('cart')
