@@ -5,6 +5,7 @@ use App\Http\Controllers\API\Admin\ACL\RoleController;
 use App\Http\Controllers\API\Admin\ACL\UserController;
 use App\Http\Controllers\API\Admin\Booking\BookingController;
 use App\Http\Controllers\API\Admin\Booking\BookingRequestController;
+use App\Http\Controllers\API\Admin\Booking\RefundController;
 use App\Http\Controllers\API\Admin\Booking\RoomRequestController;
 use App\Http\Controllers\API\Admin\Dashboard\DashboardController;
 use App\Http\Controllers\API\Admin\Location\CityController;
@@ -136,6 +137,17 @@ Route::middleware('auth:sanctum')->prefix('admin')->group(function () {
     // ── Transactions ──────────────────────────────────────────────
     Route::get('transactions',        [\App\Http\Controllers\API\Admin\Booking\TransactionController::class, 'index']);
     Route::get('transactions/stats',  [\App\Http\Controllers\API\Admin\Booking\TransactionController::class, 'stats']);
+
+    /*
+|--------------------------------------------------------------------------
+| Refund requests
+|--------------------------------------------------------------------------
+*/
+
+    Route::get('refunds', [RefundController::class, 'index',]);
+    Route::get('refunds/stats', [RefundController::class, 'stats',]);
+    Route::get('refunds/{refund:refund_number}', [RefundController::class, 'show',]);
+    Route::post('refunds/{refund:refund_number}/approve', [RefundController::class, 'approve',]);
 
     /*----------------------------------------------------------
     | Booking requests
