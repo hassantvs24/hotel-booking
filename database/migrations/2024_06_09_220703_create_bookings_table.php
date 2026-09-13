@@ -30,8 +30,19 @@ return new class extends Migration {
                 ->constrained('booking_groups')
                 ->nullOnDelete();
 
-            $table->enum('status', ['pending', 'reserved', 'approved'])
-                ->default('Pending');
+            $table->unsignedBigInteger('room_request_id')
+                ->nullable()
+                ->comment('Links bid-created bookings back to their RoomRequest');
+
+            $table->enum('status', [
+                'pending',
+                'reserved',
+                'approved',
+                'completed',
+                'cancelled',
+                'refunded',
+                ])
+                ->default('pending');
             $table->foreignId('room_id')
                 ->constrained()
                 ->onDelete('cascade')
@@ -42,7 +53,14 @@ return new class extends Migration {
                 ->onDelete('cascade')
                 ->onUpdate('No Action');
 
-            $table->enum('payment_status', ['pending', 'paid', 'failed'])
+            $table->enum('payment_status', [
+                'pending',
+                'paid',
+                'failed',
+                'cancelled',
+                'expired',
+                'refunded',
+            ])
                 ->default('pending');
 
             $table->softDeletes();

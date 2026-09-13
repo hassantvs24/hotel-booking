@@ -13,4 +13,9 @@ class Transaction extends Model
     {
         return $this->belongsTo(Booking::class,'booking_id');
     }
+
+    public function user () :BelongsTo
+    {
+        return $this->belongsTo(User::class,'user_id');
+    }
 }

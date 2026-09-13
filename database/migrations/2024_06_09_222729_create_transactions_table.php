@@ -31,6 +31,7 @@ return new class extends Migration
             $table->enum('status', ['pending', 'completed', 'failed', 'refunded'])
                 ->default('pending');
             $table->string('notes')->nullable()->comment('Additional details about the transaction');
+            $table->softDeletes();
             $table->timestamps();
         });
     }

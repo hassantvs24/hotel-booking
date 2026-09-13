@@ -19,6 +19,7 @@ return new class extends Migration
             $table->unsignedTinyInteger('rooms_count')->default(1);
             $table->enum('payment_status', ['pending', 'paid', 'failed'])->default('pending');
             $table->text('notes')->nullable();
+            $table->softDeletes();
             $table->timestamps();
         });
     }

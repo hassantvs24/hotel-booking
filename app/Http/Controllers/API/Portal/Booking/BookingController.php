@@ -5,6 +5,10 @@ namespace App\Http\Controllers\API\Portal\Booking;
 use App\Abstract\Payouts\SSLComm\Customer;
 use App\Abstract\Payouts\SSLComm\Payments;
 use App\Abstract\Payouts\SSLComm\SSLCommSession;
+use App\Events\Booking\BookingCreated;
+use App\Events\Booking\BookingCancelled;
+use App\Events\Booking\PaymentReceived;
+use App\Events\Booking\BidSubmitted;
 use App\Http\Controllers\BaseController;
 use App\Models\Booking;
 use App\Models\BookingCart;
@@ -24,44 +28,27 @@ class BookingController extends BaseController
 {
     // ══════════════════════════════════════════════════════
     //  PAYMENT DETAILS
-    //  GET /portal/room/:id/payment
-    //  Used by single-room payment page to show room summary
     // ══════════════════════════════════════════════════════
-
     public function paymentDetails(Room $room): JsonResponse
     {
         $room->load([
-            'images',
-            'property',
-            'property.place.city',
-            'activePrices',
-            'bedType',
-            'roomType',
+            'images', 'property', 'property.place.city',
+            'activePrices', 'bedType', 'roomType',
         ]);
-
         return $this->sendSuccess(['room' => $room]);
     }
 
     // ══════════════════════════════════════════════════════
-    //  CHECKOUT — SINGLE OR MULTI-ROOM
-    //  POST /portal/booking/checkout
-    //
-    //  Atomically:
-    //   1. Re-validates availability for all cart rooms
-    //   2. Creates booking_group (if multi-room)
-    //   3. Creates one booking per room
-    //   4. Marks rooms as Reserved
-    //   5. Clears cart
-    //
-    //  Uses lockForUpdate() on each room to prevent race conditions.
-    //  If ANY room fails → entire transaction rolls back.
+    //  CHECKOUT
+    //  Creates bookings with status=reserved and bids.
+    //  Does NOT fire payment yet — guest proceeds to pay separately.
+    //  Notification: admin notified ONLY when payment succeeds.
     // ══════════════════════════════════════════════════════
-
     public function checkout(Request $request): JsonResponse
     {
         $user = $request->user();
 
-        // Remove stale direct holds before processing
+        // Clean expired non-bid carts
         BookingCart::where('user_id', $user->id)
             ->where('is_bid', false)
             ->where('expires_at', '<', now())
@@ -80,15 +67,14 @@ class BookingController extends BaseController
         $notes  = $request->input('notes');
 
         try {
-            $result = DB::transaction(function () use ($direct, $bids, $user, $notes, $request) {
+            $result = DB::transaction(function () use ($direct, $bids, $user, $notes) {
 
-                // ── Direct rooms ──────────────────────────────────
                 $group    = null;
                 $bookings = [];
 
+                // ── Direct bookings ──────────────────────────────
                 if ($direct->isNotEmpty()) {
 
-                    // Multi-room: group them for a single payment
                     if ($direct->count() > 1) {
                         $group = BookingGroup::create([
                             'user_id'        => $user->id,
@@ -103,22 +89,19 @@ class BookingController extends BaseController
                     }
 
                     foreach ($direct as $item) {
-                        // Lock the row — prevents double-booking under concurrent requests
                         $room = Room::lockForUpdate()->findOrFail($item->room_id);
 
-                        // Re-check availability inside the lock
+                        // Conflict check
                         if (Booking::where('room_id', $room->id)
                             ->whereIn('status', ['reserved', 'approved'])
-                            ->where('checkin',  '<', $item->check_out)
+                            ->where('checkin', '<', $item->check_out)
                             ->where('checkout', '>', $item->check_in)
                             ->exists()
                         ) {
-                            throw new \Exception(
-                                "Room \"{$room->name}\" is no longer available. Remove it from your cart."
-                            );
+                            throw new \Exception("Room \"{$room->name}\" is no longer available.");
                         }
 
-                        $nights   = max(1, Carbon::parse($item->check_in)->diffInDays($item->check_out));
+                        $nights    = max(1, Carbon::parse($item->check_in)->diffInDays($item->check_out));
                         $bookings[] = Booking::create([
                             'booking_number'   => date('Ymd') . rand(10000000, 99999999),
                             'room_id'          => $room->id,
@@ -129,24 +112,24 @@ class BookingController extends BaseController
                             'adult'            => $item->adult,
                             'children'         => $item->children,
                             'rooms'            => $item->rooms ?? 1,
-                            'status'           => 'reserved',
+                            'status'           => 'reserved',      // ← reserved, not pending
                             'payment_status'   => 'pending',
                             'notes'            => $notes,
                             'booking_group_id' => $group?->id,
                         ]);
 
+                        // Lock the room
                         $room->update(['status' => 'Reserved']);
                     }
                 }
 
-                // ── Bid rooms ─────────────────────────────────────
+                // ── Bids ─────────────────────────────────────────
                 $createdBids = [];
 
                 foreach ($bids as $item) {
                     $room = Room::with('property.user')->find($item->room_id);
                     if (!$room) continue;
 
-                    // Re-check limit at checkout (race condition guard)
                     if (RoomRequest::where('user_id', $user->id)
                             ->where('room_id', $room->id)
                             ->whereIn('status', ['Pending', 'Approved', 'Counter'])
@@ -169,14 +152,22 @@ class BookingController extends BaseController
                         'request_expiration_time' => Carbon::now()->addHours(24),
                     ]);
 
+                    // Real-time broadcast to admin + owner channels
+                    // notifyAll() handles admin DB + guest DB
+                    // BidReceivedNotification (owner WebPush) fired separately below
+                    $bidEvent = new BidSubmitted($bid->load(['room', 'room.property', 'user']));
+                    event($bidEvent);
+                    $bidEvent->notifyAll();
+
+                    // Owner WebPush — separate from real-time, fired AFTER notifyAll
+                    // to avoid duplicate since notifyAll no longer calls this
                     $room->property->user?->notify(
-                        new BidReceivedNotification($bid, $room, $request->user())
+                        new BidReceivedNotification($bid, $room, $user)
                     );
 
                     $createdBids[] = $bid;
                 }
 
-                // Wipe cart — both direct and bid items processed
                 BookingCart::where('user_id', $user->id)->delete();
 
                 return ['bookings' => $bookings, 'group' => $group, 'bids' => $createdBids];
@@ -186,12 +177,11 @@ class BookingController extends BaseController
             return $this->sendError($e->getMessage(), [], 422);
         }
 
-        $bookings    = $result['bookings']    ?? [];
-        $group       = $result['group']       ?? null;
-        $createdBids = $result['bids']        ?? [];
-
-        $hasDirect = count($bookings) > 0;
-        $hasBids   = count($createdBids) > 0;
+        $bookings    = $result['bookings'] ?? [];
+        $group       = $result['group']    ?? null;
+        $createdBids = $result['bids']     ?? [];
+        $hasDirect   = count($bookings) > 0;
+        $hasBids     = count($createdBids) > 0;
 
         return $this->sendSuccess([
             'message'       => $this->checkoutMessage($hasDirect, $hasBids),
@@ -205,11 +195,8 @@ class BookingController extends BaseController
     }
 
     // ══════════════════════════════════════════════════════
-    //  SINGLE ROOM DIRECT RESERVE (no cart)
-    //  POST /portal/booking/store
-    //  For guests who just want one room immediately.
+    //  SINGLE ROOM RESERVE (no cart)
     // ══════════════════════════════════════════════════════
-
     public function bookingStore(Request $request): JsonResponse
     {
         $validated = $request->validate([
@@ -224,20 +211,14 @@ class BookingController extends BaseController
 
         try {
             $booking = DB::transaction(function () use ($validated, $request) {
-                $userId = $request->user()->id;
+                $room = Room::lockForUpdate()->findOrFail($validated['room_id']);
 
-                // Lock + re-check inside transaction
-                $room = Room::where('id', $validated['room_id'])
-                    ->lockForUpdate()
-                    ->first();
-
-                $conflict = Booking::where('room_id', $room->id)
+                if (Booking::where('room_id', $room->id)
                     ->whereIn('status', ['reserved', 'approved'])
-                    ->where('checkin',  '<', $validated['check_out'])
+                    ->where('checkin', '<', $validated['check_out'])
                     ->where('checkout', '>', $validated['check_in'])
-                    ->exists();
-
-                if ($conflict) {
+                    ->exists()
+                ) {
                     throw new \Exception('Room is no longer available for the selected dates.');
                 }
 
@@ -247,7 +228,7 @@ class BookingController extends BaseController
                 $booking = Booking::create([
                     'booking_number' => $this->generateBookingNumber(),
                     'room_id'        => $room->id,
-                    'user_id'        => $userId,
+                    'user_id'        => $request->user()->id,
                     'checkin'        => $validated['check_in'],
                     'checkout'       => $validated['check_out'],
                     'amount'         => $price * $nights,
@@ -280,16 +261,11 @@ class BookingController extends BaseController
     }
 
     // ══════════════════════════════════════════════════════
-    //  PAY NOW — SINGLE BOOKING
-    //  POST /portal/booking/pay-now
-    //  Initiates SSLComm payment for one booking_number
+    //  PAY NOW — single booking
     // ══════════════════════════════════════════════════════
-
     public function bookNow(Request $request)
     {
-        $request->validate([
-            'booking_number' => 'required|exists:bookings,booking_number',
-        ]);
+        $request->validate(['booking_number' => 'required|exists:bookings,booking_number']);
 
         $booking = Booking::where('booking_number', $request->booking_number)
             ->where('user_id', $request->user()->id)
@@ -304,16 +280,11 @@ class BookingController extends BaseController
     }
 
     // ══════════════════════════════════════════════════════
-    //  PAY GROUP — MULTI-ROOM PAYMENT
-    //  POST /portal/booking/pay-group
-    //  Pays for all bookings in a booking_group at once
+    //  PAY GROUP — multi-room payment
     // ══════════════════════════════════════════════════════
-
     public function payGroup(Request $request)
     {
-        $request->validate([
-            'group_ref' => 'required|exists:booking_groups,group_ref',
-        ]);
+        $request->validate(['group_ref' => 'required|exists:booking_groups,group_ref']);
 
         $group = BookingGroup::where('group_ref', $request->group_ref)
             ->where('user_id', $request->user()->id)
@@ -321,60 +292,79 @@ class BookingController extends BaseController
             ->firstOrFail();
 
         if ($group->payment_status === 'paid') {
-            return $this->sendError('This booking group is already paid.', [], 422);
+            return $this->sendError('This group is already paid.', [], 422);
         }
 
-        // Use first booking as the primary SSLComm transaction anchor
-        // Amount = total group amount
-        $primaryBooking = $group->bookings->first();
-
-        return $this->initiateSSLPayment($primaryBooking, $request->user(), $group);
+        return $this->initiateSSLPayment($group->bookings->first(), $request->user(), $group);
     }
 
     // ══════════════════════════════════════════════════════
-    //  PAYMENT SUCCESS CALLBACK
-    //  POST /payment/success  (public — no auth)
+    //  PAYMENT SUCCESS
+    //  This is the ONLY place BookingCreated fires.
+    //  Room is confirmed booked, payment is saved.
+    //  If network error caused this to be called twice,
+    //  the transaction check prevents double-processing.
     // ══════════════════════════════════════════════════════
-
     public function paymentSuccess(Request $request): JsonResponse
     {
-        $transactionId = $request->input('tran_id'); // booking_number from SSLComm
+        $tranId = $request->input('tran_id');
 
-        $booking = Booking::where('booking_number', $transactionId)
-            ->with('room')
-            ->first();
+        // Find booking or group
+        $group = BookingGroup::where('group_ref', $tranId)->first();
 
-        if (!$booking) {
-            return $this->sendError('Booking not found.', [], 404);
-        }
+        DB::transaction(function () use ($tranId, $group, $request) {
 
-        DB::transaction(function () use ($booking, $request) {
-            // Mark booking paid
-            $booking->update([
-                'status'         => 'approved',
-                'payment_status' => 'paid',
-            ]);
+            if ($group) {
+                // ── Group payment ──────────────────────────────
+                // Idempotency: skip if already paid
+                if ($group->payment_status === 'paid') return;
 
-            // Mark room as Booked
-            $booking->room->update(['status' => 'Booked']);
+                foreach ($group->bookings as $booking) {
+                    $this->confirmBooking($booking, $request);
+                }
 
-            // Create transaction record
-            Transaction::create([
-                'booking_id'            => $booking->booking_number,
-                'user_id'               => $booking->user_id,
-                'amount'                => $booking->amount,
-                'payment_method'        => 'SSLComm',
-                'transaction_reference' => $request->input('bank_tran_id'),
-                'status'                => 'completed',
-                'meta'                  => json_encode($request->all()),
-            ]);
+                $group->update(['payment_status' => 'paid']);
 
-            // If part of a group — check if ALL bookings in group are now paid
-            if ($booking->booking_group_id) {
-                $group = BookingGroup::find($booking->booking_group_id);
-                $allPaid = $group->bookings()->where('payment_status', '!=', 'paid')->doesntExist();
-                if ($allPaid) {
-                    $group->update(['payment_status' => 'paid']);
+                // Only notify once — check if already notified for this group
+                $firstBooking = $group->bookings->first()->load(['room', 'room.property', 'user', 'transaction']);
+
+                $alreadyNotified = $firstBooking->user?->notifications()
+                    ->whereRaw("JSON_UNQUOTE(JSON_EXTRACT(data, '$.group_ref')) = ?", [$group->group_ref])
+                    ->exists() ?? false;
+
+                if (!$alreadyNotified) {
+                    $this->notifyGroupBooking($group, $firstBooking);
+                }
+
+            } else {
+                // ── Single booking ─────────────────────────────
+                $booking = Booking::where('booking_number', $tranId)
+                    ->with(['room', 'room.property', 'user'])
+                    ->first();
+
+                if (!$booking) return;
+
+                // Idempotency: skip if already paid
+                $alreadyPaid = $booking->payment_status === 'paid';
+                if ($alreadyPaid) return;
+
+                $this->confirmBooking($booking, $request);
+
+                $booking->load(['room', 'room.property', 'user', 'transaction']);
+
+                // Only notify once — skip if already notified for this booking
+                $alreadyNotified = $booking->user?->notifications()
+                    ->whereRaw("JSON_UNQUOTE(JSON_EXTRACT(data, '$.booking_number')) = ?", [$booking->booking_number])
+                    ->exists() ?? false;
+
+                if (!$alreadyNotified) {
+                    $event = new BookingCreated($booking);
+                    event($event);
+                    $event->notifyAll();
+
+                    $payEvent = new PaymentReceived($booking);
+                    event($payEvent);
+                    $payEvent->notifyAll();
                 }
             }
         });
@@ -383,53 +373,117 @@ class BookingController extends BaseController
     }
 
     // ══════════════════════════════════════════════════════
-    //  PAYMENT FAIL / CANCEL CALLBACKS
+    //  PAYMENT FAIL
+    //  Room stays RESERVED — guest can retry payment.
+    //  Transaction saved as failed for audit trail.
     // ══════════════════════════════════════════════════════
-
     public function paymentFail(Request $request): JsonResponse
     {
-        $booking = Booking::where('booking_number', $request->input('tran_id'))->first();
-        if ($booking) {
-            $booking->update(['payment_status' => 'failed']);
-            Transaction::create([
-                'booking_id' => $booking->booking_number,
-                'user_id'    => $booking->user_id,
-                'amount'     => $booking->amount,
-                'status'     => 'failed',
-                'meta'       => json_encode($request->all()),
-            ]);
+        $tranId = $request->input('tran_id');
+
+        $group = BookingGroup::where('group_ref', $tranId)->first();
+
+        if ($group) {
+            // Group payment failed — all bookings stay reserved
+            foreach ($group->bookings as $booking) {
+                $this->recordFailedTransaction($booking, $request);
+            }
+            $group->update(['payment_status' => 'failed']);
+        } else {
+            $booking = Booking::where('booking_number', $tranId)->first();
+            if ($booking) {
+                // Room stays reserved so guest can retry
+                $this->recordFailedTransaction($booking, $request);
+            }
         }
-        return $this->sendError('Payment failed.', [], 422);
+
+        return $this->sendError('Payment failed. Your room is still reserved — you can retry payment.', [], 422);
     }
 
+    // ══════════════════════════════════════════════════════
+    //  PAYMENT CANCEL
+    //  Room stays RESERVED — guest can retry payment.
+    // ══════════════════════════════════════════════════════
     public function paymentCancel(Request $request): JsonResponse
     {
-        return $this->sendError('Payment was cancelled.', [], 422);
+        // Room stays reserved, guest can pay later
+        return $this->sendError('Payment cancelled. Your room is still reserved.', [], 422);
     }
 
     // ══════════════════════════════════════════════════════
     //  RETRY PAYMENT
-    //  POST /portal/booking/retry-payment
+    //  Guest can pay again after fail/cancel.
+    //  Room must still be reserved.
     // ══════════════════════════════════════════════════════
-
     public function tryToPayAgain(Request $request)
     {
         $request->validate([
-            'booking_number' => 'required|exists:bookings,booking_number',
+            'booking_number' => 'nullable|exists:bookings,booking_number',
+            'group_ref'      => 'nullable|exists:booking_groups,group_ref',
         ]);
+
+        if ($request->filled('group_ref')) {
+            $group = BookingGroup::where('group_ref', $request->group_ref)
+                ->where('user_id', $request->user()->id)
+                ->with('bookings.room.property.place.city')
+                ->firstOrFail();
+
+            if ($group->payment_status === 'paid') {
+                return $this->sendError('This group is already paid.', [], 422);
+            }
+
+            return $this->initiateSSLPayment($group->bookings->first(), $request->user(), $group);
+        }
 
         $booking = Booking::where('booking_number', $request->booking_number)
             ->where('user_id', $request->user()->id)
             ->firstOrFail();
 
+        if ($booking->payment_status === 'paid') {
+            return $this->sendError('Already paid.', [], 422);
+        }
+
+        if ($booking->status === 'cancelled') {
+            return $this->sendError('This booking has been cancelled and cannot be paid.', [], 422);
+        }
+
         return $this->initiateSSLPayment($booking, $request->user());
     }
 
     // ══════════════════════════════════════════════════════
-    //  AVAILABILITY CHECK
-    //  GET /portal/booking/check/:room
+    //  CANCEL BOOKING
+    //  Frees the room and notifies admin + owner.
     // ══════════════════════════════════════════════════════
+    public function cancelBooking(Request $request): JsonResponse
+    {
+        $request->validate(['booking_number' => 'required|exists:bookings,booking_number']);
 
+        $booking = Booking::where('booking_number', $request->booking_number)
+            ->where('user_id', $request->user()->id)
+            ->firstOrFail();
+
+        if ($booking->payment_status === 'paid') {
+            return $this->sendError('Paid bookings cannot be self-cancelled. Contact support.', [], 422);
+        }
+
+        $booking->update(['status' => 'cancelled', 'payment_status' => 'cancelled']);
+
+        Room::where('id', $booking->room_id)->update([
+            'status'          => 'Available',
+            'booked_date'     => null,
+            'booked_off_date' => null,
+        ]);
+
+        $event = new BookingCancelled($booking->load(['room', 'room.property', 'user']));
+        event($event);
+        $event->notifyAll();
+
+        return $this->sendSuccess(['message' => 'Booking cancelled successfully.']);
+    }
+
+    // ══════════════════════════════════════════════════════
+    //  AVAILABILITY CHECK
+    // ══════════════════════════════════════════════════════
     public function bookingCheck(Request $request, $room): JsonResponse
     {
         $request->validate([
@@ -439,7 +493,7 @@ class BookingController extends BaseController
 
         $conflict = Booking::where('room_id', $room)
             ->whereIn('status', ['reserved', 'approved'])
-            ->where('checkin',  '<', $request->check_out)
+            ->where('checkin', '<', $request->check_out)
             ->where('checkout', '>', $request->check_in)
             ->exists();
 
@@ -448,19 +502,13 @@ class BookingController extends BaseController
 
     // ══════════════════════════════════════════════════════
     //  MY BOOKINGS
-    //  GET /portal/booking/my-bookings
     // ══════════════════════════════════════════════════════
-
     public function myBookings(Request $request): JsonResponse
     {
         $bookings = Booking::where('user_id', $request->user()->id)
             ->with([
-                'room',
-                'room.primaryImage',
-                'room.roomType',
-                'room.property',
-                'room.property.place.city',
-                'group',
+                'room', 'room.primaryImage', 'room.roomType',
+                'room.property', 'room.property.place.city', 'group',
             ])
             ->orderByDesc('created_at')
             ->get()
@@ -471,61 +519,37 @@ class BookingController extends BaseController
                 return $booking;
             });
 
-        // Group by booking_group_id for display
-        $grouped = $bookings->groupBy(fn($b) => $b->booking_group_id ?? 'single_' . $b->id);
-
         return $this->sendSuccess([
             'bookings' => $bookings,
-            'grouped'  => $grouped,
+            'grouped'  => $bookings->groupBy(fn($b) => $b->booking_group_id ?? 'single_' . $b->id),
         ]);
     }
 
     // ══════════════════════════════════════════════════════
     //  BOOKING DETAILS
-    //  GET /portal/booking/details
     // ══════════════════════════════════════════════════════
-
     public function bookingDetails(Request $request): JsonResponse
     {
         $userId = $request->user()->id;
 
-        // ── Multi-room: fetch by group_ref ────────────
         if ($request->filled('group_ref')) {
             $group = BookingGroup::where('group_ref', $request->group_ref)
                 ->where('user_id', $userId)
-                ->with([
-                    'bookings.room.primaryImage',
-                    'bookings.room.images',
-                    'bookings.room.property',
-                    'bookings.room.property.place.city',
-                ])
+                ->with(['bookings.room.primaryImage', 'bookings.room.property', 'bookings.room.property.place.city'])
                 ->first();
 
-            if (!$group) {
-                return $this->sendError('Booking group not found.', [], 404);
-            }
+            if (!$group) return $this->sendError('Group not found.', [], 404);
 
-            return $this->sendSuccess([
-                'booking_group' => $group,
-                'bookings'      => $group->bookings,
-            ]);
+            return $this->sendSuccess(['booking_group' => $group, 'bookings' => $group->bookings]);
         }
 
-        // ── Single room: fetch by booking_number ──────
         if ($request->filled('booking_number')) {
             $booking = Booking::where('booking_number', $request->booking_number)
                 ->where('user_id', $userId)
-                ->with([
-                    'room.primaryImage',
-                    'room.images',
-                    'room.property',
-                    'room.property.place.city',
-                ])
+                ->with(['room.primaryImage', 'room.property', 'room.property.place.city'])
                 ->first();
 
-            if (!$booking) {
-                return $this->sendError('Booking not found.', [], 404);
-            }
+            if (!$booking) return $this->sendError('Booking not found.', [], 404);
 
             return $this->sendSuccess(['booking' => $booking]);
         }
@@ -538,9 +562,106 @@ class BookingController extends BaseController
     // ══════════════════════════════════════════════════════
 
     /**
-     * Generate a unique booking number.
-     * Format: timestamp + 4 random digits = 14 digits total.
+     * Confirm a booking after successful payment.
+     * Idempotent — safe to call multiple times.
      */
+    private function confirmBooking(Booking $booking, Request $request): void
+    {
+        $booking->update([
+            'status'         => 'approved',
+            'payment_status' => 'paid',
+        ]);
+
+        $booking->room->update(['status' => 'Booked']);
+
+        // Upsert transaction — prevents duplicate on network retry
+        Transaction::updateOrCreate(
+            ['booking_id' => $booking->booking_number],
+            [
+                'user_id'               => $booking->user_id,
+                'amount'                => $booking->amount,
+                'payment_method'        => 'SSLComm',
+                'transaction_reference' => $request->input('bank_tran_id'),
+                'status'                => 'completed',
+                'meta'                  => json_encode($request->all()),
+            ]
+        );
+    }
+
+    /**
+     * Record a failed payment without changing booking/room status.
+     * Room stays reserved so guest can retry.
+     */
+    private function recordFailedTransaction(Booking $booking, Request $request): void
+    {
+        Transaction::updateOrCreate(
+            ['booking_id' => $booking->booking_number],
+            [
+                'user_id'               => $booking->user_id,
+                'amount'                => $booking->amount,
+                'payment_method'        => 'SSLComm',
+                'transaction_reference' => $request->input('bank_tran_id', 'FAILED'),
+                'status'                => 'failed',
+                'meta'                  => json_encode($request->all()),
+            ]
+        );
+
+        // Update booking payment_status to failed but keep status=reserved
+        $booking->update(['payment_status' => 'failed']);
+    }
+
+    /**
+     * Send ONE grouped notification for a multi-room booking.
+     */
+    private function notifyGroupBooking(BookingGroup $group, Booking $firstBooking): void
+    {
+        $bookings  = $group->bookings->load(['room', 'room.property']);
+        $roomCount = $bookings->count();
+        $property  = $firstBooking->room?->property;
+        $guestName = $firstBooking->user?->name ?? 'Guest';
+        $groupRef  = $group->group_ref;
+        $total     = number_format($group->total_amount);
+
+        $title   = "{$roomCount} room" . ($roomCount > 1 ? 's' : '') . ' booked — ' . ($property?->name ?? 'property');
+        $message = "By {$guestName} · BDT {$total} · Ref: {$groupRef}";
+
+        // Real-time broadcast — use first booking as carrier
+        $broadcastPayload = $firstBooking->load(['room', 'room.property', 'user', 'transaction']);
+
+        // Override broadcastWith data by firing a BookingCreated
+        // but with custom title via the extra field in AdminNotification
+        $event = new BookingCreated($broadcastPayload);
+        event($event);
+
+        // DB notification — ONE for all admins, grouped title
+        \App\Models\User::admins()->each(fn($admin) =>
+        $admin->notify(new \App\Notifications\Admin\AdminNotification(
+            type:    'booking',
+            title:   $title,
+            message: $message,
+            icon:    'bx-calendar-check',
+            color:   'teal',
+            extra:   ['group_ref' => $groupRef, 'rooms_count' => $roomCount],
+            channel: 'admin',
+        ))
+        );
+
+        // Guest confirmation
+        if ($firstBooking->user) {
+            $firstBooking->user->notify(
+                new \App\Notifications\Booking\PaymentConfirmedNotification($firstBooking, 'guest')
+            );
+        }
+
+        // Owner confirmation
+        if ($property?->user) {
+            $property->user->notify(
+                new \App\Notifications\Booking\PaymentConfirmedNotification($firstBooking, 'owner')
+            );
+        }
+    }
+
+
     private function generateBookingNumber(): int
     {
         do {
@@ -550,19 +671,13 @@ class BookingController extends BaseController
         return $number;
     }
 
-    /**
-     * Initiate SSLComm payment session.
-     * Used by bookNow, payGroup, and tryToPayAgain.
-     */
     private function initiateSSLPayment(Booking $booking, User $user, ?BookingGroup $group = null)
     {
-        $amount = $group ? $group->total_amount : $booking->amount;
-        $transactionId = $group
-            ? $group->group_ref   // for group payments SSLComm tran_id = group_ref
-            : $booking->booking_number;
+        $amount        = $group ? $group->total_amount : $booking->amount;
+        $transactionId = $group ? $group->group_ref    : $booking->booking_number;
 
         $paymentSession = new Payments(SSLCommSession::create([
-            'store_id'       => config('sslcomm.store_id', 'hotel674dd7e831e76'),
+            'store_id'       => config('sslcomm.store_id',       'hotel674dd7e831e76'),
             'store_password' => config('sslcomm.store_password', 'hotel674dd7e831e76@ssl'),
             'success_url'    => route('payment.success'),
             'fail_url'       => route('payment.fail'),
@@ -570,34 +685,29 @@ class BookingController extends BaseController
             'currency'       => 'BDT',
         ]));
 
-        $profile = $user->profile;
-
+        $profile  = $user->profile;
         $customer = Customer::createFromArray([
             'name'     => ($profile->first_name ?? '') . ' ' . ($profile->last_name ?? $user->name),
             'email'    => $user->email,
             'phone'    => $user->phone ?? 'N/A',
-            'address1' => $profile->address ?? 'N/A',
+            'address1' => $profile->address  ?? 'N/A',
             'address2' => '',
-            'city'     => $profile->city    ?? 'N/A',
-            'state'    => $profile->state   ?? '',
+            'city'     => $profile->city     ?? 'N/A',
+            'state'    => $profile->state    ?? '',
             'postcode' => $profile->zip_code ?? '',
-            'country'  => $profile->country ?? 'Bangladesh',
+            'country'  => $profile->country  ?? 'Bangladesh',
             'fax'      => '',
         ]);
 
         $checkin  = Carbon::parse($booking->checkin);
         $checkout = Carbon::parse($booking->checkout);
 
-        // Build rooms array — for group include all rooms
         $rooms = $group
-            ? $group->bookings->map(fn($b) => [
-                'name'  => $b->room->name ?? 'Room',
-                'price' => $b->amount,
-            ])->toArray()
+            ? $group->bookings->map(fn($b) => ['name' => $b->room->name ?? 'Room', 'price' => $b->amount])->toArray()
             : [['name' => $booking->room->name ?? 'Room', 'price' => $booking->amount]];
 
         $paymentItem = \App\Abstract\Payouts\SSLComm\Booking::createFromArray([
-            'transaction_id' => (string)$transactionId,
+            'transaction_id' => (string) $transactionId,
             'length_of_stay' => $checkin->diffInDays($checkout) . ' days',
             'hotel_name'     => $booking->room->property->name ?? 'Hotel',
             'hotel_city'     => $booking->room->property->place->city->name ?? 'N/A',
@@ -616,7 +726,7 @@ class BookingController extends BaseController
     {
         return match(true) {
             $hasDirect && $hasBids => 'Rooms booked! Your offers have also been sent to owners.',
-            $hasDirect             => 'Booking confirmed! Proceed to payment.',
+            $hasDirect             => 'Room reserved. Proceed to payment.',
             $hasBids               => 'Offers sent! You\'ll be notified when owners respond.',
             default                => 'Checkout complete.',
         };

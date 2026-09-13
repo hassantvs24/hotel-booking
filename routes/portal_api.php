@@ -6,6 +6,7 @@
 
 use App\Http\Controllers\API\Portal\Booking\BookingController;
 use App\Http\Controllers\API\Portal\Booking\CartController;
+use App\Http\Controllers\API\Portal\Booking\RefundController;
 use App\Http\Controllers\API\Portal\Booking\RoomRequestController;
 use App\Http\Controllers\API\Portal\HomeController;
 use App\Http\Controllers\API\Portal\Notification\NotificationController;
@@ -63,6 +64,17 @@ Route::prefix('portal')->group(function () {
         Route::post('/retry-payment', [PaymentController::class, 'tryToPayAgain']);
     });
 
+    Route::prefix('refunds')
+        ->middleware('auth:sanctum')
+        ->controller(RefundController::class)
+        ->group(function () {
+            Route::get('/quote/{booking:booking_number}', 'quote');
+            Route::post('/', 'store');
+            Route::get('/', 'index');
+            Route::get('/{refund:refund_number}', 'show');
+            Route::post('/{refund:refund_number}/cancel', 'cancel');
+        });
+
     // ── Cart routes
     Route::prefix('cart')
         ->middleware('auth:sanctum')
@@ -119,6 +131,18 @@ Route::prefix('portal')->group(function () {
         Route::get('/property/request-properties', [VendorController::class, 'requestProperties']);
         Route::get('/reg-info', [VendorController::class, 'getRegInfo']);
     });
+
+    Route::prefix('property/draft')
+        ->middleware('auth:sanctum')
+        ->controller(\App\Http\Controllers\API\Portal\Vendor\PropertyDraftController::class)
+        ->group(function () {
+            Route::get('/options',           'options');
+            Route::get('/by-ref',            'showByRef');
+            Route::get('/',                  'show');
+            Route::match(['post', 'patch'],'/{id}/step/{step}','saveStep');
+            Route::post('/{id}/submit',      'submit');
+            Route::delete('/{id}',           'destroy');
+        });
 
 
     // ── LOCAL DEV ONLY — remove before going live ────────
