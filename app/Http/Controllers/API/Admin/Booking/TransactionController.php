@@ -14,14 +14,12 @@ class TransactionController extends BaseController
         $user  = auth()->user();
         $query = Transaction::with(['user:id,name,email,phone']);
 
-        // Merchant scope — only transactions for their property's bookings
+        // Merchant scope — only transactions for their properties' bookings
         if ($user->is_merchant && !$user->is_admin) {
-            $propertyId = $user->associated_property?->id;
-            if ($propertyId) {
-                $query->whereHas('booking.room', fn($q) =>
-                $q->where('property_id', $propertyId)
-                );
-            }
+            $propertyIds = $user->properties()->pluck('id');
+            $query->whereHas('booking.room', fn($q) =>
+            $q->whereIn('property_id', $propertyIds)
+            );
         }
 
         // Search — booking_id, transaction_reference, or guest name/email
@@ -70,12 +68,10 @@ class TransactionController extends BaseController
         $query = Transaction::query();
 
         if ($user->is_merchant && !$user->is_admin) {
-            $propertyId = $user->associated_property?->id;
-            if ($propertyId) {
-                $query->whereHas('booking.room', fn($q) =>
-                $q->where('property_id', $propertyId)
-                );
-            }
+            $propertyIds = $user->properties()->pluck('id');
+            $query->whereHas('booking.room', fn($q) =>
+            $q->whereIn('property_id', $propertyIds)
+            );
         }
 
         return $this->sendSuccess([
