@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\API\Admin\Booking;
 
 use App\Http\Controllers\BaseController;
+use App\Models\RefundRequest;
 use App\Models\Transaction;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -70,19 +71,30 @@ class TransactionController extends BaseController
         $user  = auth()->user();
         $query = Transaction::query();
 
+        $refundQuery = RefundRequest::query()->where('status', RefundRequest::STATUS_COMPLETED);
+
         if ($user->is_merchant && !$user->is_admin) {
             $propertyIds = $user->properties()->pluck('id');
             $query->whereHas('booking.room', fn($q) =>
             $q->whereIn('property_id', $propertyIds)
             );
+            $refundQuery->whereHas('booking.room', fn($q) =>
+            $q->whereIn('property_id', $propertyIds)
+            );
         }
 
+        // A refunded booking's cancellation fee is money the property still
+        // keeps, so it counts toward revenue even though the transaction's
+        // own status moved from "completed" to "refunded".
+        $keptFromRefunds = (clone $refundQuery)->sum('cancellation_fee');
+
         return $this->sendSuccess([
-            'total'     => (clone $query)->count(),
-            'completed' => (clone $query)->where('status', 'completed')->count(),
-            'pending'   => (clone $query)->where('status', 'pending')->count(),
-            'failed'    => (clone $query)->where('status', 'failed')->count(),
-            'revenue'   => (clone $query)->where('status', 'completed')->sum('amount'),
+            'total'        => (clone $query)->count(),
+            'completed'    => (clone $query)->where('status', 'completed')->count(),
+            'pending'      => (clone $query)->where('status', 'pending')->count(),
+            'failed'       => (clone $query)->where('status', 'failed')->count(),
+            'total_refund' => (float) (clone $refundQuery)->sum('approved_amount'),
+            'revenue'      => (float) (clone $query)->where('status', 'completed')->sum('amount') + $keptFromRefunds,
         ]);
     }
 }
