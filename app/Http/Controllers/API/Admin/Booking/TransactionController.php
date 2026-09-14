@@ -12,7 +12,10 @@ class TransactionController extends BaseController
     public function index(Request $request): JsonResponse
     {
         $user  = auth()->user();
-        $query = Transaction::with(['user:id,name,email,phone']);
+        $query = Transaction::with([
+            'user:id,name,email,phone',
+            'refundRequests:id,transaction_id,status,original_amount,requested_amount,approved_amount,cancellation_fee,currency,requested_at,completed_at',
+        ]);
 
         // Merchant scope — only transactions for their properties' bookings
         if ($user->is_merchant && !$user->is_admin) {

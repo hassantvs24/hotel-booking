@@ -25,10 +25,11 @@ class BookingController extends BaseController
             'transaction',
         ]);
 
-        // Merchant scope
+        // Merchant scope — only bookings for their properties' rooms
         if ($user->is_merchant && !$user->is_admin) {
-            $query->whereHas('room', function ($q) use ($user) {
-                $q->where('property_id', $user->associated_property->id);
+            $propertyIds = $user->properties()->pluck('id');
+            $query->whereHas('room', function ($q) use ($propertyIds) {
+                $q->whereIn('property_id', $propertyIds);
             });
         }
 
@@ -144,13 +145,24 @@ class BookingController extends BaseController
 
     public function stats(): JsonResponse
     {
+        $user  = auth()->user();
+        $query = Booking::query();
+
+        // Merchant scope — only bookings for their properties' rooms
+        if ($user->is_merchant && !$user->is_admin) {
+            $propertyIds = $user->properties()->pluck('id');
+            $query->whereHas('room', function ($q) use ($propertyIds) {
+                $q->whereIn('property_id', $propertyIds);
+            });
+        }
+
         $stats = [
-            'total'     => Booking::count(),
-            'pending'   => Booking::where('status', 'pending')->count(),
-            'reserved'  => Booking::where('status', 'reserved')->count(),
-            'approved'  => Booking::where('status', 'approved')->count(),
-            'cancelled' => Booking::where('status', 'cancelled')->count(),
-            'completed' => Booking::where('status', 'completed')->count(),
+            'total'     => (clone $query)->count(),
+            'pending'   => (clone $query)->where('status', 'pending')->count(),
+            'reserved'  => (clone $query)->where('status', 'reserved')->count(),
+            'approved'  => (clone $query)->where('status', 'approved')->count(),
+            'cancelled' => (clone $query)->where('status', 'cancelled')->count(),
+            'completed' => (clone $query)->where('status', 'completed')->count(),
         ];
 
         return $this->sendSuccess($stats);
