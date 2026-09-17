@@ -42,4 +42,9 @@ class Booking extends Model
         return $this->hasMany(RefundRequest::class);
     }
 
+    public function reviewSubmission(): HasOne
+    {
+        return $this->hasOne(ReviewSubmission::class);
+    }
+
 }

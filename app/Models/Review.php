@@ -24,4 +24,9 @@ class Review extends Model
     {
         return $this->belongsTo(ReviewCategory::class);
     }
+
+    public function reviewSubmission() : BelongsTo
+    {
+        return $this->belongsTo(ReviewSubmission::class);
+    }
 }

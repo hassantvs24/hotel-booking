@@ -86,6 +86,16 @@ Route::middleware('auth:sanctum')->prefix('admin')->group(function () {
     Route::apiResource('reviews', ReviewController::class)->except(['create', 'show', 'edit']);
     Route::get('reviews/all', [ReviewController::class, 'all']);
 
+    Route::prefix('review-submissions')
+        ->controller(\App\Http\Controllers\API\Admin\Review\ReviewSubmissionController::class)
+        ->group(function () {
+            Route::get('/', 'index');
+            Route::get('/stats', 'stats');
+            Route::get('/{submission}', 'show');
+            Route::post('/{submission}/reply', 'reply');
+            Route::put('/{submission}/status', 'updateStatus');
+        });
+
     /*----------------------------------------------------------
     | Property rules
     ----------------------------------------------------------*/
