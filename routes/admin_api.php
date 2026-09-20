@@ -28,9 +28,21 @@ use App\Http\Controllers\API\Admin\Review\ReviewController;
 use App\Http\Controllers\API\Admin\Surrounding\SurroundingController;
 use App\Http\Controllers\API\Admin\Surrounding\SurroundingPlaceController;
 use App\Http\Controllers\API\Admin\Notification\NotificationController;
+use App\Http\Controllers\API\ChatController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware('auth:sanctum')->prefix('admin')->group(function () {
+
+    Route::prefix('chat')->controller(ChatController::class)->group(function () {
+        Route::get('/conversations', 'index');
+        Route::get('/conversations/{conversation}/messages', 'messages');
+        Route::post('/conversations/{conversation}/messages', 'send')->middleware('throttle:30,1');
+        Route::post('/conversations/{conversation}/read', 'read');
+        Route::get('/conversations/{conversation}/requests', 'specialRequests');
+        Route::post('/conversations/{conversation}/internal-notes', 'internalNote');
+        Route::post('/conversations/{conversation}/status', 'setStatus');
+        Route::post('/conversations/{conversation}/requests/{specialRequest}/respond', 'respondSpecialRequest');
+    });
 
     /*----------------------------------------------------------
     | ACL

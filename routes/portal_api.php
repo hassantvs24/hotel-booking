@@ -4,6 +4,7 @@
 | Portal API Routes
 ------------------------------------------*/
 
+use App\Http\Controllers\API\ChatController;
 use App\Http\Controllers\API\Portal\Booking\BookingController;
 use App\Http\Controllers\API\Portal\Booking\CartController;
 use App\Http\Controllers\API\Portal\Booking\RefundController;
@@ -74,6 +75,16 @@ Route::prefix('portal')->group(function () {
             Route::get('/{refund:refund_number}', 'show');
             Route::post('/{refund:refund_number}/cancel', 'cancel');
         });
+
+    Route::prefix('chat')->middleware('auth:sanctum')->controller(ChatController::class)->group(function () {
+        Route::get('/conversations', 'index');
+        Route::post('/conversations', 'create');
+        Route::get('/conversations/{conversation}/messages', 'messages');
+        Route::post('/conversations/{conversation}/messages', 'send')->middleware('throttle:30,1');
+        Route::post('/conversations/{conversation}/read', 'read');
+        Route::get('/conversations/{conversation}/requests', 'specialRequests');
+        Route::post('/conversations/{conversation}/requests', 'createSpecialRequest');
+    });
 
     // ── Cart routes
     Route::prefix('cart')
