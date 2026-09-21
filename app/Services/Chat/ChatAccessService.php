@@ -4,8 +4,7 @@ namespace App\Services\Chat;
 
 use App\Models\ChatConversation;
 use App\Models\User;
-use Illuminate\Database\Query\Builder;
-
+use Illuminate\Database\Eloquent\Builder;
 class ChatAccessService
 {
     public function canAccess(User $user, ChatConversation $conversation): bool

@@ -21,6 +21,7 @@ return new class extends Migration {
             $table->string('group')->default('default');
             $table->boolean('admin_only')->default(false);
             $table->boolean('is_deletable')->default(true);
+            $table->softDeletes();
             $table->timestamps();
         });
     }

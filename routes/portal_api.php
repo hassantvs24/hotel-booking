@@ -183,6 +183,15 @@ Route::prefix('portal')->group(function () {
 
 });
 
+// ── Chat attachments download ───────────────────────
+Route::middleware('auth:sanctum')
+    ->get(
+        '/chat/attachments/{attachment}',
+        [ChatController::class, 'download']
+    )
+    ->middleware('throttle:60,1')
+    ->name('chat.attachments.download');
+
 /*----------------- Payment Callbacks (public — no auth, called by SSLCommerz IPN) -----------------*/
 Route::post('/payment/success', [PaymentController::class, 'paymentSuccess'])->name('payment.success');
 Route::post('/payment/fail',    [PaymentController::class, 'paymentFail'])->name('payment.fail');

@@ -74,6 +74,8 @@ return new class extends Migration
                 ->constrained('users')
                 ->cascadeOnDelete();
             $table->timestamp('read_at');
+            $table->softDeletes();
+            $table->timestamps();
         });
 
         Schema::create('chat_attachments', function (Blueprint $table) {
@@ -121,6 +123,7 @@ return new class extends Migration
             ])->default('pending');
             $table->text('response_note')->nullable();
             $table->timestamp('responded_at')->nullable();
+            $table->softDeletes();
             $table->timestamps();
         });
     }
