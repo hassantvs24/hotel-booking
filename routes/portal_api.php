@@ -4,6 +4,7 @@
 | Portal API Routes
 ------------------------------------------*/
 
+use App\Http\Controllers\API\ChatController;
 use App\Http\Controllers\API\Portal\Booking\BookingController;
 use App\Http\Controllers\API\Portal\Booking\CartController;
 use App\Http\Controllers\API\Portal\Booking\RefundController;
@@ -85,6 +86,16 @@ Route::prefix('portal')->group(function () {
             Route::post('/', 'store');
             Route::get('/my-reviews', 'myReviews');
         });
+
+    Route::prefix('chat')->middleware('auth:sanctum')->controller(ChatController::class)->group(function () {
+        Route::get('/conversations', 'index');
+        Route::post('/conversations', 'create');
+        Route::get('/conversations/{conversation}/messages', 'messages');
+        Route::post('/conversations/{conversation}/messages', 'send')->middleware('throttle:30,1');
+        Route::post('/conversations/{conversation}/read', 'read');
+        Route::get('/conversations/{conversation}/requests', 'specialRequests');
+        Route::post('/conversations/{conversation}/requests', 'createSpecialRequest');
+    });
 
     // ── Cart routes
     Route::prefix('cart')
@@ -182,6 +193,15 @@ Route::prefix('portal')->group(function () {
         });
 
 });
+
+// ── Chat attachments download ───────────────────────
+Route::middleware('auth:sanctum')
+    ->get(
+        '/chat/attachments/{attachment}',
+        [ChatController::class, 'download']
+    )
+    ->middleware('throttle:60,1')
+    ->name('chat.attachments.download');
 
 /*----------------- Payment Callbacks (public — no auth, called by SSLCommerz IPN) -----------------*/
 Route::post('/payment/success', [PaymentController::class, 'paymentSuccess'])->name('payment.success');

@@ -1,6 +1,5 @@
 <?php
 
-
 namespace App\Traits;
 
 use Illuminate\Http\UploadedFile;
@@ -9,49 +8,82 @@ use Illuminate\Support\Str;
 
 trait MediaMan
 {
-
     /**
-     * @param $file
-     * @param $path
-     * @return mixed
+     * Store an uploaded file.
+     *
+     * Existing calls continue using the public disk:
+     * $this->storeFile($file, 'room');
+     *
+     * Private chat upload:
+     * $this->storeFile($file, 'chat-attachments/1', 'local');
      */
-    public function storeFile($file, $path) :mixed
-    {
-        // if not file
+    public function storeFile(
+        mixed $file,
+        string $path,
+        string $disk = 'public'
+    ): mixed {
         if (!$file instanceof UploadedFile) {
             return $file;
         }
 
-        // generate unique name for file
-        $currentDate = now();
-        $slugify = Str::slug($currentDate, '-') . '-' . uniqid();
-        $imageName = $slugify . '.' . $file->getClientOriginalExtension();
+        $extension = strtolower(
+            $file->getClientOriginalExtension()
+                ?: $file->extension()
+                ?: 'bin'
+        );
 
-        // Check if Path exist or not
-        if (!Storage::disk('public')->exists($path)) {
-            Storage::disk('public')->makeDirectory($path);
+        $fileName = sprintf(
+            '%s-%s.%s',
+            now()->format('Y-m-d-His'),
+            Str::lower(Str::random(20)),
+            $extension
+        );
+
+        $path = trim($path, '/');
+
+        if (!Storage::disk($disk)->exists($path)) {
+            Storage::disk($disk)->makeDirectory($path);
         }
 
-        // Store File to Disk
-        Storage::disk('public')->putFileAs($path . '/', $file, $imageName);
+        Storage::disk($disk)->putFileAs(
+            $path,
+            $file,
+            $fileName
+        );
+
         return [
-            'name' => $imageName,
+            'name' => $fileName,
             'path' => $path,
+            'disk' => $disk,
             'size' => $file->getSize(),
-            'mime' => $file->getClientMimeType(),
+            'mime' => $file->getMimeType()
+                ?: $file->getClientMimeType()
+                    ?: 'application/octet-stream',
+            'original_name' =>
+                $file->getClientOriginalName(),
         ];
     }
 
-    /**
-     * @param $file
-     * @param $path
-     * @return void
-     */
-    public function deleteFile($file, $path) :void
-    {
-        if (Storage::disk('public')->exists($path . '/' . $file)) {
-            Storage::disk('public')->delete($path . '/' . $file);
+    public function deleteFile(
+        string $file,
+        string $path,
+        string $disk = 'public'
+    ): void {
+        $fullPath = trim($path, '/')
+            . '/'
+            . ltrim($file, '/');
+
+        if (Storage::disk($disk)->exists($fullPath)) {
+            Storage::disk($disk)->delete($fullPath);
         }
     }
 
+    public function deleteStoredFile(
+        string $fullPath,
+        string $disk = 'public'
+    ): void {
+        if (Storage::disk($disk)->exists($fullPath)) {
+            Storage::disk($disk)->delete($fullPath);
+        }
+    }
 }
