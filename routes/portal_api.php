@@ -162,6 +162,7 @@ Route::prefix('portal')->group(function () {
             Route::get('/by-ref',            'showByRef');
             Route::get('/',                  'show');
             Route::match(['post', 'patch'],'/{id}/step/{step}','saveStep');
+            Route::post('/{id}/photos',      'uploadPhoto');
             Route::post('/{id}/submit',      'submit');
             Route::delete('/{id}',           'destroy');
         });

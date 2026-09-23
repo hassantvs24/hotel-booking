@@ -13,12 +13,15 @@ use App\Models\PropertyRule;
 use App\Models\State;
 use App\Models\User;
 use App\Notifications\Admin\AdminNotification;
+use App\Traits\MediaMan;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class PropertyDraftController extends BaseController
 {
+    use MediaMan;
+
     /*
      * All options needed for the property draft management will be handled here.
      */
@@ -128,6 +131,45 @@ class PropertyDraftController extends BaseController
             'message'    => 'Step ' . $step . ' saved.',
             'draft'      => $draft->fresh(),
         ]);
+    }
+
+    /*
+     * Upload a single photo for the Photos step (step 5).
+     * Stores the file to disk immediately and appends it to draft_data
+     * so it survives a refresh — unlike the other steps, photos can't
+     * wait for the "Continue" click since the file itself lives in the
+     * browser's memory until uploaded.
+     */
+
+    public function uploadPhoto(Request $request, $id) : JsonResponse
+    {
+        $request->validate([
+            'photo' => 'required|image|max:5120',
+        ]);
+
+        $draft = $this->getDraft($request, $id);
+
+        $stored = $this->storeFile($request->file('photo'), 'properties');
+
+        $draftData = $draft->draft_data ?? [];
+        $photos = $draftData['step_5']['photos'] ?? [];
+        $photos[] = [
+            'name'          => $stored['name'],
+            'path'          => $stored['path'],
+            'disk'          => $stored['disk'],
+            'mime'          => $stored['mime'],
+            'size'          => $stored['size'],
+            'original_name' => $stored['original_name'],
+            'url'           => asset('storage/' . $stored['path'] . '/' . $stored['name']),
+        ];
+        $draftData['step_5']['photos'] = $photos;
+
+        $draft->update([
+            'draft_data' => $draftData,
+            'draft_step' => max((int) $draft->draft_step, 5),
+        ]);
+
+        return $this->sendSuccess(['photos' => $photos]);
     }
 
     /*
