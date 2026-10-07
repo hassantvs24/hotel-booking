@@ -10,6 +10,8 @@ use App\Http\Controllers\API\Portal\Booking\CartController;
 use App\Http\Controllers\API\Portal\Booking\RefundController;
 use App\Http\Controllers\API\Portal\Booking\RoomRequestController;
 use App\Http\Controllers\API\Portal\HomeController;
+use App\Http\Controllers\API\Portal\LocalConfirmController;
+use App\Http\Controllers\API\Portal\Location\LocationController;
 use App\Http\Controllers\API\Portal\Notification\NotificationController;
 use App\Http\Controllers\API\Portal\Notification\PushController;
 use App\Http\Controllers\API\Portal\PaymentController;
@@ -18,6 +20,7 @@ use App\Http\Controllers\API\Portal\Property\SearchController;
 use App\Http\Controllers\API\Portal\PropertyController;
 use App\Http\Controllers\API\Portal\RequestController;
 use App\Http\Controllers\API\Portal\Review\ReviewController;
+use App\Http\Controllers\API\Portal\Vendor\PropertyDraftController;
 use App\Http\Controllers\API\Portal\Vendor\PropertyRequestController;
 use App\Http\Controllers\API\Portal\Vendor\VendorController;
 use Illuminate\Support\Facades\Route;
@@ -118,7 +121,7 @@ Route::prefix('portal')->group(function () {
         Route::post('/request', [RoomRequestController::class, 'roomRequest']);
         Route::get('/request-notification', [RoomRequestController::class, 'roomRequestNotification']);
         Route::delete('request-notification-remove/{propertyId}', [RoomRequestController::class, 'removeNotification']);
-        Route::get('/request-response/{propertyId}', [RoomRequestController::class, 'roomResponselist']);
+        Route::get('/request-response/{propertyId}', [RoomRequestController::class, 'roomResponseList']);
     });
 
     Route::prefix('request')->middleware('auth:sanctum')->group(function () {
@@ -143,8 +146,8 @@ Route::prefix('portal')->group(function () {
 
     // Location Routes
     Route::prefix('location')->group(function () {
-        Route::get('/suggestions', [\App\Http\Controllers\API\Portal\Location\LocationController::class, 'suggestions']);
-        Route::post('/resolve-place', [\App\Http\Controllers\API\Portal\Location\LocationController::class, 'resolvePlace']);
+        Route::get('/suggestions', [LocationController::class, 'suggestions']);
+        Route::post('/resolve-place', [LocationController::class, 'resolvePlace']);
     });
 
     Route::middleware('auth:sanctum')->group(function () {
@@ -156,7 +159,7 @@ Route::prefix('portal')->group(function () {
 
     Route::prefix('property/draft')
         ->middleware('auth:sanctum')
-        ->controller(\App\Http\Controllers\API\Portal\Vendor\PropertyDraftController::class)
+        ->controller(PropertyDraftController::class)
         ->group(function () {
             Route::get('/options',           'options');
             Route::get('/by-ref',            'showByRef');
@@ -171,7 +174,7 @@ Route::prefix('portal')->group(function () {
     // ── LOCAL DEV ONLY — remove before going live ────────
     // No auth middleware — after SSLCommerz redirect, token may not be
     // rehydrated in time. LocalConfirmController checks app()->isLocal()
-    Route::post('/booking/confirm-local', [\App\Http\Controllers\API\Portal\LocalConfirmController::class, 'confirm']);
+    Route::post('/booking/confirm-local', [LocalConfirmController::class, 'confirm']);
 
     // ── Notifications ───────────────────────────────────
     Route::prefix('notifications')

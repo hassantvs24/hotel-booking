@@ -268,7 +268,7 @@ class RoomRequestController extends BaseController
         return $this->sendSuccess(['message' => 'Notification removed.']);
     }
 
-    public function roomResponselist(Request $request, $propertyId): JsonResponse
+    public function roomResponseList(Request $request, $propertyId): JsonResponse
     {
         $all    = RoomRequest::where('user_id', $request->user()->id)
             ->where('property_id', $propertyId)
