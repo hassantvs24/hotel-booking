@@ -29,6 +29,7 @@ class DatabaseSeeder extends Seeder
             RoleSeeder::class,
             //RoomSeeder::class,
             //ReviewSeeder::class,
+            ReviewCategorySeeder::class,
             //OfferSeeder::class
         ]);
     }

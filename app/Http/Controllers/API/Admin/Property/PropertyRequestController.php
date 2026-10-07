@@ -3,6 +3,9 @@
 namespace App\Http\Controllers\API\Admin\Property;
 
 use App\Http\Controllers\BaseController;
+use App\Models\City;
+use App\Models\Country;
+use App\Models\Property;
 use App\Models\PropertyRequest;
 use App\Models\User;
 use App\Notifications\Property\PropertyRequestApproved;
@@ -91,12 +94,88 @@ class PropertyRequestController extends BaseController
 
         $propertyRequest->update(['user_id' => $user->id]);
 
+        if (!$propertyRequest->property_id) {
+            $property = $this->createPropertyFromDraft($propertyRequest, $user);
+            $propertyRequest->update(['property_id' => $property->id]);
+        }
+
         PropertyRequestApproved::send($propertyRequest->owner_email, [
             'name' => $propertyRequest->name,
             'email' => $propertyRequest->owner_email,
             'phone' => $propertyRequest->contact_number,
             'user' => $user
         ]);
+    }
+
+    /**
+     * Build the actual Property record from the wizard's draft_data,
+     * so approving a request is what finally puts the property in
+     * front of admins/guests — the wizard itself only ever writes
+     * to property_requests.
+     */
+    private function createPropertyFromDraft(PropertyRequest $propertyRequest, User $user): Property
+    {
+        $draftData = $propertyRequest->draft_data ?? [];
+        $step1 = $draftData['step_1'] ?? [];
+        $step3 = $draftData['step_3'] ?? [];
+        $step5 = $draftData['step_5'] ?? [];
+        $step6 = $draftData['step_6'] ?? [];
+        $step7 = $draftData['step_7'] ?? [];
+
+        // Property::address is a serialize()/unserialize() accessor that
+        // expects this exact shape — a plain string gets silently nulled.
+        $address = [
+            'address'   => $propertyRequest->address,
+            'apartment' => null,
+            'city'      => City::find($step3['city_id'] ?? null)?->name,
+            'country'   => Country::find($step3['country_id'] ?? null)?->name,
+        ];
+
+        $property = Property::create([
+            'name'                  => $propertyRequest->property_title,
+            'description'           => $propertyRequest->description,
+            'property_type'         => $step1['property_type_name'] ?? null,
+            'lat'                   => $propertyRequest->latitude,
+            'long'                  => $propertyRequest->longitude,
+            'address'               => $address,
+            'phone_number'          => $propertyRequest->contact_number,
+            'email'                 => $propertyRequest->owner_email,
+            'check_in_time'         => $step7['check_in_time'] ?? null,
+            'check_out_time'        => $step7['check_out_time'] ?? null,
+            'status'                => Property::STATUS_PENDING,
+            'property_category_id'  => $step1['property_type_id'] ?? null,
+            'place_id'              => $step3['place_id'] ?: null,
+            'user_id'               => $user->id,
+            'meta'                  => json_encode([
+                'surroundings'        => $step6['surroundings'] ?? [],
+                'distance_to_centre'  => $step6['distance_to_centre'] ?? null,
+                'cancellation_policy' => $step7['cancellation_policy'] ?? null,
+                'min_stay'            => $step7['min_stay'] ?? null,
+                'policies'            => $step7['policies'] ?? [],
+            ]),
+        ]);
+
+        $facilityIds = $draftData['step_4']['facility_ids'] ?? [];
+        if (!empty($facilityIds)) {
+            $property->facilities()->sync($facilityIds);
+        }
+
+        foreach (($step5['photos'] ?? []) as $index => $photo) {
+            if (empty($photo['name']) || empty($photo['path'])) {
+                continue;
+            }
+
+            $property->images()->create([
+                'name'       => $photo['name'],
+                'type'       => 'image',
+                'path'       => $photo['path'],
+                'media_role' => $index === 0 ? 'property_image' : 'property_gallery_image',
+                'size'       => $photo['size'] ?? null,
+                'mime'       => $photo['mime'] ?? null,
+            ]);
+        }
+
+        return $property;
     }
 
     private function handleRejection(PropertyRequest $propertyRequest, string $previousStatus): void

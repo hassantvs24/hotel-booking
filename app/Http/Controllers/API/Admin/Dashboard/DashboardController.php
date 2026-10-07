@@ -4,8 +4,10 @@ namespace App\Http\Controllers\API\Admin\Dashboard;
 
 use App\Http\Controllers\BaseController;
 use App\Models\Booking;
+use App\Models\RefundRequest;
 use App\Models\Review;
 use App\Models\Room;
+use App\Models\Transaction;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -15,35 +17,50 @@ class DashboardController extends BaseController
     {
         $user = auth()->user();
 
-        if ($user->is_admin) {
-            $bookings = Booking::with(['room', 'room.property', 'room.property.place.city', 'user', 'user.profile'])->latest()->take(3)->get();
-            $bookingCount = Booking::count();
-            $roomCount = Room::count();
-            $reviewCount = Review::count();
-            $bookingCountsByStatus = Booking::selectRaw('status, COUNT(*) as count')
-                ->groupBy('status')
-                ->pluck('count', 'status');
-        } elseif ($user->is_merchant && $user->associated_property) {
-            $bookings = Booking::whereHas('room', function ($query) use ($request) {
-                $query->where('property_id', $request->user()->associated_property->id);
-            })->with(['room', 'room.property', 'room.property.place', 'user'])->latest()->take(3)->get();
-            $bookingCount = Booking::whereHas('room', function ($query) use ($request) {
-                $query->where('property_id', $request->user()->associated_property->id);
-            })->count();
-            $roomCount = Room::where('property_id', $request->user()->associated_property->id)->count();
-            $reviewCount = Review::where('property_id', $request->user()->associated_property->id)->count();
-            $bookingCountsByStatus = Booking::whereHas('room', function ($query) use ($request) {
-                $query->where('property_id', $request->user()->associated_property->id);
-            })->selectRaw('status, COUNT(*) as count')
-                ->groupBy('status')
-                ->pluck('count', 'status');
-        }
+        // Property scope — admin sees the whole platform, a merchant sees
+        // only rooms/bookings/reviews for properties they own (all of
+        // them, not just the first — a merchant can own several).
+        $propertyIds = $user->is_admin ? null : $user->properties()->pluck('id');
+        $scoped = fn($query) => $propertyIds === null
+            ? $query
+            : $query->whereHas('room', fn($q) => $q->whereIn('property_id', $propertyIds));
+
+        $bookings = $scoped(Booking::with(['room', 'room.property', 'room.property.place.city', 'user', 'user.profile']))
+            ->latest()->take(3)->get();
+        $bookingCount = $scoped(Booking::query())->count();
+        $roomCount = $propertyIds === null
+            ? Room::count()
+            : Room::whereIn('property_id', $propertyIds)->count();
+        $reviewCount = $propertyIds === null
+            ? Review::count()
+            : Review::whereIn('property_id', $propertyIds)->count();
+        $bookingCountsByStatus = $scoped(Booking::query())
+            ->selectRaw('status, COUNT(*) as count')
+            ->groupBy('status')
+            ->pluck('count', 'status');
+
+        // Total earnings — same definition used on the Transactions page:
+        // completed transactions' full amount, plus the cancellation fee
+        // kept from any completed refund (the transaction itself moves to
+        // "refunded" status, but that fee is still money the property keeps).
+        $transactionScope = fn($query) => $propertyIds === null
+            ? $query
+            : $query->whereHas('booking.room', fn($q) => $q->whereIn('property_id', $propertyIds));
+        $refundScope = fn($query) => $propertyIds === null
+            ? $query
+            : $query->whereHas('booking.room', fn($q) => $q->whereIn('property_id', $propertyIds));
+
+        $completedRevenue = $transactionScope(Transaction::where('status', 'completed'))->sum('amount');
+        $keptFromRefunds = $refundScope(RefundRequest::where('status', RefundRequest::STATUS_COMPLETED))->sum('cancellation_fee');
+        $totalEarnings = (float) $completedRevenue + (float) $keptFromRefunds;
+
         $data = [
             'bookings' => $bookings,
             'total_bookings' => $bookingCount,
             'total_rooms' => $roomCount,
             'booking_counts_by_status' => $bookingCountsByStatus,
             'review_count' => $reviewCount,
+            'total_earnings' => $totalEarnings,
             'user' => $user
         ];
 

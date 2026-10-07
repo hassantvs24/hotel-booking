@@ -17,6 +17,7 @@ use App\Http\Controllers\API\Portal\Property\FilterController;
 use App\Http\Controllers\API\Portal\Property\SearchController;
 use App\Http\Controllers\API\Portal\PropertyController;
 use App\Http\Controllers\API\Portal\RequestController;
+use App\Http\Controllers\API\Portal\Review\ReviewController;
 use App\Http\Controllers\API\Portal\Vendor\PropertyRequestController;
 use App\Http\Controllers\API\Portal\Vendor\VendorController;
 use Illuminate\Support\Facades\Route;
@@ -35,6 +36,7 @@ Route::prefix('portal')->group(function () {
         Route::get('/{property}/other-rooms', [PropertyController::class, 'otherRooms']);
         Route::get('/{property}/booking-request-check', [PropertyController::class, 'bookingRoomCheck']);
         Route::get('/{property}/booking-date-check', [PropertyController::class, 'checkBookedDate']);
+        Route::get('/{property}/reviews', [ReviewController::class, 'index']);
     });
 
     Route::prefix('search')->group(function () {
@@ -74,6 +76,15 @@ Route::prefix('portal')->group(function () {
             Route::get('/', 'index');
             Route::get('/{refund:refund_number}', 'show');
             Route::post('/{refund:refund_number}/cancel', 'cancel');
+        });
+
+    Route::prefix('reviews')
+        ->middleware('auth:sanctum')
+        ->controller(ReviewController::class)
+        ->group(function () {
+            Route::get('/eligibility/{booking:booking_number}', 'eligibility');
+            Route::post('/', 'store');
+            Route::get('/my-reviews', 'myReviews');
         });
 
     Route::prefix('chat')->middleware('auth:sanctum')->controller(ChatController::class)->group(function () {
@@ -151,6 +162,7 @@ Route::prefix('portal')->group(function () {
             Route::get('/by-ref',            'showByRef');
             Route::get('/',                  'show');
             Route::match(['post', 'patch'],'/{id}/step/{step}','saveStep');
+            Route::post('/{id}/photos',      'uploadPhoto');
             Route::post('/{id}/submit',      'submit');
             Route::delete('/{id}',           'destroy');
         });
