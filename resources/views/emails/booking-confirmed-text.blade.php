@@ -46,8 +46,13 @@ Paid on:           {!! $d['paid_at'] !!}
 
 CANCELLATION & REFUND POLICY
 (counted from the start of your check-in day)
-@foreach ($d['policy'] as $row)
+@foreach ($d['policies'] as $block)
+@if (count($d['policies']) > 1)
+{!! implode(', ', $block['hotels']) !!}:
+@endif
+@foreach ($block['rows'] as $row)
 - {!! $row['when'] !!}: {!! $row['outcome'] !!}
+@endforeach
 @endforeach
 
 View your bookings: {!! $d['bookings_url'] !!}

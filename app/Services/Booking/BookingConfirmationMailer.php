@@ -6,6 +6,7 @@ use App\Mail\BookingConfirmedMail;
 use App\Models\Booking;
 use App\Models\BookingGroup;
 use App\Models\RoomRequest;
+use App\Services\Refund\RefundPolicyService;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Support\Facades\Log;
@@ -73,7 +74,7 @@ class BookingConfirmationMailer
             'payment_method' => self::paymentMethod($transaction?->payment_method),
             'payment_ref'    => $transaction?->transaction_reference,
             'paid_at'        => Carbon::parse($paidAt)->setTimezone(self::TIMEZONE)->format('d M Y, g:i A'),
-            'policy'         => self::refundPolicy(),
+            'policies'       => self::refundPolicies($bookings),
             'bookings_url'   => rtrim((string) config('app.frontend_url'), '/') . '/profile/bookings',
             'app_name'       => 'Oystay',
         ];
@@ -146,42 +147,27 @@ class BookingConfirmationMailer
         }
     }
 
-    /** The refund tiers from config/refund.php, worded for a guest, most generous first */
-    private static function refundPolicy(): array
+    /**
+     * Each hotel sets its own refund policy, so list one per policy. Hotels whose policy is identical
+     * share a block; the hotel names are only shown when the booking involves more than one block.
+     */
+    private static function refundPolicies(EloquentCollection $bookings): array
     {
-        $tiers = collect(config('refund.tiers', []))->sortByDesc('minimum_hours_before_checkin')->values();
-        $rows  = [];
-        $upper = null;   // hours — the tier above covers everything beyond this
+        $service = app(RefundPolicyService::class);
+        $blocks  = [];
 
-        foreach ($tiers as $tier) {
-            $hours   = (int) $tier['minimum_hours_before_checkin'];
-            $percent = (int) $tier['refund_percentage'];
+        foreach ($bookings as $booking) {
+            $property = $booking->room?->property;
+            $rows     = $service->lines($service->tiersFor($property));
+            $key      = md5(json_encode($rows));
 
-            $when = $upper === null
-                ? 'More than ' . self::duration($hours) . ' before check-in'
-                : 'Between ' . self::duration($hours) . ' and ' . self::duration($upper) . ' before check-in';
-
-            $rows[] = [
-                'when'    => $when,
-                'outcome' => $percent >= 100 ? 'Full refund' : $percent . '% refunded',
-                'percent' => $percent,
-            ];
-            $upper = $hours;
+            $blocks[$key]['rows']     = $rows;
+            $blocks[$key]['hotels'][] = $property?->name ?: 'Your hotel';
         }
 
-        $rows[] = ['when' => 'Once check-in day has started', 'outcome' => 'No refund', 'percent' => 0];
-
-        return $rows;
-    }
-
-    private static function duration(int $hours): string
-    {
-        if ($hours >= 24 && $hours % 24 === 0) {
-            $days = intdiv($hours, 24);
-
-            return $days . ' day' . ($days > 1 ? 's' : '');
-        }
-
-        return $hours . ' hour' . ($hours > 1 ? 's' : '');
+        return collect($blocks)->map(fn (array $b) => [
+            'rows'   => $b['rows'],
+            'hotels' => array_values(array_unique($b['hotels'])),
+        ])->values()->all();
     }
 }

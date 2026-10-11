@@ -16,6 +16,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 
 class PropertyRequestController extends BaseController
 {
@@ -88,9 +89,16 @@ class PropertyRequestController extends BaseController
             throw new \Exception('User with the same phone number already exists. Please update the phone number and try again.');
         }
 
-        $user = $propertyRequest->user_id
-            ? User::find($propertyRequest->user_id)
-            : $this->createUser($propertyRequest);
+        // Someone who applied while signed in already has an account and keeps their own password.
+        // Only an owner added without an account gets a new one — with a random temporary password.
+        $tempPassword = null;
+
+        if ($propertyRequest->user_id) {
+            $user = User::find($propertyRequest->user_id);
+        } else {
+            $tempPassword = Str::random(10);
+            $user = $this->createUser($propertyRequest, $tempPassword);
+        }
 
         $propertyRequest->update(['user_id' => $user->id]);
 
@@ -103,7 +111,10 @@ class PropertyRequestController extends BaseController
             'name' => $propertyRequest->name,
             'email' => $propertyRequest->owner_email,
             'phone' => $propertyRequest->contact_number,
-            'user' => $user
+            'user' => $user,
+            'temp_password' => $tempPassword,
+            'login_url' => rtrim((string) config('app.admin_url'), '/') . '/login',
+            'set_password_url' => rtrim((string) config('app.admin_url'), '/') . '/forgot-password?' . http_build_query(['email' => $propertyRequest->owner_email]),
         ]);
     }
 
@@ -146,6 +157,8 @@ class PropertyRequestController extends BaseController
             'property_category_id'  => $step1['property_type_id'] ?? null,
             'place_id'              => $step3['place_id'] ?: null,
             'user_id'               => $user->id,
+            // What the owner picked on the application form becomes their real refund policy
+            'refund_policy'         => app(\App\Services\Refund\RefundPolicyService::class)->fromLegacy($step7['cancellation_policy'] ?? null),
             'meta'                  => json_encode([
                 'surroundings'        => $step6['surroundings'] ?? [],
                 'distance_to_centre'  => $step6['distance_to_centre'] ?? null,
@@ -209,12 +222,12 @@ class PropertyRequestController extends BaseController
         $propertyRequest->update(['user_id' => null]);
     }
 
-    private function createUser($data): User
+    private function createUser($data, string $password): User
     {
         return User::create([
             'name' => $data->name,
             'email' => $data->owner_email,
-            'password' => Hash::make('password'),
+            'password' => Hash::make($password),
             'phone' => $data->contact_number,
         ]);
     }

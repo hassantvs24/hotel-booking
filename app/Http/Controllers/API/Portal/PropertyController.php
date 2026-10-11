@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\API\Portal;
 
+use App\Services\Refund\RefundPolicyService;
 use App\Http\Controllers\BaseController;
 use Carbon\Carbon;
 use App\Models\Booking;
@@ -72,7 +73,10 @@ class PropertyController extends BaseController
             'faqs.answer',
         ]);
 
-        return $this->sendSuccess(['property' => $property]);
+        return $this->sendSuccess([
+            'property'      => $property,
+            'refund_policy' => app(RefundPolicyService::class)->summary($property),
+        ]);
     }
 
     // ══════════════════════════════════════════════════════

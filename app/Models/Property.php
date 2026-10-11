@@ -17,6 +17,8 @@ class Property extends Model
 
     protected $hidden = ['bank_details'];
 
+    protected $casts = ['refund_policy' => 'array'];
+
     public const STATUS_PUBLISHED = 'Published';
     public const STATUS_UNPUBLISHED = 'Unpublished';
     public const STATUS_PENDING = 'Pending';

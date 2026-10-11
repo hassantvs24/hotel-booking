@@ -196,12 +196,16 @@
                     <tr><td style="padding:20px 20px 8px;">
                         <div style="font-family:{{ $serif }}; font-size:18px; color:{{ $ink }};">Cancellation &amp; refund policy</div>
                         <div style="font-family:{{ $sans }}; font-size:13px; line-height:20px; color:{{ $slate }}; margin-top:4px;">
-                            Changed your plans? You can ask for a refund from My Bookings. How much comes back depends on how early you cancel, counted from the start of your check-in day.
+                            Changed your plans? You can ask for a refund from My Bookings. How much comes back depends on the property's own policy and how early you cancel, counted from the start of your check-in day.
                         </div>
                     </td></tr>
                     <tr><td style="padding:6px 20px 16px;">
+                        @foreach ($d['policies'] as $block)
+                        @if (count($d['policies']) > 1)
+                            <div style="font-family:{{ $sans }}; font-size:13px; font-weight:700; color:{{ $ink }}; padding:12px 0 4px;">{{ implode(', ', $block['hotels']) }}</div>
+                        @endif
                         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
-                            @foreach ($d['policy'] as $row)
+                            @foreach ($block['rows'] as $row)
                                 @php
                                     $c = $row['percent'] >= 100 ? ['#dcfce7', '#166534'] : ($row['percent'] > 0 ? ['#fef3c7', '#92400e'] : ['#fee2e2', '#991b1b']);
                                 @endphp
@@ -213,6 +217,7 @@
                                 </tr>
                             @endforeach
                         </table>
+                        @endforeach
                     </td></tr>
                 </table>
             </td>

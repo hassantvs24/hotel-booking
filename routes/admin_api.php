@@ -131,6 +131,10 @@ Route::middleware('auth:sanctum')->prefix('admin')->group(function () {
 
     Route::put('properties/{property}/properties-setting', [PropertySettingController::class, 'update']);
 
+    // Refund policy: set by the property owner only (admin can view)
+    Route::get('properties/{property}/refund-policy', [\App\Http\Controllers\API\Admin\Property\PropertyRefundPolicyController::class, 'show']);
+    Route::put('properties/{property}/refund-policy', [\App\Http\Controllers\API\Admin\Property\PropertyRefundPolicyController::class, 'update']);
+
     /*----------------------------------------------------------
     | Rooms
     ----------------------------------------------------------*/
