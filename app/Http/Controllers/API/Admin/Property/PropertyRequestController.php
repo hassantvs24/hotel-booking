@@ -5,6 +5,9 @@ namespace App\Http\Controllers\API\Admin\Property;
 use App\Http\Controllers\BaseController;
 use App\Models\City;
 use App\Models\Country;
+use App\Models\FacilitySub;
+use App\Models\Place;
+use App\Models\State;
 use App\Models\Property;
 use App\Models\PropertyRequest;
 use App\Models\User;
@@ -20,25 +23,82 @@ use Illuminate\Support\Str;
 
 class PropertyRequestController extends BaseController
 {
-    public function index(Request $request, PropertyRequestRepository $propertyRequestRepository) : JsonResponse
+    /**
+     * The review queue: only applications the owner has actually submitted (not half-filled drafts),
+     * with the numbers for the status tabs and everything the reviewer needs already spelled out.
+     */
+    public function index(Request $request) : JsonResponse
     {
-        $query = array_merge(
-            $request->only(['search', 'filters', 'order_by', 'order', 'per_page', 'page']),
-            [
-                'with' => [],
-                'where' => [],
-                'order_by' => 'id',
-                'order' => 'DESC',
-            ]
-        );
+        abort_unless($request->user()->is_admin, 403, 'Only the platform admin can review property requests.');
 
-        $propertyRequests = $propertyRequestRepository->paginate($query);
+        $submitted = PropertyRequest::query()->where('is_draft', false);
 
-        return $this->sendSuccess(['property_requests' => $propertyRequests]);
+        $stats = [
+            'all'      => (clone $submitted)->count(),
+            'pending'  => (clone $submitted)->where('status', PropertyRequest::STATUS_PENDING)->count(),
+            'approved' => (clone $submitted)->where('status', PropertyRequest::STATUS_APPROVED)->count(),
+            'rejected' => (clone $submitted)->where('status', PropertyRequest::STATUS_REJECTED)->count(),
+        ];
+
+        $requests = $submitted
+            ->when($request->filled('status') && $request->status !== 'all', fn ($q) => $q->where('status', $request->status))
+            ->when($request->filled('search'), function ($q) use ($request) {
+                $term = '%' . $request->search . '%';
+                $q->where(fn ($w) => $w->where('property_title', 'like', $term)
+                    ->orWhere('name', 'like', $term)
+                    ->orWhere('owner_email', 'like', $term)
+                    ->orWhere('unique_request_number', 'like', $term));
+            })
+            ->orderByRaw("status = 'pending' desc")   // what needs a decision comes first
+            ->orderByDesc('id')
+            ->paginate(min((int) $request->input('per_page', 10), 50), ['*'], 'page', (int) $request->input('page', 1));
+
+        $requests->getCollection()->transform(fn (PropertyRequest $r) => array_merge($r->toArray(), ['summary' => $this->summary($r)]));
+
+        return $this->sendSuccess(['property_requests' => $requests, 'stats' => $stats]);
     }
 
+    /** The application's wizard answers turned from ids into words a reviewer can read */
+    private function summary(PropertyRequest $r): array
+    {
+        $d  = $r->draft_data ?? [];
+        $s3 = $d['step_3'] ?? [];
+        $s7 = $d['step_7'] ?? [];
+
+        $place = collect([
+            Place::find($s3['place_id'] ?? null)?->name,
+            City::find($s3['city_id'] ?? null)?->name,
+            State::find($s3['state_id'] ?? null)?->name,
+            Country::find($s3['country_id'] ?? null)?->name,
+        ])->filter()->unique()->implode(', ');
+
+        $facilityIds = $d['step_4']['facility_ids'] ?? [];
+
+        return [
+            'type'          => $d['step_1']['property_type_name'] ?? null,
+            'stars'         => $d['step_2']['star_rating'] ?? null,
+            'phone'         => $d['step_2']['phone'] ?? null,
+            'location'      => $place,
+            'facilities'    => $facilityIds ? FacilitySub::whereIn('id', $facilityIds)->pluck('name')->all() : [],
+            'photos'        => collect($d['step_5']['photos'] ?? [])->map(fn ($p) => $p['url'] ?? (isset($p['path'], $p['name']) ? asset('storage/' . $p['path'] . '/' . $p['name']) : null))->filter()->values()->all(),
+            'surroundings'  => $d['step_6']['surroundings'] ?? [],
+            'check_in'      => $s7['check_in_time'] ?? null,
+            'check_out'     => $s7['check_out_time'] ?? null,
+            'min_stay'      => $s7['min_stay'] ?? null,
+            'house_rules'   => collect($s7['policies'] ?? [])->map(fn ($on) => (bool) $on)->all(),
+            'refund_policy' => app(\App\Services\Refund\RefundPolicyService::class)->fromLegacy($s7['cancellation_policy'] ?? null),
+            'has_account'   => (bool) $r->user_id,
+        ];
+    }
     public function updateStatus(Request $request, PropertyRequestRepository $propertyRequestRepository, $id): JsonResponse
     {
+        abort_unless($request->user()->is_admin, 403, 'Only the platform admin can review property requests.');
+
+        $request->validate([
+            'status'        => ['required', 'in:pending,approved,rejected'],
+            'admin_message' => ['nullable', 'string', 'max:1000', 'required_if:status,rejected'],
+        ]);
+
         DB::beginTransaction();
         try {
             $propertyRequest = $propertyRequestRepository->find($id);

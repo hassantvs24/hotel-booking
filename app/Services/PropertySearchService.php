@@ -80,8 +80,6 @@ class PropertySearchService
 
         $results = $query
             ->with($eagerLoads)
-            ->withAvg('reviews', 'rating')
-            ->withCount('reviews')
             ->get()
             ->map(fn($p) => $this->appendComputedFields($p, $params));
 
@@ -214,7 +212,7 @@ class PropertySearchService
         return match ($sortBy) {
             default   => $hasGeo
                 ? $query->orderBy('distance_km', 'asc')
-                : $query->orderByDesc('rating'),
+                : $query->orderByRaw('IF(reviews_count > 0, reviews_avg_rating, rating) DESC'),   // guests' score once there are reviews
         };
     }
 
