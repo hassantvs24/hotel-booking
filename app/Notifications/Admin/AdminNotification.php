@@ -58,11 +58,16 @@ class AdminNotification extends Notification
                 return false;
             }
 
+            if (!empty($this->extra['refund_request_id']) && (string)($data['refund_request_id'] ?? '') === (string)$this->extra['refund_request_id']) {
+                return false;
+            }
+
             // Fallback: same title+message within 60 seconds
             if (
                 empty($this->extra['group_ref']) &&
                 empty($this->extra['booking_number']) &&
                 empty($this->extra['room_request_id']) &&
+                empty($this->extra['refund_request_id']) &&
                 ($data['title'] ?? '') === $this->title &&
                 ($data['message'] ?? '') === $this->message
             ) {
