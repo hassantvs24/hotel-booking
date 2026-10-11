@@ -5,6 +5,7 @@ namespace App\Http\Controllers\API\Portal;
 use App\Http\Controllers\BaseController;
 use App\Models\Booking;
 use App\Models\BookingGroup;
+use App\Models\RoomRequest;
 use App\Models\Transaction;
 use App\Notifications\Booking\PaymentConfirmedNotification;
 use Illuminate\Http\JsonResponse;
@@ -130,6 +131,11 @@ class LocalConfirmController extends BaseController
 
             if ($booking->room) {
                 $booking->room->update(['status' => 'Booked']);
+            }
+
+            // Same as the real IPN path: a paid bid booking completes its bid
+            if ($booking->room_request_id) {
+                RoomRequest::where('id', $booking->room_request_id)->update(['status' => 'Done']);
             }
 
             try {

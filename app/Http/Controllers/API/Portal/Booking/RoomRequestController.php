@@ -28,10 +28,25 @@ class RoomRequestController extends BaseController
             ->active()
             ->count();
 
+        // With the stay dates: the offers already spent for those dates (live + declined),
+        // and where the next one has to land (above their earlier offer, below an open counter)
+        $window = ['floor' => null, 'ceiling' => null];
+        if ($request->filled('check_in') && $request->filled('check_out')) {
+            $userId = $request->user()->id;
+            $count  = RoomRequest::offersUsed(
+                $userId, (int) $roomId, $request->input('check_in'), $request->input('check_out')
+            );
+            $window = RoomRequest::offerWindow(
+                $userId, (int) $roomId, $request->input('check_in'), $request->input('check_out')
+            );
+        }
+
         return $this->sendSuccess([
             'active_bids'    => $count,
             'bids_remaining' => max(0, self::MAX_BIDS - $count),
             'limit_reached'  => $count >= self::MAX_BIDS,
+            'min_price'      => $window['floor'],     // new offer must be above this (per night)
+            'max_price'      => $window['ceiling'],   // ...and below this
         ]);
     }
 
@@ -56,7 +71,7 @@ class RoomRequestController extends BaseController
         $propertyIds = $request->user()->properties()->pluck('id');
 
         $bids = RoomRequest::whereIn('property_id', $propertyIds)
-            ->whereIn('status', self::ACTIVE_STATUSES)
+            ->active()
             ->with([
                 'room:id,name,base_price,property_id',
                 'room.primaryImage',
@@ -77,7 +92,12 @@ class RoomRequestController extends BaseController
 
     public function accept(Request $request, $id): JsonResponse
     {
-        $bid       = $this->ownerBid($request->user(), $id, 'Pending');
+        $bid = $this->ownerBid($request->user(), $id, 'Pending');
+
+        if ($expired = $this->rejectIfExpired($bid)) {
+            return $expired;
+        }
+
         $expiresAt = Carbon::now()->addHours(self::PAYMENT_HOURS);
 
         DB::transaction(function () use ($bid, $expiresAt) {
@@ -88,7 +108,10 @@ class RoomRequestController extends BaseController
 
             RoomRequestAccepted::updateOrCreate(
                 ['room_requests_id' => $bid->id],
-                ['request_expiration_time' => $expiresAt]
+                [
+                    'property_id'             => $bid->property_id,
+                    'request_expiration_time' => $expiresAt,
+                ]
             );
         });
 
@@ -109,6 +132,10 @@ class RoomRequestController extends BaseController
 
         $bid = $this->ownerBid($request->user(), $id, 'Pending');
 
+        if ($expired = $this->rejectIfExpired($bid)) {
+            return $expired;
+        }
+
         $bid->update([
             'status'                  => 'Counter',
             'counter_price'           => $request->counter_price,
@@ -126,19 +153,28 @@ class RoomRequestController extends BaseController
 
     public function acceptCounter(Request $request, $id): JsonResponse
     {
-        $bid       = $this->guestBid($request->user(), $id, 'Counter');
+        $bid = $this->guestBid($request->user(), $id, 'Counter');
+
+        if ($expired = $this->rejectIfExpired($bid)) {
+            return $expired;
+        }
+
         $expiresAt = Carbon::now()->addHours(self::PAYMENT_HOURS);
 
         DB::transaction(function () use ($bid, $expiresAt) {
             $bid->update([
+                // discount_price stays the guest's original offer; the agreed price
+                // is counter_price (see agreedPrice()) so both stay visible afterwards
                 'status'                  => 'Approved',
-                'discount_price'          => $bid->counter_price, // agreed price = counter
                 'request_expiration_time' => $expiresAt,
             ]);
 
             RoomRequestAccepted::updateOrCreate(
                 ['room_requests_id' => $bid->id],
-                ['request_expiration_time' => $expiresAt]
+                [
+                    'property_id'             => $bid->property_id,
+                    'request_expiration_time' => $expiresAt,
+                ]
             );
         });
 
@@ -194,11 +230,20 @@ class RoomRequestController extends BaseController
             );
         }
 
-        // Check room is still available
+        // A guest who reached the gateway and came back to pay again already has an
+        // unpaid booking for this bid — reuse it, and don't mistake it for someone else's.
+        $existing = Booking::where('room_request_id', $bid->id)
+            ->where('status', 'reserved')
+            ->where('payment_status', 'pending')
+            ->latest('id')
+            ->first();
+
+        // Check room is still available (this bid's own booking doesn't count)
         $taken = Booking::where('room_id', $bid->room_id)
             ->whereIn('status', ['reserved', 'approved'])
             ->where('checkin',  '<', $bid->check_out)
             ->where('checkout', '>', $bid->check_in)
+            ->where(fn ($q) => $q->whereNull('room_request_id')->orWhere('room_request_id', '!=', $bid->id))
             ->exists();
 
         if ($taken) {
@@ -209,14 +254,13 @@ class RoomRequestController extends BaseController
             );
         }
 
-        // Refresh to get latest discount_price (updated by acceptCounter)
         $bid->refresh();
 
         $nights      = max(1, Carbon::parse($bid->check_in)->diffInDays($bid->check_out));
-        $agreedPrice = (float) $bid->discount_price; // = counter_price after acceptCounter
+        $agreedPrice = $bid->agreed_price;
         $totalAmount = $agreedPrice * $nights;
 
-        $booking = Booking::create([
+        $booking = $existing ?? Booking::create([
             'booking_number'  => date('Ymd') . rand(10000000, 99999999),
             'room_id'         => $bid->room_id,
             'user_id'         => $request->user()->id,
@@ -235,14 +279,25 @@ class RoomRequestController extends BaseController
         $bid->room?->update(['status' => 'Reserved']);
 
         // Initiate SSLComm payment
-        return app(\App\Http\Controllers\API\Portal\PaymentController::class)
+        $response = app(\App\Http\Controllers\API\Portal\PaymentController::class)
             ->bookNow($request->merge(['booking_number' => $booking->booking_number]));
+
+        // The gateway reply doesn't say which booking it is for, and the payment-success
+        // page needs that number (stored before the redirect) to confirm the booking.
+        if ($response->getStatusCode() === 200) {
+            return response()->json(array_merge(
+                $response->getData(true),
+                ['booking_number' => $booking->booking_number]
+            ));
+        }
+
+        return $response;
     }
 
     public function roomRequestNotification(Request $request): JsonResponse
     {
         $bids = RoomRequest::where('user_id', $request->user()->id)
-            ->whereIn('status', self::ACTIVE_STATUSES)
+            ->active()
             ->with('room.property')
             ->get();
 
@@ -287,22 +342,54 @@ class RoomRequestController extends BaseController
         ]);
     }
 
+    /**
+     * A bid past its window can't be acted on — flag it Timeout (the
+     * scheduled job would anyway) and tell the caller why.
+     */
+    private function rejectIfExpired(RoomRequest $bid): ?JsonResponse
+    {
+        if (!$bid->isExpired()) {
+            return null;
+        }
+
+        $bid->update(['status' => 'Timeout']);
+        RoomRequestAccepted::where('room_requests_id', $bid->id)->delete();
+
+        return $this->sendError('This offer has expired.', [], 422);
+    }
+
     private function ownerBid($user, $id, string $status): RoomRequest
     {
-        return RoomRequest::where('id', $id)
+        $bid = RoomRequest::where('id', $id)
             ->whereIn('property_id', $user->properties()->pluck('id'))
             ->where('status', $status)
             ->with('room.property.user', 'user')
             ->firstOrFail();
+
+        $this->abortIfSuperseded($bid);
+
+        return $bid;
     }
 
     private function guestBid($user, $id, string $status): RoomRequest
     {
-        return RoomRequest::where('id', $id)
+        $bid = RoomRequest::where('id', $id)
             ->where('user_id', $user->id)
             ->where('status', $status)
             ->with('room.property.user', 'user')
             ->firstOrFail();
+
+        $this->abortIfSuperseded($bid);
+
+        return $bid;
+    }
+
+    /** An offer the guest has since replaced with a newer one can no longer be acted on */
+    private function abortIfSuperseded(RoomRequest $bid): void
+    {
+        if ($bid->isSuperseded()) {
+            abort(422, 'This offer was replaced by a newer offer — please use the latest one.');
+        }
     }
 
     private function formatBidForGuest(RoomRequest $bid): array
@@ -322,9 +409,12 @@ class RoomRequestController extends BaseController
             'counter_price'           => $bid->counter_price,
             'message'                 => $bid->message,
             'bid_number'              => $bid->bid_number,
+            'agreed_price'            => $bid->agreed_price,   // what the guest pays per night
+            'agreed_total'            => $bid->agreed_price * $nights,
             'total_offered'           => $bid->discount_price * $nights,
             'room_base_total'         => ($bid->room?->base_price ?? 0) * $nights,
-            'is_active'               => in_array($bid->status, self::ACTIVE_STATUSES),
+            'superseded'              => $superseded = $bid->isSuperseded(),
+            'is_active'               => in_array($bid->status, self::ACTIVE_STATUSES) && !$superseded,
             'request_expiration_time' => $bid->request_expiration_time,
             'seconds_left'            => $bid->request_expiration_time
                 ? max(0, now()->diffInSeconds($bid->request_expiration_time, false))

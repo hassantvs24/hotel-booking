@@ -42,7 +42,15 @@ class CartController extends BaseController
         $room  = Room::findOrFail($data['room_id']);
 
         if ($isBid) {
-            $this->checkBidLimit($user->id, $room->id);
+            $this->checkBidLimit($user->id, $room->id, $data['check_in'], $data['check_out']);
+            $this->checkOfferPrice($room, (float) ($data['offer_price'] ?? 0));
+
+            // Negotiation: stay above their own earlier offer, below an open counter
+            if ($err = RoomRequest::offerWindowError(
+                $user->id, $room->id, $data['check_in'], $data['check_out'], (float) $data['offer_price']
+            )) {
+                abort(422, $err);
+            }
             $price     = $data['offer_price'];
             $expiresAt = null; // bid items never expire from cart
 
@@ -147,20 +155,39 @@ class CartController extends BaseController
     //  PRIVATE HELPERS
     // ─────────────────────────────────────────────────────
 
-    private function checkBidLimit(int $userId, int $roomId): void
+    private function checkBidLimit(int $userId, int $roomId, string $checkIn, string $checkOut): void
     {
-        $active = RoomRequest::where('user_id', $userId)
-            ->where('room_id', $roomId)
-            ->active() // scope on RoomRequest model: whereIn status Pending/Approved/Counter
-            ->count();
+        // Offers already spent on this room for these stay dates (live + declined).
+        // The cart row is not counted: adding another offer for the room replaces it.
+        $used = RoomRequest::offersUsed($userId, $roomId, $checkIn, $checkOut);
 
-        $inCart = BookingCart::where('user_id', $userId)
-            ->where('room_id', $roomId)
-            ->where('is_bid', true)
-            ->count();
+        if ($used >= self::MAX_BIDS) {
+            abort(422, 'You have used all ' . self::MAX_BIDS . ' offers for this room and these dates.');
+        }
+    }
 
-        if (($active + $inCart) >= self::MAX_BIDS) {
-            abort(422, 'You have reached the maximum of ' . self::MAX_BIDS . ' bids for this room.');
+    /**
+     * The offer modal only lets a guest pick 1%–99% off the room's base price;
+     * the API has to hold the same line, since the price comes from the client.
+     */
+    private function checkOfferPrice(Room $room, float $offer): void
+    {
+        $base = (float) $room->base_price;
+
+        if ($base <= 0) {
+            return;
+        }
+
+        // Whole cents, with one cent of slack each side: the browser rounds the
+        // discounted price itself, and it can land a cent away from PHP's rounding.
+        $baseCents = (int) round($base * 100);
+        $minCents  = (int) round($baseCents * 0.01);
+        $maxCents  = (int) round($baseCents * 0.99);
+        $offerCents = (int) round($offer * 100);
+
+        if ($offerCents < $minCents - 1 || $offerCents > $maxCents + 1) {
+            abort(422, 'Your offer must be between BDT ' . number_format($minCents / 100, 2)
+                . ' and BDT ' . number_format($maxCents / 100, 2) . ' (1%–99% off the room price).');
         }
     }
 

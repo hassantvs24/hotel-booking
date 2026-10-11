@@ -2,6 +2,7 @@
 
 namespace App\Notifications\BID;
 
+use App\Models\RoomRequest;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Notification;
@@ -24,6 +25,16 @@ class BidStatusNotification extends Notification implements ShouldQueue
         return ['database', 'broadcast', WebPushChannel::class];
     }
 
+    /** Offers the guest still has left on this room for these stay dates (live and declined ones are spent) */
+    private function bidsRemaining(): int
+    {
+        $used = RoomRequest::offersUsed(
+            $this->bid->user_id, $this->bid->room_id, $this->bid->check_in, $this->bid->check_out
+        );
+
+        return max(0, RoomRequest::MAX_BIDS - $used);
+    }
+
     private function content(): array
     {
         $room = $this->bid->room->name ?? 'your room';
@@ -33,19 +44,19 @@ class BidStatusNotification extends Notification implements ShouldQueue
                 'type'  => 'bid_accepted',
                 'title' => 'Bid accepted!',
                 'body'  => "Your offer for {$room} was accepted. Complete payment within 2 hours.",
-                'url'   => '/request?tab=my-bids&bid=' . $this->bid->id,
+                'url'   => '/profile/my-bids?bid=' . $this->bid->id,
             ],
             'countered' => [
                 'type'  => 'bid_countered',
                 'title' => 'Counter offer received',
                 'body'  => "The owner countered your bid on {$room} — BDT " . number_format($this->bid->counter_price) . '/night.',
-                'url'   => '/request?tab=my-bids&bid=' . $this->bid->id,
+                'url'   => '/profile/my-bids?bid=' . $this->bid->id,
             ],
             'declined' => [
                 'type'  => 'bid_declined',
                 'title' => 'Bid declined',
-                'body'  => "Your offer for {$room} was not accepted. " . (3 - $this->bid->bid_number) . " bid(s) remaining.",
-                'url'   => '/request?tab=my-bids',
+                'body'  => "Your offer for {$room} was not accepted. " . $this->bidsRemaining() . " bid(s) remaining.",
+                'url'   => '/profile/my-bids',
             ],
             'counter_accepted' => [
                 'type'  => 'counter_accepted',
@@ -57,7 +68,7 @@ class BidStatusNotification extends Notification implements ShouldQueue
                 'type'  => 'bid_expired',
                 'title' => 'Bid expired',
                 'body'  => "Your offer for {$room} expired. You can submit a new bid.",
-                'url'   => '/request?tab=my-bids',
+                'url'   => '/profile/my-bids',
             ],
             default => [
                 'type'  => 'bid_update',

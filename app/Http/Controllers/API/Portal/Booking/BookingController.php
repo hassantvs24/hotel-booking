@@ -22,6 +22,7 @@ use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 class BookingController extends BaseController
@@ -130,11 +131,22 @@ class BookingController extends BaseController
                     $room = Room::with('property.user')->find($item->room_id);
                     if (!$room) continue;
 
-                    if (RoomRequest::where('user_id', $user->id)
-                            ->where('room_id', $room->id)
-                            ->whereIn('status', ['Pending', 'Approved', 'Counter'])
-                            ->count() >= 3
-                    ) { continue; }
+                    // Offers already spent on this room for these dates (live + declined)
+                    $used = RoomRequest::offersUsed($user->id, $room->id, $item->check_in, $item->check_out);
+
+                    if ($used >= RoomRequest::MAX_BIDS) { continue; }
+
+                    // The cart was checked when the offer was added, but an owner counter
+                    // may have arrived since — hold the same negotiation window here
+                    if ($err = RoomRequest::offerWindowError(
+                        $user->id, $room->id, $item->check_in, $item->check_out, (float) $item->offer_price
+                    )) {
+                        throw new \Exception($err);
+                    }
+
+                    // "Bid N of 3": this is the next offer for the room and dates, so it can only
+                    // be 1–3 (the limit above stops a fourth)
+                    $slot = $used + 1;
 
                     $bid = RoomRequest::create([
                         'room_id'                 => $room->id,
@@ -146,24 +158,30 @@ class BookingController extends BaseController
                         'children'                => $item->children ?? 0,
                         'discount_price'          => $item->offer_price,
                         'message'                 => $item->bid_message,
-                        'bid_number'              => RoomRequest::where('user_id', $user->id)
-                                ->where('room_id', $room->id)->count() + 1,
+                        'bid_number'              => $slot,
                         'status'                  => 'Pending',
                         'request_expiration_time' => Carbon::now()->addHours(24),
                     ]);
 
                     // Real-time broadcast to admin + owner channels
                     // notifyAll() handles admin DB + guest DB
-                    // BidReceivedNotification (owner WebPush) fired separately below
+                    // BidReceivedNotification (owner) is sent only here, below
                     $bidEvent = new BidSubmitted($bid->load(['room', 'room.property', 'user']));
-                    event($bidEvent);
                     $bidEvent->notifyAll();
 
-                    // Owner WebPush — separate from real-time, fired AFTER notifyAll
-                    // to avoid duplicate since notifyAll no longer calls this
+                    // Owner notification — the only place it is sent (notifyAll skips owners)
                     $room->property->user?->notify(
                         new BidReceivedNotification($bid, $room, $user)
                     );
+
+                    // The live push is best-effort: if the websocket server (Reverb) is
+                    // down the bid must still go through — the saved notifications above
+                    // are what the owner sees on their next load
+                    try {
+                        event($bidEvent);
+                    } catch (\Throwable $e) {
+                        Log::warning('Bid broadcast failed (is Reverb running?): ' . $e->getMessage());
+                    }
 
                     $createdBids[] = $bid;
                 }

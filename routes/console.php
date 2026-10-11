@@ -14,4 +14,4 @@ Schedule::command(DeleteExpiredHotelRequests::class)->everyFiveSeconds();
 
 Schedule::job(new \App\Jobs\ExpireCartItems)->everyFiveMinutes();
 Schedule::job(new \App\Jobs\ExpireUnpaidBookings)->everyFiveMinutes();
-//Schedule::job(new \App\Jobs\ExpireRoomRequests)->everyFiveMinutes();
+Schedule::job(new \App\Jobs\ExpireRoomRequests)->everyFiveMinutes();
