@@ -145,6 +145,9 @@ Route::prefix('portal')->group(function () {
     Route::prefix('location')->group(function () {
         Route::get('/suggestions', [\App\Http\Controllers\API\Portal\Location\LocationController::class, 'suggestions']);
         Route::post('/resolve-place', [\App\Http\Controllers\API\Portal\Location\LocationController::class, 'resolvePlace']);
+        // Creates the country / division / district too, so only for signed-in owners (and rate-limited)
+        Route::post('/resolve', [\App\Http\Controllers\API\Portal\Location\LocationController::class, 'resolve'])
+            ->middleware(['auth:sanctum', 'throttle:30,1']);
     });
 
     Route::middleware('auth:sanctum')->group(function () {

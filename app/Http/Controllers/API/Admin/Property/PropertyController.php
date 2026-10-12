@@ -30,7 +30,7 @@ class PropertyController extends BaseController
     {
 
         $query = [
-            'with'     => ['user'],
+            'with'     => ['user', 'place.city'],
             'where'    => [],
             'order_by' => 'id',
             'order'    => 'DESC',
@@ -44,9 +44,20 @@ class PropertyController extends BaseController
 
         $properties = $propertyRepository->paginate($query);
 
+        // How many rooms each listed property really has (one query for the whole page)
+        $properties->getCollection()->loadCount('rooms');
+
+        // The tab numbers cover every property, whichever tab or page is open
+        $counts = Property::query()->selectRaw('status, COUNT(*) AS total')->groupBy('status')->pluck('total', 'status');
 
         $data = [
             'properties' => $properties,
+            'stats'      => [
+                'all'         => (int) $counts->sum(),
+                'published'   => (int) ($counts[Property::STATUS_PUBLISHED] ?? 0),
+                'pending'     => (int) ($counts[Property::STATUS_PENDING] ?? 0),
+                'unpublished' => (int) ($counts[Property::STATUS_UNPUBLISHED] ?? 0),
+            ],
         ];
 
         return $this->sendSuccess($data);

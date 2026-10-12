@@ -107,14 +107,25 @@ class LocationService
     //  RESOLVE & STORE PLACE
     // ══════════════════════════════════════════════════════
 
-    public function resolveAndStorePlace(array $data): Place
+    /**
+     * @param bool $createHierarchy true only for signed-in owners (property form); the open search
+     *                              endpoint just matches what already exists and never adds countries/states/cities.
+     */
+    public function resolveAndStorePlace(array $data, bool $createHierarchy = false): Place
     {
-        $existing = Place::where('external_id', $data['external_id'])->first();
-        if ($existing) return $existing;
+        $chain = $this->ensureHierarchy($data, $createHierarchy);
 
-        $city = !empty($data['city'])
-            ? City::where('name', 'like', "%{$data['city']}%")->first()
-            : null;
+        $existing = Place::where('external_id', $data['external_id'])->first();
+        if ($existing) {
+            // A place saved earlier without its district gets it now
+            if (!$existing->city_id && $chain['city']) {
+                $existing->update(['city_id' => $chain['city']->id]);
+            }
+
+            return $existing;
+        }
+
+        $city = $chain['city'];
 
         $place = Place::create([
             'city_id'         => $city?->id,
@@ -228,10 +239,113 @@ class LocationService
             'city'        => $p->city?->name,
             'state'       => $p->city?->state?->name,
             'country'     => $p->city?->state?->country?->name,
+            'city_id'     => $p->city_id,
+            'state_id'    => $p->city?->state_id,
+            'country_id'  => $p->city?->state?->country_id,
             'lat'         => $p->lat,
             'long'        => $p->long,
             'source'      => $p->external_source ?? 'local',
         ];
+    }
+
+    // ══════════════════════════════════════════════════════
+    //  COUNTRY → DIVISION → DISTRICT → PLACE
+    // ══════════════════════════════════════════════════════
+
+    /**
+     * What a form needs after the owner picks a map result: the place saved, and the country / state
+     * (division) / city (district) it belongs to, all created on the way when they are new.
+     *
+     * A result that is itself a whole division or district gives no place, only the chain above it.
+     */
+    public function resolveLocation(array $data): array
+    {
+        $chain = $this->ensureHierarchy($data, true);
+
+        $isRegion = in_array($data['kind'] ?? null, ['state', 'state_district', 'county', 'country'], true);
+        $place    = $isRegion ? null : $this->resolveAndStorePlace($data, true)->loadMissing('city.state.country');
+
+        $city    = $place?->city ?? $chain['city'];
+        $state   = $city?->state ?? $chain['state'];
+        $country = $state?->country ?? $chain['country'];
+
+        return [
+            'place'   => $place ? ['id' => $place->id, 'name' => $place->name, 'city_id' => $place->city_id] : null,
+            'country' => $country ? ['id' => $country->id, 'name' => $country->name] : null,
+            'state'   => $state ? ['id' => $state->id, 'name' => $state->name, 'country_id' => $state->country_id] : null,
+            'city'    => $city ? ['id' => $city->id, 'name' => $city->name, 'state_id' => $city->state_id] : null,
+        ];
+    }
+
+    /**
+     * Find, or create, the country, division and district named in a map result.
+     * Matching ignores words like "Division" / "District" and the Chattogram / Chittagong spelling, so a
+     * hotel in "Chattogram Division" lands in our existing "Chittagong Division" rather than a duplicate.
+     *
+     * @return array{country: ?Country, state: ?State, city: ?City}
+     */
+    public function ensureHierarchy(array $data, bool $create = true): array
+    {
+        $none = ['country' => null, 'state' => null, 'city' => null];
+
+        if (blank($data['country'] ?? null)) {
+            return $none;
+        }
+
+        $country = $this->matchByName(Country::query(), $data['country'])
+            ?? ($create ? Country::create(['name' => trim($data['country'])]) : null);
+
+        if (!$country) {
+            return $none;
+        }
+
+        $state = null;
+        if (filled($data['state'] ?? null)) {
+            $state = $this->matchByName(State::where('country_id', $country->id), $data['state'])
+                ?? ($create ? State::create(['name' => trim($data['state']), 'country_id' => $country->id]) : null);
+        }
+
+        $city = null;
+        // The districts of Bangladesh come as "state_district"; elsewhere the town/city is the best we have
+        $cityName = $data['district'] ?? $data['city'] ?? null;
+
+        if ($state && filled($cityName)) {
+            $city = $this->matchByName(City::where('state_id', $state->id), $cityName)
+                ?? ($create ? City::create([
+                    'name'     => $this->cleanName($cityName, ['district', 'zila']),
+                    'state_id' => $state->id,
+                    'lat'      => $data['lat'] ?? null,
+                    'long'     => $data['long'] ?? null,
+                ]) : null);
+        }
+
+        return ['country' => $country, 'state' => $state, 'city' => $city];
+    }
+
+    /** The first row whose name matches once "Division" / "District" etc. and spelling variants are ignored */
+    private function matchByName($query, string $name)
+    {
+        $wanted = $this->normalizeName($name);
+
+        return $query->get()->first(fn ($row) => $this->normalizeName($row->name) === $wanted);
+    }
+
+    private function normalizeName(string $name): string
+    {
+        $n = mb_strtolower(trim($name));
+        $n = preg_replace('/\b(division|district|zila|city|metropolitan)\b/u', '', $n);
+        $n = trim(preg_replace('/\s+/u', ' ', $n));
+
+        // Spellings the map and our own data disagree on
+        return strtr($n, [
+            'chattogram' => 'chittagong', 'barisal' => 'barishal', 'comilla' => 'cumilla',
+            'bogra' => 'bogura', 'jessore' => 'jashore', 'dacca' => 'dhaka',
+        ]);
+    }
+
+    private function cleanName(string $name, array $words): string
+    {
+        return trim(preg_replace('/\s+/u', ' ', preg_replace('/\b(' . implode('|', $words) . ')\b/iu', '', $name)));
     }
 
     // ══════════════════════════════════════════════════════
@@ -286,8 +400,10 @@ class LocationService
                 'external_id' => (string) $r['place_id'],
                 'name'        => $r['display_name'],
                 'city'        => $r['address']['city'] ?? $r['address']['town'] ?? null,
+                'district'    => $r['address']['state_district'] ?? null,   // Bangladesh: the zila, e.g. "Moulvibazar District"
                 'state'       => $r['address']['state']   ?? null,
                 'country'     => $r['address']['country'] ?? null,
+                'kind'        => $r['addresstype'] ?? null,                 // city, suburb, town, state, state_district ...
                 'lat'         => (float) $r['lat'],
                 'long'        => (float) $r['lon'],
                 'full_address'=> $r['display_name'],
