@@ -10,6 +10,7 @@ use App\Models\RoomRequest;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use App\Services\Pricing\PriceService;
 
 class CartController extends BaseController
 {
@@ -100,12 +101,12 @@ class CartController extends BaseController
 
         $items = BookingCart::where('user_id', $userId)
             ->with([
-                'room:id,name,base_price,property_id,status',
+                'room:id,name,base_price,vat_percent,service_charge_percent,property_id,status',
                 'room.primaryImage',
                 'room.images',
                 'room.bedType',
                 'room.roomType',
-                'room.property:id,name',
+                'room.property:id,name,vat_percent,service_charge_percent',
                 'room.property.place.city',
             ])
             ->oldest()
@@ -119,8 +120,18 @@ class CartController extends BaseController
             'items'        => $items,
             'direct_items' => $direct,
             'bid_items'    => $bids,
-            'total'        => $direct->sum('total_price'), // charged now
-            'bid_total'    => $bids->sum('total_price'),   // charged after accept
+            'total'        => $direct->sum('total_price'), // charged now (VAT and service charge included)
+            'bid_total'    => $bids->sum('total_price'),   // charged after accept (taxes included)
+            'summary'      => [
+                'subtotal'       => round($direct->sum('base_total'), 2),
+                'service_charge' => round($direct->sum('service_charge_total'), 2),
+                'vat'            => round($direct->sum('vat_total'), 2),
+                'total'          => round($direct->sum('total_price'), 2),
+                'offers_subtotal'       => round($bids->sum('base_total'), 2),
+                'offers_service_charge' => round($bids->sum('service_charge_total'), 2),
+                'offers_vat'            => round($bids->sum('vat_total'), 2),
+                'offers_total'          => round($bids->sum('total_price'), 2),
+            ],
             'rooms_count'  => $items->count(),
         ]);
     }
@@ -211,16 +222,27 @@ class CartController extends BaseController
         // so 1 !== true — bid items would disappear from both groups
         $item->is_bid = (bool) $item->is_bid;
 
-        $nights            = max(1, Carbon::parse($item->check_in)->diffInDays($item->check_out));
-        $item->nights      = $nights;
-        $item->total_price = $item->price * $nights;
+        $nights       = max(1, Carbon::parse($item->check_in)->diffInDays($item->check_out));
+        $item->nights = $nights;
+
+        // price = the room price per night (an offer's price for a bid); VAT and service charge go on top.
+        // total_price is what the guest pays (or would pay, for an offer), so every screen that adds it up
+        // stays right; the parts are there for the price summary.
+        $tax = app(PriceService::class)->forStay($item->room, (float) $item->price, $nights);
+
+        $item->base_total            = $tax['stay']['base'];
+        $item->service_charge_total  = $tax['stay']['service_charge'];
+        $item->vat_total             = $tax['stay']['vat'];
+        $item->price_with_tax        = $tax['per_night']['total'];
+        $item->tax_rates             = $tax['rates'];
+        $item->total_price           = $tax['stay']['total'];
 
         // Bid items have no cart timer — null means "no expiry"
         // Direct items get a live countdown in seconds
         $item->seconds_left = $item->is_bid
             ? null
             : ($item->expires_at
-                ? max(0, Carbon::now()->diffInSeconds($item->expires_at, false))
+                ? max(0, (int) floor(Carbon::now()->diffInSeconds($item->expires_at, false)))   // whole seconds (Carbon 3 returns a fraction)
                 : 0);
 
         return $item;

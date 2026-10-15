@@ -107,7 +107,13 @@ class BookingConfirmationMailer
             'adults'         => (int) $b->adult,
             'children'       => (int) $b->children,
             'amount'         => (float) $b->amount,
-            'per_night'      => (float) $b->amount / $nights,
+            // the room price per night before VAT and service charge (older bookings have no breakdown)
+            'per_night'      => $b->subtotal_amount !== null ? (float) $b->subtotal_amount / $nights : (float) $b->amount / $nights,
+            'subtotal'       => $b->subtotal_amount !== null ? (float) $b->subtotal_amount : null,
+            'service_charge' => (float) ($b->service_charge_amount ?? 0),
+            'vat'            => (float) ($b->vat_amount ?? 0),
+            'service_percent' => (float) ($b->service_charge_percent ?? 0),
+            'vat_percent'    => (float) ($b->vat_percent ?? 0),
             'bid'            => null,
         ];
 

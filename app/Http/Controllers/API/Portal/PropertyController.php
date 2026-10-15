@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\API\Portal;
 
+use App\Services\Pricing\PriceService;
 use App\Services\Refund\RefundPolicyService;
 use App\Http\Controllers\BaseController;
 use Carbon\Carbon;
@@ -136,6 +137,7 @@ class PropertyController extends BaseController
             $room->nights         = $nights;
             $room->total_price    = $room->resolved_price * $nights;
             $room->booking_type   = 'direct';
+            $room->tax            = app(PriceService::class)->forStay($room, (float) $room->resolved_price, $nights);
             return $room;
         });
 
@@ -182,6 +184,7 @@ class PropertyController extends BaseController
                 $room->nights         = $this->nights($checkIn, $checkOut);
                 $room->total_price    = $room->resolved_price * $room->nights;
                 $room->booking_type   = 'request';
+                $room->tax            = app(PriceService::class)->forStay($room, (float) $room->resolved_price, $room->nights);
                 return $room;
             });
 

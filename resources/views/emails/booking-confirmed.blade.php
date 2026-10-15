@@ -147,8 +147,30 @@
                         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
                             <tr>
                                 <td style="font-family:{{ $sans }}; font-size:13px; color:{{ $slate }};">{{ $l['nights'] }} {{ $l['nights'] > 1 ? 'nights' : 'night' }} × {{ $money($l['per_night']) }}</td>
-                                <td align="right" style="font-family:{{ $sans }}; font-size:15px; font-weight:700; color:{{ $ink }};">{{ $money($l['amount']) }}</td>
+                                <td align="right" style="font-family:{{ $sans }}; font-size:13px; color:{{ $ink }};">{{ $money($l['subtotal'] ?? $l['amount']) }}</td>
                             </tr>
+                            @if ($l['subtotal'] !== null && ($l['service_charge'] > 0 || $l['vat'] > 0))
+                                <tr>
+                                    <td style="padding-top:6px; font-family:{{ $sans }}; font-size:13px; color:{{ $slate }};">Taxes and fees</td>
+                                    <td align="right" style="padding-top:6px; font-family:{{ $sans }}; font-size:13px; color:{{ $ink }};">{{ $money($l['service_charge'] + $l['vat']) }}</td>
+                                </tr>
+                                @if ($l['service_charge'] > 0)
+                                <tr>
+                                    <td style="padding-top:2px; padding-left:12px; font-family:{{ $sans }}; font-size:12px; color:#94a3b8;">Service charge ({{ rtrim(rtrim(number_format($l['service_percent'], 2), '0'), '.') }}%)</td>
+                                    <td align="right" style="padding-top:2px; font-family:{{ $sans }}; font-size:12px; color:#94a3b8;">{{ $money($l['service_charge']) }}</td>
+                                </tr>
+                                @endif
+                                @if ($l['vat'] > 0)
+                                <tr>
+                                    <td style="padding-top:2px; padding-left:12px; font-family:{{ $sans }}; font-size:12px; color:#94a3b8;">VAT ({{ rtrim(rtrim(number_format($l['vat_percent'], 2), '0'), '.') }}%)</td>
+                                    <td align="right" style="padding-top:2px; font-family:{{ $sans }}; font-size:12px; color:#94a3b8;">{{ $money($l['vat']) }}</td>
+                                </tr>
+                                @endif
+                                <tr>
+                                    <td style="padding-top:8px; border-top:1px solid {{ $line }}; font-family:{{ $sans }}; font-size:13px; font-weight:700; color:{{ $ink }};">Stay total</td>
+                                    <td align="right" style="padding-top:8px; border-top:1px solid {{ $line }}; font-family:{{ $sans }}; font-size:15px; font-weight:700; color:{{ $ink }};">{{ $money($l['amount']) }}</td>
+                                </tr>
+                            @endif
                         </table>
                     </td></tr>
                 </table>

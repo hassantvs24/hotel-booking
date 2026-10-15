@@ -32,7 +32,17 @@ Guests:    {!! $l['adults'] !!} {!! $l['adults'] === 1 ? 'adult' : 'adults' !!}@
 @if ($l['bid'])
 Your offer was accepted: {!! $money($l['bid']['agreed_per_night']) !!} a night instead of {!! $money($l['bid']['listed_per_night']) !!}@if ($l['bid']['saved_total'] > 0) (you saved {!! $money($l['bid']['saved_total']) !!}, {!! $l['bid']['saved_percent'] !!}% off)@endif.
 @endif
-Price:     {!! $l['nights'] !!} x {!! $money($l['per_night']) !!} = {!! $money($l['amount']) !!}
+Price:     {!! $l['nights'] !!} x {!! $money($l['per_night']) !!} = {!! $money($l['subtotal'] ?? $l['amount']) !!}
+@if ($l['subtotal'] !== null && ($l['service_charge'] > 0 || $l['vat'] > 0))
+Taxes and fees: {!! $money($l['service_charge'] + $l['vat']) !!}
+@if ($l['service_charge'] > 0)
+  - Service charge ({!! rtrim(rtrim(number_format($l['service_percent'], 2), '0'), '.') !!}%): {!! $money($l['service_charge']) !!}
+@endif
+@if ($l['vat'] > 0)
+  - VAT ({!! rtrim(rtrim(number_format($l['vat_percent'], 2), '0'), '.') !!}%): {!! $money($l['vat']) !!}
+@endif
+Stay total: {!! $money($l['amount']) !!}
+@endif
 @endforeach
 
 ------------------------------------------------------------

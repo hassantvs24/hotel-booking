@@ -515,6 +515,8 @@ return [
         'review_icon',
         'property_logo',
         'property_gallery_image',
+        'room_gallery_image',
+        'property_logo_image',
     ],
 
     'settings' => [

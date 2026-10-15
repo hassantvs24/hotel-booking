@@ -86,11 +86,11 @@ class PropertySearchService
         // Price sort — applied on collection after fetch
         // because lowest_room_price is a computed accessor not a DB column
         if ($sortBy === 'asc') {
-            return $results->sortBy(fn($p) => $p->min_price ?? $p->lowest_room_price ?? 0)->values();
+            return $results->sortBy(fn($p) => $p->min_price_with_tax ?? $p->min_price ?? 0)->values();
         }
 
         if ($sortBy === 'desc') {
-            return $results->sortByDesc(fn($p) => $p->min_price ?? $p->lowest_room_price ?? 0)->values();
+            return $results->sortByDesc(fn($p) => $p->min_price_with_tax ?? $p->min_price ?? 0)->values();
         }
 
         return $results;
@@ -223,6 +223,8 @@ class PropertySearchService
     private function appendComputedFields(Property $property, array $params): Property
     {
         $property->min_price = $property->rooms->min('base_price');
+        // What guests actually pay per night for the cheapest room: VAT and service charge included
+        $property->min_price_with_tax = app(\App\Services\Pricing\PriceService::class)->lowestWithTax($property->rooms, $property) ?? 0;
 
         $hasGeo = !empty($params['lat']) && !empty($params['long'])
             && $params['lat'] !== '' && $params['long'] !== '';

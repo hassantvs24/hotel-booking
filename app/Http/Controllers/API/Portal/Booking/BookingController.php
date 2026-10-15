@@ -17,6 +17,7 @@ use App\Models\Room;
 use App\Models\RoomRequest;
 use App\Models\Transaction;
 use App\Models\User;
+use App\Services\Pricing\PriceService;
 use App\Notifications\BID\BidReceivedNotification;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
@@ -36,6 +37,10 @@ class BookingController extends BaseController
             'images', 'property', 'property.place.city',
             'activePrices', 'bedType', 'roomType',
         ]);
+
+        // VAT and service charge rates for this room (the page works out the amounts for the nights chosen)
+        $room->tax = app(PriceService::class)->forStay($room, (float) ($room->activePrices->first()?->price ?? $room->base_price), 1);
+
         return $this->sendSuccess(['room' => $room]);
     }
 
@@ -80,8 +85,13 @@ class BookingController extends BaseController
                         $group = BookingGroup::create([
                             'user_id'        => $user->id,
                             'group_ref'      => 'GRP-' . strtoupper(Str::random(8)),
+                            // what the guest pays: room prices plus VAT and service charge
                             'total_amount'   => $direct->sum(fn($i) =>
-                                $i->price * max(1, Carbon::parse($i->check_in)->diffInDays($i->check_out))
+                                app(PriceService::class)->bookingFields(
+                                    $i->room,
+                                    (float) $i->price,
+                                    max(1, Carbon::parse($i->check_in)->diffInDays($i->check_out))
+                                )['amount']
                             ),
                             'rooms_count'    => $direct->count(),
                             'payment_status' => 'pending',
@@ -109,7 +119,7 @@ class BookingController extends BaseController
                             'user_id'          => $user->id,
                             'checkin'          => $item->check_in,
                             'checkout'         => $item->check_out,
-                            'amount'           => $item->price * $nights,
+                            ...app(PriceService::class)->bookingFields($room, (float) $item->price, $nights),
                             'adult'            => $item->adult,
                             'children'         => $item->children,
                             'rooms'            => $item->rooms ?? 1,
@@ -249,7 +259,7 @@ class BookingController extends BaseController
                     'user_id'        => $request->user()->id,
                     'checkin'        => $validated['check_in'],
                     'checkout'       => $validated['check_out'],
-                    'amount'         => $price * $nights,
+                    ...app(PriceService::class)->bookingFields($room, (float) $price, $nights),
                     'adult'          => $validated['adult'],
                     'children'       => $validated['children'] ?? 0,
                     'rooms'          => $validated['rooms']    ?? 1,

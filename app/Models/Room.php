@@ -24,7 +24,11 @@ class Room extends Model
 
     public function images(): MorphMany
     {
-        return $this->morphMany(Media::class, 'media')->where('media_role', 'room_gallery_image');
+        // in the order the owner arranged them (photos without a number keep the order they were added in)
+        return $this->morphMany(Media::class, 'media')
+            ->where('media_role', 'room_gallery_image')
+            ->orderBy('sort_order')
+            ->orderBy('id');
     }
 
     public function property(): BelongsTo

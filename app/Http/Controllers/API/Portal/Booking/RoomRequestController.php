@@ -13,6 +13,7 @@ use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use App\Services\Pricing\PriceService;
 
 class RoomRequestController extends BaseController
 {
@@ -258,7 +259,6 @@ class RoomRequestController extends BaseController
 
         $nights      = max(1, Carbon::parse($bid->check_in)->diffInDays($bid->check_out));
         $agreedPrice = $bid->agreed_price;
-        $totalAmount = $agreedPrice * $nights;
 
         $booking = $existing ?? Booking::create([
             'booking_number'  => date('Ymd') . rand(10000000, 99999999),
@@ -266,7 +266,8 @@ class RoomRequestController extends BaseController
             'user_id'         => $request->user()->id,
             'checkin'         => $bid->check_in,
             'checkout'        => $bid->check_out,
-            'amount'          => $totalAmount,
+            // the agreed price per night, with VAT and service charge on it
+            ...app(PriceService::class)->bookingFields($bid->room, (float) $agreedPrice, $nights),
             'adult'           => $bid->adult,
             'children'        => $bid->children ?? 0,
             'rooms'           => 1,
@@ -395,6 +396,8 @@ class RoomRequestController extends BaseController
     private function formatBidForGuest(RoomRequest $bid): array
     {
         $nights = max(1, Carbon::parse($bid->check_in)->diffInDays($bid->check_out));
+        $svc    = app(PriceService::class);
+        $tax    = ['rates' => $svc->ratesFor($bid->room)];
 
         return [
             'id'                      => $bid->id,
@@ -412,12 +415,18 @@ class RoomRequestController extends BaseController
             'agreed_price'            => $bid->agreed_price,   // what the guest pays per night
             'agreed_total'            => $bid->agreed_price * $nights,
             'total_offered'           => $bid->discount_price * $nights,
+            // the same with VAT and service charge on (what the guest really pays)
+            'tax_rates'               => $tax['rates'],
+            'agreed_total_with_tax'   => $bid->agreed_price ? $svc->breakdown($bid->agreed_price * $nights, $tax['rates'])['total'] : null,
+            'offered_total_with_tax'  => $svc->breakdown($bid->discount_price * $nights, $tax['rates'])['total'],
+            'counter_total_with_tax'  => $bid->counter_price ? $svc->breakdown($bid->counter_price * $nights, $tax['rates'])['total'] : null,
+            'room_base_total_with_tax' => $svc->breakdown(($bid->room?->base_price ?? 0) * $nights, $tax['rates'])['total'],
             'room_base_total'         => ($bid->room?->base_price ?? 0) * $nights,
             'superseded'              => $superseded = $bid->isSuperseded(),
             'is_active'               => in_array($bid->status, self::ACTIVE_STATUSES) && !$superseded,
             'request_expiration_time' => $bid->request_expiration_time,
             'seconds_left'            => $bid->request_expiration_time
-                ? max(0, now()->diffInSeconds($bid->request_expiration_time, false))
+                ? max(0, (int) floor(now()->diffInSeconds($bid->request_expiration_time, false)))
                 : 0,
             'created_at'              => $bid->created_at,
         ];
