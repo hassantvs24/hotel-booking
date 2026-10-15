@@ -461,13 +461,6 @@ class RoomController extends BaseController
         }
     }
 
-    private function deletePrimaryImage(Room $room): void
-    {
-        if ($primary = $room->primaryImage()->first()) {
-            $this->deleteFile($primary->name, 'room');
-            $primary->delete();
-        }
-    }
     private function deleteImage($room): void
     {
         if ($room->primaryImage()->exists()) {
