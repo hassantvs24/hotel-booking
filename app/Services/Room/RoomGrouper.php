@@ -2,6 +2,7 @@
 
 namespace App\Services\Room;
 
+use App\Models\Booking;
 use App\Models\Room;
 use Illuminate\Support\Collection;
 
@@ -24,6 +25,52 @@ class RoomGrouper
         return $rooms
             ->sortBy('id')
             ->groupBy(fn (Room $room) => $this->key($room, $priceOf($room)));
+    }
+
+    /** The price per night that applies to a room: its active price if it has one, else its base price */
+    public function priceOf(Room $room): float
+    {
+        $room->loadMissing('activePrices');
+
+        return (float) ($room->activePrices->isNotEmpty()
+            ? ($room->activePrices->first()->price ?? $room->base_price)
+            : ($room->base_price ?? 0));
+    }
+
+    /**
+     * Another room just like $room (same card) that is free for these dates, or null.
+     *
+     * Used when the room a guest picked was taken in the meantime: if "Deluxe 1" is gone but "Deluxe 2" is free,
+     * the guest gets "Deluxe 2" instead of an error, which is the whole point of showing one "Deluxe" card.
+     *
+     * @param  int[]  $excludeIds  rooms that must not be chosen (already in the guest's cart or booking)
+     */
+    public function freeSibling(Room $room, string $checkIn, string $checkOut, array $excludeIds = []): ?Room
+    {
+        $room->loadMissing('facilities');
+        $key = $this->key($room, $this->priceOf($room));
+
+        $same = Room::where('property_id', $room->property_id)
+            ->where('id', '!=', $room->id)
+            ->whereNotIn('id', $excludeIds)
+            ->where(fn ($q) => $q->whereNull('status')->orWhereNotIn('status', ['Maintenance', 'Disabled', 'Inactive']))
+            ->with(['facilities', 'activePrices'])
+            ->orderBy('id')
+            ->get()
+            ->filter(fn (Room $r) => $this->key($r, $this->priceOf($r)) === $key);
+
+        if ($same->isEmpty()) {
+            return null;
+        }
+
+        $busy = Booking::whereIn('room_id', $same->pluck('id'))
+            ->whereIn('status', ['reserved', 'approved'])
+            ->where('checkin', '<', $checkOut)
+            ->where('checkout', '>', $checkIn)
+            ->pluck('room_id')
+            ->all();
+
+        return $same->first(fn (Room $r) => !in_array($r->id, $busy));
     }
 
     /** "Deluxe 3" and "Deluxe (copy 2)" both become "Deluxe"; a name that is only a number stays as it is */

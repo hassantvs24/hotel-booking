@@ -18,6 +18,7 @@ use App\Models\RoomRequest;
 use App\Models\Transaction;
 use App\Models\User;
 use App\Services\Pricing\PriceService;
+use App\Services\Room\RoomGrouper;
 use App\Notifications\BID\BidReceivedNotification;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
@@ -61,6 +62,7 @@ class BookingController extends BaseController
             ->delete();
 
         $cart = BookingCart::where('user_id', $user->id)
+            ->whereHas('room')
             ->with('room.property.user')
             ->get();
 
@@ -103,13 +105,30 @@ class BookingController extends BaseController
                         $room = Room::lockForUpdate()->findOrFail($item->room_id);
 
                         // Conflict check
-                        if (Booking::where('room_id', $room->id)
+                        $taken = fn (Room $r) => Booking::where('room_id', $r->id)
                             ->whereIn('status', ['reserved', 'approved'])
                             ->where('checkin', '<', $item->check_out)
                             ->where('checkout', '>', $item->check_in)
-                            ->exists()
-                        ) {
-                            throw new \Exception("Room \"{$room->name}\" is no longer available.");
+                            ->exists();
+
+                        if ($taken($room)) {
+                            // Taken meanwhile. If the same room type has another free room (the guest saw one "Deluxe"
+                            // card), give them that one; only when none is left is it an error.
+                            $skip = array_merge(
+                                $direct->pluck('room_id')->all(),
+                                array_map(fn ($b) => $b->room_id, $bookings)
+                            );
+                            $other = app(RoomGrouper::class)->freeSibling($room, $item->check_in, $item->check_out, $skip);
+
+                            if (!$other) {
+                                throw new \Exception("Room \"{$room->name}\" is no longer available.");
+                            }
+
+                            $room = Room::lockForUpdate()->findOrFail($other->id);
+
+                            if ($taken($room)) {
+                                throw new \Exception("Room \"{$room->name}\" is no longer available.");
+                            }
                         }
 
                         $nights    = max(1, Carbon::parse($item->check_in)->diffInDays($item->check_out));

@@ -11,6 +11,7 @@ use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use App\Services\Pricing\PriceService;
+use App\Services\Room\RoomGrouper;
 
 class CartController extends BaseController
 {
@@ -56,7 +57,12 @@ class CartController extends BaseController
             $expiresAt = null; // bid items never expire from cart
 
         } else {
-            $this->checkAvailability($room->id, $data['check_in'], $data['check_out']);
+            // The room was taken after the guest saw it: another room of the same type will do
+            if ($this->isTaken($room->id, $data['check_in'], $data['check_out'])) {
+                $room = app(RoomGrouper::class)->freeSibling(
+                    $room, $data['check_in'], $data['check_out'], BookingCart::where('user_id', $user->id)->pluck('room_id')->all()
+                ) ?? abort(422, 'This room is not available for the selected dates.');
+            }
             $price     = $room->base_price;
             $expiresAt = Carbon::now()->addMinutes(self::CART_HOLD_MINUTES);
         }
@@ -203,17 +209,13 @@ class CartController extends BaseController
         }
     }
 
-    private function checkAvailability(int $roomId, string $checkIn, string $checkOut): void
+    private function isTaken(int $roomId, string $checkIn, string $checkOut): bool
     {
-        $taken = Booking::where('room_id', $roomId)
+        return Booking::where('room_id', $roomId)
             ->whereIn('status', ['reserved', 'approved'])
             ->where('checkin',  '<', $checkOut)
             ->where('checkout', '>', $checkIn)
             ->exists();
-
-        if ($taken) {
-            abort(422, 'This room is not available for the selected dates.');
-        }
     }
 
     private function enrichItem(BookingCart $item): BookingCart
