@@ -55,10 +55,20 @@ class ImageOptimizer
             return null;
         }
 
-        // A big photo is large once it is unpacked into memory (width x height x 4 bytes)
+        // Every photo gets its own time allowance: a slow machine needs a few seconds per big photo, and several
+        // photos in one request must not run into the 30 second limit together.
+        @set_time_limit(60);
+
+        // A big photo is large once it is unpacked into memory (about 5 bytes per pixel with the copy made when
+        // scaling). If that cannot fit, the photo is stored as it is: running out of memory cannot be caught.
         $previousLimit = ini_get('memory_limit');
         @ini_set('memory_limit', '768M');
 
+        if (!$this->fitsInMemory($width, $height)) {
+            @ini_set('memory_limit', (string) $previousLimit);
+
+            return null;
+        }
         try {
             $image = @imagecreatefromstring((string) file_get_contents($path));
             if (!$image) {
@@ -97,6 +107,21 @@ class ImageOptimizer
         } finally {
             @ini_set('memory_limit', (string) $previousLimit);
         }
+    }
+
+    private function fitsInMemory(int $width, int $height): bool
+    {
+        $limit = ini_get('memory_limit');
+
+        if ($limit === '-1' || $limit === false || $limit === '') {
+            return true;
+        }
+
+        $bytes = (int) $limit;
+        $unit  = strtolower(substr((string) $limit, -1));
+        $bytes *= match ($unit) { 'g' => 1073741824, 'm' => 1048576, 'k' => 1024, default => 1 };
+
+        return $width * $height * 5 + memory_get_usage(true) < $bytes;
     }
 
     /** EXIF orientation (1 = upright). Only JPEGs carry it, and only when the "exif" extension is there. */

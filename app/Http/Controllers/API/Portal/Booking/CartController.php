@@ -100,6 +100,7 @@ class CartController extends BaseController
             ->delete();
 
         $items = BookingCart::where('user_id', $userId)
+            ->whereHas('room')   // a deleted room cannot be booked any more
             ->with([
                 'room:id,name,base_price,vat_percent,service_charge_percent,property_id,status',
                 'room.primaryImage',
@@ -251,6 +252,7 @@ class CartController extends BaseController
     private function cartCount(int $userId): int
     {
         return BookingCart::where('user_id', $userId)
+            ->whereHas('room')
             ->where(function ($q) {
                 $q->where('is_bid', true)
                     ->orWhere(function ($q2) {

@@ -3,6 +3,7 @@
 namespace App\Services\Room;
 
 use App\Models\Booking;
+use App\Models\BookingCart;
 use App\Models\Room;
 use App\Models\RoomRequest;
 
@@ -55,6 +56,25 @@ class RoomUsage
     public function forRoom(Room $room): array
     {
         return $this->forRooms([$room->id])[$room->id];
+    }
+
+    /**
+     * Called when rooms are deleted: they leave every guest's cart, and guest offers still open on them are
+     * declined (an offer on a room that no longer exists can never be paid).
+     *
+     * @param  int[]  $roomIds
+     */
+    public function release(array $roomIds): void
+    {
+        if (!$roomIds) {
+            return;
+        }
+
+        BookingCart::whereIn('room_id', $roomIds)->delete();
+
+        RoomRequest::whereIn('room_id', $roomIds)
+            ->whereIn('status', RoomRequest::LIVE_STATUSES)
+            ->update(['status' => 'Declined']);
     }
 
     /** The reason a room cannot be deleted, or null when it can */

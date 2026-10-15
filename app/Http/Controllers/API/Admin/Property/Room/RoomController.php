@@ -189,10 +189,14 @@ class RoomController extends BaseController
 
             // A new main photo replaces only the old main photo; the extra photos are changed separately
             if ($request->hasFile('photo')) {
-                $this->deletePrimaryImage($room);
-
+                $old   = $room->primaryImage()->first();
                 $image = $this->storeFile($request->file('photo'), 'room');
                 $room->primaryImage()->create([...$image, 'media_role' => 'room_image']);
+
+                if ($old) {
+                    $this->deleteFile($old->name, 'room');
+                    $old->delete();
+                }
             }
 
             $this->applyGallery($request, $room);
@@ -219,6 +223,7 @@ class RoomController extends BaseController
 
             $this->deleteImage($room);
             $roomRepository->delete($room->id);
+            $usage->release([$room->id]);
 
             return $this->sendSuccess([], 'Room deleted successfully');
         } catch (Exception $e) {
@@ -268,6 +273,8 @@ class RoomController extends BaseController
             $room->delete();
             $deleted[] = $room->id;
         }
+
+        $usage->release($deleted);
 
         $message = count($deleted) . ' room' . (count($deleted) === 1 ? '' : 's') . ' deleted'
             . ($skipped ? ', ' . count($skipped) . ' kept because of upcoming bookings' : '') . '.';
@@ -336,7 +343,10 @@ class RoomController extends BaseController
      */
     private function roomFields(Request $request): array
     {
-        $fields = $request->except('photo', 'gallery', 'gallery_order', 'remove_gallery', 'room_facilities', 'quantity');
+        $fields = $request->only([
+            'name', 'room_size', 'guest_capacity', 'extra_bed', 'total_balcony', 'total_window', 'base_price',
+            'notes', 'bed_type_id', 'room_type_id', 'vat_percent', 'service_charge_percent',
+        ]);
 
         if (!isset($fields['extra_bed']) || $fields['extra_bed'] === '') {
             unset($fields['extra_bed']);
