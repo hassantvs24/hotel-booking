@@ -9,6 +9,7 @@ use App\Models\Room;
 use App\Repositories\Admin\RoomRepository;
 use App\Services\Pricing\PriceService;
 use App\Services\Room\RoomDuplicator;
+use App\Services\Room\RoomUsage;
 use App\Traits\MediaMan;
 use Exception;
 use Illuminate\Http\JsonResponse;
@@ -204,12 +205,18 @@ class RoomController extends BaseController
 
     /**
      * Remove the specified resource from storage.
+     * A room with upcoming bookings is kept: the guests have paid for it.
      */
-    public function destroy(Request $request, RoomRepository $roomRepository, $room)
+    public function destroy(Request $request, RoomRepository $roomRepository, RoomUsage $usage, $room)
     {
         try {
             $room = $roomRepository->getModel($room);
             $this->authorizeRoom($request, $room);
+
+            if ($reason = $usage->blockReason($room)) {
+                return $this->sendError($reason, ['room' => [$reason]], 422);
+            }
+
             $this->deleteImage($room);
             $roomRepository->delete($room->id);
 
@@ -219,6 +226,85 @@ class RoomController extends BaseController
         }
     }
 
+    /**
+     * What stands in the way of deleting these rooms, so the screen can warn before asking.
+     * GET rooms/usage?ids[]=1&ids[]=2
+     */
+    public function usage(Request $request, RoomUsage $usage): JsonResponse
+    {
+        $rooms = $this->ownedRooms($request, (array) $request->input('ids', []));
+        $map   = $usage->forRooms($rooms->pluck('id')->all());
+
+        return $this->sendSuccess([
+            'rooms' => $rooms->map(fn (Room $r) => [
+                'id'           => $r->id,
+                'name'         => $r->name,
+                'bookings'     => $map[$r->id]['bookings'],
+                'next_checkin' => $map[$r->id]['next_checkin'],
+                'offers'       => $map[$r->id]['offers'],
+                'blocked'      => $map[$r->id]['bookings'] > 0,
+                'reason'       => $usage->blockReason($r, $map[$r->id]),
+            ])->values(),
+        ]);
+    }
+
+    /** Delete several rooms at once; the ones with upcoming bookings are skipped and reported */
+    public function bulkDestroy(Request $request, RoomUsage $usage): JsonResponse
+    {
+        $request->validate(['ids' => 'required|array|min:1|max:100', 'ids.*' => 'integer']);
+
+        $rooms   = $this->ownedRooms($request, $request->input('ids'));
+        $map     = $usage->forRooms($rooms->pluck('id')->all());
+        $deleted = [];
+        $skipped = [];
+
+        foreach ($rooms as $room) {
+            if ($reason = $usage->blockReason($room, $map[$room->id])) {
+                $skipped[] = ['id' => $room->id, 'name' => $room->name, 'reason' => $reason];
+                continue;
+            }
+
+            $this->deleteImage($room);
+            $room->delete();
+            $deleted[] = $room->id;
+        }
+
+        $message = count($deleted) . ' room' . (count($deleted) === 1 ? '' : 's') . ' deleted'
+            . ($skipped ? ', ' . count($skipped) . ' kept because of upcoming bookings' : '') . '.';
+
+        return $this->sendSuccess(['deleted' => $deleted, 'skipped' => $skipped], $message);
+    }
+
+    /** Change the guest capacity and / or the price of several rooms at once */
+    public function bulkUpdate(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'ids'            => 'required|array|min:1|max:100',
+            'ids.*'          => 'integer',
+            'guest_capacity' => 'nullable|integer|min:1|max:50',
+            'base_price'     => 'nullable|numeric|min:1',
+        ], [
+            'guest_capacity.min' => 'Guest capacity must be at least 1.',
+            'base_price.min'     => 'The price must be more than 0.',
+        ]);
+
+        $changes = array_filter(
+            ['guest_capacity' => $data['guest_capacity'] ?? null, 'base_price' => $data['base_price'] ?? null],
+            fn ($v) => $v !== null && $v !== ''
+        );
+
+        if (!$changes) {
+            return $this->sendError('Choose a guest capacity or a price to apply.', ['ids' => ['Nothing to change.']], 422);
+        }
+
+        $rooms = $this->ownedRooms($request, $data['ids']);
+
+        foreach ($rooms as $room) {
+            $room->update($changes);   // through the model, so the price is stored the usual way
+        }
+
+        return $this->sendSuccess(['updated' => $rooms->pluck('id')], $rooms->count() . ' room' . ($rooms->count() === 1 ? '' : 's') . ' updated.');
+    }
     public function all(RoomRepository $roomRepository): JsonResponse
     {
         $rooms = $roomRepository->get();
@@ -278,6 +364,18 @@ class RoomController extends BaseController
         return $user->associated_property?->id;
     }
 
+    /** The rooms among $ids the signed-in user may manage (all for the admin, own property for an owner) */
+    private function ownedRooms(Request $request, array $ids)
+    {
+        $user  = $request->user();
+        $query = Room::whereIn('id', array_map('intval', $ids));
+
+        if (!$user->is_admin) {
+            $query->where('property_id', $user->associated_property?->id ?? 0);
+        }
+
+        return $query->get();
+    }
     /** Admin: any room. Owner: only rooms of their own property. */
     private function authorizeRoom(Request $request, Room $room): void
     {

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\API\Portal;
 
 use App\Services\Pricing\PriceService;
 use App\Services\Refund\RefundPolicyService;
+use App\Services\Room\RoomGrouper;
 use App\Http\Controllers\BaseController;
 use Carbon\Carbon;
 use App\Models\Booking;
@@ -122,31 +123,56 @@ class PropertyController extends BaseController
                 ->toArray();
         }
 
-        // ── 3. Split + filter by capacity + resolve price ──
+        // ── 3. Group identical rooms, then filter by availability and capacity ──
+        // Identical rooms ("Deluxe 1" ... "Deluxe 5") are one card: "Deluxe — 3 left". The card stands for the
+        // first free room of the set; the rest are listed in room_ids so the guest can add more than one.
 
-        $nights = $this->nights($checkIn, $checkOut);
+        $nights  = $this->nights($checkIn, $checkOut);
+        $grouper = app(RoomGrouper::class);
 
-        $availableRooms = $allRooms->filter(function ($room) use ($bookedRoomIds, $adult) {
-            $hasConflict              = in_array($room->id, $bookedRoomIds);
-            $isPermanentlyUnavailable = in_array($room->status, ['Maintenance', 'Disabled', 'Inactive']);
-            $hasCapacity              = $room->guest_capacity >= $adult;
+        $available      = collect();
+        $hiddenCapacity = [];
 
-            return !$hasConflict && !$isPermanentlyUnavailable && $hasCapacity;
-        })->map(function ($room) use ($nights) {
+        foreach ($grouper->group($allRooms, fn ($room) => $this->resolvePrice($room)) as $key => $members) {
+            $free = $members->filter(function ($room) use ($bookedRoomIds) {
+                return !in_array($room->id, $bookedRoomIds)
+                    && !in_array($room->status, ['Maintenance', 'Disabled', 'Inactive']);
+            })->values();
+
+            if ($free->isEmpty()) {
+                continue;
+            }
+
+            $room = $free->first();
+            $name = $members->count() > 1 ? $grouper->baseName($room->name) : $room->name;
+
+            // Too small for the party: not offered, but the guest is told, so they know why it is missing
+            if ($room->guest_capacity < $adult) {
+                $hiddenCapacity[] = ['name' => $name, 'guest_capacity' => (int) $room->guest_capacity, 'count' => $free->count()];
+                continue;
+            }
+
+            $room->name           = $name;
             $room->resolved_price = $this->resolvePrice($room);
             $room->nights         = $nights;
             $room->total_price    = $room->resolved_price * $nights;
             $room->booking_type   = 'direct';
             $room->tax            = app(PriceService::class)->forStay($room, (float) $room->resolved_price, $nights);
-            return $room;
-        });
+            $room->group_key      = $key;
+            $room->group_total    = $members->count();
+            $room->available_count = $free->count();
+            $room->room_ids       = $free->pluck('id')->values();
+
+            $available->push($room);
+        }
 
         return $this->sendSuccess([
-            'available_rooms' => $availableRooms->values(),
-            'check_in'        => $checkIn,
-            'check_out'       => $checkOut,
-            'nights'          => $nights,
-            'adult'           => $adult,
+            'available_rooms'     => $available->values(),
+            'hidden_for_capacity' => $hiddenCapacity,
+            'check_in'            => $checkIn,
+            'check_out'           => $checkOut,
+            'nights'              => $nights,
+            'adult'               => $adult,
         ]);
     }
 

@@ -148,6 +148,9 @@ Route::middleware('auth:sanctum')->prefix('admin')->group(function () {
     Route::get('rooms/all',              [RoomController::class, 'all']);
     Route::get('rooms/{room}/details',   [RoomController::class, 'showDetails']);
     Route::post('rooms/{room}/duplicate', [RoomController::class, 'duplicate']);
+    Route::get('rooms/usage',            [RoomController::class, 'usage']);
+    Route::post('rooms/bulk-delete',     [RoomController::class, 'bulkDestroy']);
+    Route::post('rooms/bulk-update',     [RoomController::class, 'bulkUpdate']);
 
     Route::apiResource('room-types',  RoomTypeController::class )->except(['create', 'show', 'edit']);
     Route::get('room-types/all',  [RoomTypeController::class,  'all']);
