@@ -138,6 +138,11 @@ Route::middleware('auth:sanctum')->prefix('admin')->group(function () {
     // VAT and service charge: platform rates (admin) and each property's own default (owner or admin)
     Route::get('settings/tax',  [\App\Http\Controllers\API\Admin\Property\TaxRateController::class, 'platform']);
     Route::put('settings/tax',  [\App\Http\Controllers\API\Admin\Property\TaxRateController::class, 'updatePlatform']);
+
+    // the legal pages the admin edits
+    Route::get('legal',         [\App\Http\Controllers\API\Admin\Legal\LegalDocumentController::class, 'index']);
+    Route::get('legal/{slug}',  [\App\Http\Controllers\API\Admin\Legal\LegalDocumentController::class, 'show']);
+    Route::put('legal/{slug}',  [\App\Http\Controllers\API\Admin\Legal\LegalDocumentController::class, 'update']);
     Route::get('properties/{property}/tax-rates', [\App\Http\Controllers\API\Admin\Property\TaxRateController::class, 'property']);
     Route::put('properties/{property}/tax-rates', [\App\Http\Controllers\API\Admin\Property\TaxRateController::class, 'updateProperty']);
 

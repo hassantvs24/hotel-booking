@@ -44,7 +44,9 @@ class PropertyController extends BaseController
 
     public function placeWiseProperties(Place $place): JsonResponse
     {
+        // same rule as the main list and search: a property shows once it has a room a guest could book
         $properties = Property::query()
+            ->whereHas('rooms')
             ->with(['images', 'facilities', 'place.city'])
             ->where([
                 'place_id' => $place->id,
@@ -60,8 +62,31 @@ class PropertyController extends BaseController
     //  GET /portal/properties/{property}/details
     // ══════════════════════════════════════════════════════
 
-    public function details(Property $property): JsonResponse
+    /**
+     * A property that is approved but not published yet is not for guests: it is missing from every list and search,
+     * and it must not open by its address or id either. Only its owner and the admins may (to get it ready).
+     */
+    private function ensureVisible(Request $request, $property): void
     {
+        $property = $property instanceof Property ? $property : Property::find($property);
+
+        if (!$property || $property->status === Property::STATUS_PUBLISHED) {
+            return;
+        }
+
+        $viewer = $request->user('sanctum');
+
+        if ($viewer && ($viewer->is_admin || (int) $viewer->id === (int) $property->user_id)) {
+            return;
+        }
+
+        abort(404, 'This property is not available.');
+    }
+
+    public function details(Request $request, Property $property): JsonResponse
+    {
+        $this->ensureVisible($request, $property);
+
         $property->load([
             'images',
             'logoImage',
@@ -93,6 +118,8 @@ class PropertyController extends BaseController
 
     public function availableRooms(Request $request, $propertyId): JsonResponse
     {
+        $this->ensureVisible($request, $propertyId);
+
         $checkIn  = $request->input('check_in');
         $checkOut = $request->input('check_out');
         $adult    = (int) $request->input('adult', 1);
@@ -183,6 +210,8 @@ class PropertyController extends BaseController
 
     public function otherRooms(Request $request, $propertyId): JsonResponse
     {
+        $this->ensureVisible($request, $propertyId);
+
         $checkIn  = $request->input('check_in');
         $checkOut = $request->input('check_out');
 
@@ -223,8 +252,10 @@ class PropertyController extends BaseController
     //  Returns true if user already has a pending request
     // ══════════════════════════════════════════════════════
 
-    public function bookingRoomCheck($property): JsonResponse
+    public function bookingRoomCheck(Request $request, $property): JsonResponse
     {
+        $this->ensureVisible($request, $property);
+
         $data = RoomRequest::where('property_id', $property)->exists();
 
         return $this->sendSuccess($data);
@@ -236,8 +267,10 @@ class PropertyController extends BaseController
     //  Returns all blocked date ranges for the calendar
     // ══════════════════════════════════════════════════════
 
-    public function checkBookedDate($propertyId): JsonResponse
+    public function checkBookedDate(Request $request, $propertyId): JsonResponse
     {
+        $this->ensureVisible($request, $propertyId);
+
         try {
             // Return actual booking date ranges instead of room columns
             // This gives the calendar accurate blocked dates

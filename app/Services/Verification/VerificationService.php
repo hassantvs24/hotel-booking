@@ -29,9 +29,14 @@ class VerificationService
 
     // ── input rules ───────────────────────────────────────
 
+    /** Spaces and hyphens go, and digits typed in Bengali (০-৯), Arabic-Indic (٠-٩) or Persian (۰-۹) become ordinary digits */
     public function cleanNid(?string $value): string
     {
-        return preg_replace('/[\s-]+/', '', (string) $value);
+        $digits = ['০' => '0', '১' => '1', '২' => '2', '৩' => '3', '৪' => '4', '৫' => '5', '৬' => '6', '৭' => '7', '৮' => '8', '৯' => '9',
+                   '٠' => '0', '١' => '1', '٢' => '2', '٣' => '3', '٤' => '4', '٥' => '5', '٦' => '6', '٧' => '7', '٨' => '8', '٩' => '9',
+                   '۰' => '0', '۱' => '1', '۲' => '2', '۳' => '3', '۴' => '4', '۵' => '5', '۶' => '6', '۷' => '7', '۸' => '8', '۹' => '9'];
+
+        return preg_replace('/[\s-]+/u', '', strtr((string) $value, $digits));
     }
 
     public function nidError(string $nid): ?string
@@ -74,7 +79,8 @@ class VerificationService
 
         return [
             'required' => true,
-            'complete' => $identity !== null && $license !== null,
+            // handed in, and nothing the team refused is still waiting to be replaced
+            'complete' => $identity !== null && $license !== null && $identity->status !== 'rejected' && $license->status !== 'rejected',
             'nid' => $identity ? [
                 'on_file' => true,
                 'masked'  => $identity->maskedNumber(),
@@ -156,7 +162,9 @@ class VerificationService
         $expires = $data['license_expiry'] ?? null;
         $file    = ($files['license_file'] ?? null) instanceof UploadedFile ? $files['license_file'] : null;
 
-        $unchanged = $license?->isVerified()
+        // Nothing new handed in: leave it (and its status) alone. A refused licence is only fixed by a new file or a corrected number,
+        // pressing Continue again must not clear the refusal.
+        $unchanged = $license
             && $license->license_number === $number
             && ($license->expires_on?->format('Y-m-d')) === ($expires ?: null)
             && !$file;
@@ -185,16 +193,19 @@ class VerificationService
     // ── admin side ────────────────────────────────────────
 
     /** Short form for the review list: just where each document stands */
-    public function listSummary(PropertyRequest $req): ?array
+    public function listSummary(PropertyRequest $req, ?OwnerIdentity $identity = null): ?array
     {
         if (!$req->verification_required) {
             return null;
         }
 
+        // the list passes the owner's identity in (one query for the whole page), a single request looks it up
+        $identity ??= $this->identityOf($req->user_id);
+
         return [
-            'nid'      => $this->identityOf($req->user_id)?->status,
+            'nid'      => $identity?->status,
             'license'  => $req->license?->status,
-            'verified' => $this->isFullyVerified($req),
+            'verified' => $this->isFullyVerified($req, $identity),
         ];
     }
 
@@ -216,7 +227,13 @@ class VerificationService
                 ->map(fn ($l) => ['property' => $l->propertyRequest?->property_title, 'email' => $l->propertyRequest?->owner_email])->all()
             : [];
 
+        // what the owner agreed to when they submitted (the latest submission)
+        $consents = \App\Models\LegalConsent::where('property_request_id', $req->id)->latest('accepted_at')->latest('id')->get()
+            ->unique('document_slug')
+            ->map(fn ($c) => ['slug' => $c->document_slug, 'version' => $c->document_version, 'accepted_at' => $c->accepted_at])->values()->all();
+
         return [
+            'consents' => $consents,
             'required' => (bool) $req->verification_required,
             'verified' => $this->isFullyVerified($req),
             'nid' => $identity ? [
@@ -241,9 +258,11 @@ class VerificationService
         ];
     }
 
-    public function isFullyVerified(PropertyRequest $req): bool
+    public function isFullyVerified(PropertyRequest $req, ?OwnerIdentity $identity = null): bool
     {
-        return (bool) $this->identityOf($req->user_id)?->isVerified() && (bool) $req->license?->isVerified();
+        $identity ??= $this->identityOf($req->user_id);
+
+        return (bool) $identity?->isVerified() && (bool) $req->license?->isVerified();
     }
 
     /** The stored file for one of the three pictures, or null */

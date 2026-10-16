@@ -8,6 +8,7 @@ use App\Models\Country;
 use App\Models\FacilitySub;
 use App\Models\Place;
 use App\Models\State;
+use App\Models\OwnerIdentity;
 use App\Models\Property;
 use App\Models\PropertyRequest;
 use App\Models\User;
@@ -55,7 +56,14 @@ class PropertyRequestController extends BaseController
             ->orderByDesc('id')
             ->paginate(min((int) $request->input('per_page', 10), 50), ['*'], 'page', (int) $request->input('page', 1));
 
-        $requests->getCollection()->transform(fn (PropertyRequest $r) => array_merge($r->toArray(), ['summary' => $this->summary($r), 'verification' => app(VerificationService::class)->listSummary($r)]));
+        // the documents' status for the whole page in two queries, not two per row
+        $requests->getCollection()->load('license');
+        $identities = OwnerIdentity::whereIn('user_id', $requests->getCollection()->pluck('user_id')->filter()->unique())->get()->keyBy('user_id');
+
+        $requests->getCollection()->transform(fn (PropertyRequest $r) => array_merge($r->toArray(), [
+            'summary'      => $this->summary($r),
+            'verification' => app(VerificationService::class)->listSummary($r, $identities->get($r->user_id)),
+        ]));
 
         return $this->sendSuccess(['property_requests' => $requests, 'stats' => $stats]);
     }
@@ -100,6 +108,11 @@ class PropertyRequestController extends BaseController
             'status'        => ['required', 'in:pending,approved,rejected'],
             'admin_message' => ['nullable', 'string', 'max:1000', 'required_if:status,rejected'],
         ]);
+
+        // Only an application the owner has actually submitted can be approved (the public landing form leaves unsubmitted drafts)
+        if ($request->status === 'approved' && PropertyRequest::where('id', $id)->where('is_draft', true)->exists()) {
+            return $this->sendError('The owner has not submitted this application yet.', [], 422);
+        }
 
         // An application that went through the Verification step is approved only once the NID and the licence are both verified
         if ($request->status === 'approved' && ($existing = PropertyRequest::find($id)) && $existing->verification_required
@@ -245,6 +258,8 @@ class PropertyRequestController extends BaseController
 
         PropertyRequestApproved::send($propertyRequest->owner_email, [
             'name' => $propertyRequest->name,
+            'property' => $propertyRequest->property_title,
+            'reference' => $propertyRequest->unique_request_number,
             'email' => $propertyRequest->owner_email,
             'phone' => $propertyRequest->contact_number,
             'user' => $user,
@@ -252,6 +267,9 @@ class PropertyRequestController extends BaseController
             'login_url' => rtrim((string) config('app.admin_url'), '/') . '/login',
             'set_password_url' => rtrim((string) config('app.admin_url'), '/') . '/forgot-password?' . http_build_query(['email' => $propertyRequest->owner_email]),
         ]);
+
+        // and the bell: approved, but not public until it is published
+        app(\App\Services\Property\PropertyAnnouncements::class)->approved($propertyRequest->fresh());
     }
 
     /**

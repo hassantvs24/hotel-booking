@@ -273,6 +273,8 @@ class PropertyController extends BaseController
 
     public function propertyAction(Property $property, Request $request): JsonResponse
     {
+        $request->validate(['status' => ['required', 'in:Pending,Published,Unpublished']]);
+
         $originalStatus = $property->status;
         $statusInput = $request->input('status');
 
@@ -312,6 +314,12 @@ class PropertyController extends BaseController
             }
 
             DB::commit();
+
+            // Going live is the moment the owner has waited for: tell them (bell + email with the full details)
+            if ($statusInput === 'Published') {
+                app(\App\Services\Property\PropertyAnnouncements::class)->published($property->fresh());
+            }
+
             return $this->sendSuccess($property, 'Property status updated successfully');
         } catch (Throwable $e) {
             DB::rollBack();

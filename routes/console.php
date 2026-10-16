@@ -19,6 +19,9 @@ Artisan::command('inspire', function () {
 Schedule::job(new \App\Jobs\ExpireCartItems)->everyFiveMinutes();
 Schedule::job(new \App\Jobs\ExpireUnpaidBookings)->everyFiveMinutes();
 Schedule::job(new \App\Jobs\ExpireRoomRequests)->everyFiveMinutes();
+
+// Empty property drafts (nothing typed) left alone for 3 days; a draft with the owner's own content is never removed here
+Schedule::job(new \App\Jobs\DeleteEmptyDrafts)->dailyAt('03:30');
 // SSLCommerz finishes a refund within minutes (sandbox) — ask often so the page and the email do not lag behind.
 // It only calls SSLCommerz when a refund is actually waiting, so running it every minute costs nothing otherwise.
 Schedule::job(new \App\Jobs\CheckRefundStatuses)->everyMinute();

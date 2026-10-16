@@ -18,7 +18,11 @@
             <tr>
                 <td style="padding:28px 28px 8px; font-size:15px; line-height:24px;">
                     <p style="margin:0 0 14px;">Dear {{ $name }},</p>
-                    <p style="margin:0;">Good news &mdash; your property request has been <strong>approved</strong>. You can now manage your property from the Oystay dashboard.</p>
+                    <p style="margin:0 0 12px;">Good news &mdash; your property request{{ !empty($property) ? ' for ' : '' }}@if(!empty($property))<strong>{{ $property }}</strong>@endif has been <strong>approved</strong>.</p>
+                    <p style="margin:0; padding:12px 14px; background-color:#fffbeb; border-radius:8px; color:#92400e;">
+                        <strong>It is not live yet.</strong> Our team is now getting it ready to be published. This can take a little while, and until then it will not appear in search.
+                        We will email you again, with all its details, the moment it is published.
+                    </p>
                 </td>
             </tr>
 
@@ -27,6 +31,9 @@
                     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f0fdfa; border-left:4px solid #14b8a6; border-radius:8px;">
                         <tr><td style="padding:16px 18px; font-size:14px; line-height:22px;">
                             <div style="font-weight:700; color:#0f766e; margin-bottom:6px;">Your details</div>
+                                @if (!empty($property))<div><strong>Property:</strong> {{ $property }}</div>@endif
+                                @if (!empty($reference))<div><strong>Reference:</strong> {{ $reference }}</div>@endif
+                                <div><strong>Status:</strong> Approved, waiting to be published</div>
                             <div><strong>Name:</strong> {{ $name }}</div>
                             <div><strong>Email:</strong> {{ $email }}</div>
                             <div><strong>Phone:</strong> {{ $phone }}</div>
@@ -40,6 +47,7 @@
                     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f8fafc; border:1px solid #e2e8f0; border-radius:8px;">
                         <tr><td style="padding:16px 18px; font-size:14px; line-height:22px;">
                             <div style="font-weight:700; color:#0f766e; margin-bottom:6px;">How to sign in</div>
+                            <div style="margin-bottom:8px; color:#64748b;">Your dashboard opens once your property is published. Keep these details for then.</div>
                             <div><strong>Email:</strong> {{ $email }}</div>
                             @if (!empty($temp_password))
                                 <div><strong>Temporary password:</strong>
@@ -63,7 +71,7 @@
                 <td align="center" style="padding:26px 28px 8px;">
                     <table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
                         <td align="center" style="background-color:#0d9488; border-radius:12px;">
-                            <a href="{{ $login_url }}" style="display:inline-block; padding:14px 34px; font-size:15px; font-weight:700; color:#ffffff; text-decoration:none;">Open my property dashboard</a>
+                            <a href="{{ $login_url }}" style="display:inline-block; padding:14px 34px; font-size:15px; font-weight:700; color:#ffffff; text-decoration:none;">Sign in to my account</a>
                         </td>
                     </tr></table>
                     <p style="margin:12px 0 0; font-size:12px; line-height:18px; color:#94a3b8;">

@@ -28,6 +28,9 @@ Route::prefix('portal')->group(function () {
 
     Route::get('home', [HomeController::class, 'index']);
 
+    // the legal pages (privacy policy, terms), public
+    Route::get('legal/{slug}', [\App\Http\Controllers\API\Portal\Legal\LegalController::class, 'show'])->where('slug', '[a-z0-9-]+');
+
     Route::prefix('properties')->group(function () {
         Route::get('/', [PropertyController::class, 'index']);
         Route::get('/{place}/place', [PropertyController::class, 'placeWiseProperties']);
@@ -109,9 +112,8 @@ Route::prefix('portal')->group(function () {
         });
 
     /*----------------- property request -----------------*/
-    Route::prefix('property-request')->group(function () {
-        Route::post('/store', [PropertyRequestController::class, 'store']);
-    });
+    // (the public POST /property-request/store was removed: it took a request without login or documents and left it as an
+    //  unseen draft. Owners now start from "List your property", sign in, and use the wizard.)
 
     // room request
     Route::prefix('room')->middleware('auth:sanctum')->group(function () {
@@ -152,7 +154,7 @@ Route::prefix('portal')->group(function () {
 
     Route::middleware('auth:sanctum')->group(function () {
         Route::get('/getAllPropertyOption', [VendorController::class, 'allPropertyOption']);
-        Route::post('/property/store', [VendorController::class, 'store']);
+        // (the old POST /property/store was removed: it created a property outside the application, review and documents path, then crashed)
         Route::get('/property/request-properties', [VendorController::class, 'requestProperties']);
         Route::get('/reg-info', [VendorController::class, 'getRegInfo']);
     });

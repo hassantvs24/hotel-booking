@@ -189,6 +189,16 @@ class PropertyDraftController extends BaseController
             return $this->sendError('Property address is required.', [], 422);
         }
 
+        // The owner has to agree to the privacy policy and the host terms (what they agreed to is recorded below)
+        if (!$request->boolean('accept_terms')) {
+            return $this->sendError('Please agree to the Privacy Policy and the Host Terms & Conditions to submit.', ['step' => 9], 422);
+        }
+
+        // The photos step asks for at least one photo: a listing without any cannot go to review
+        if (empty($draft->draft_data['step_5']['photos'] ?? [])) {
+            return $this->sendError('Please add at least one photo of your property before you submit.', ['step' => 5], 422);
+        }
+
         // Owner verification (NID + trade licence) is part of every application
         $verification = app(\App\Services\Verification\VerificationService::class);
 
@@ -196,17 +206,27 @@ class PropertyDraftController extends BaseController
             return $this->sendError("Please complete the Verification step: the owner's NID and the trade licence.", ['step' => 8], 422);
         }
 
+        // a document the team refused has to be replaced first, otherwise it would just be refused again
+        if ($refused = $verification->rejectedDocuments($draft)) {
+            $names = collect($refused)->pluck('label')->map(fn ($l) => $l === 'NID' ? 'NID' : 'trade licence')->implode(' and ');
+
+            return $this->sendError("Please replace your {$names} (our team refused it) in the Verification step before you submit again.", ['step' => 8], 422);
+        }
+
         if ($draft->license?->expires_on?->isPast()) {
             return $this->sendError('The trade licence has expired. Please upload a valid one in the Verification step.', ['step' => 8], 422);
         }
 
-        DB::transaction(function () use ($draft) {
+        DB::transaction(function () use ($draft, $request) {
             $draft->update([
                 'is_draft'      => false,
                 'status'        => 'pending',
                 'admin_message' => null,   // the reply to the last round; this is a fresh submission
                 'approved_at'   => null,
             ]);
+
+            // who agreed to which version of the host documents, and when
+            \App\Models\LegalConsent::recordHostAgreement($request->user(), $draft, $request);
         });
 
         // Notify all admins
@@ -235,15 +255,8 @@ class PropertyDraftController extends BaseController
     public function destroy(Request $request, $id): JsonResponse
     {
         $draft = $this->getDraft($request, $id);
-        abort_unless($draft->is_draft, 403, 'Only an unfinished draft can be discarded.');
-
-        // the licence belongs to this application; the owner's NID stays on their account
-        if ($draft->license) {
-            app(\App\Services\Verification\VerificationService::class)->deleteFiles([$draft->license->file_path]);
-            $draft->license->forceDelete();
-        }
-
-        $draft->delete();
+        // the draft, its uploaded photos and its licence go together; the owner's NID stays on their account
+        app(\App\Services\Property\DraftCleaner::class)->purge($draft);
 
         return $this->sendSuccess(null, 'Draft discarded.');
     }
