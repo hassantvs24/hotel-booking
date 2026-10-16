@@ -5,6 +5,7 @@ namespace App\Http\Controllers\API\Portal\Booking;
 use App\Http\Controllers\BaseController;
 use App\Models\Booking;
 use App\Models\BookingCart;
+use App\Models\Property;
 use App\Models\Room;
 use App\Models\RoomRequest;
 use Carbon\Carbon;
@@ -41,7 +42,16 @@ class CartController extends BaseController
 
         // filter_var handles true/false/"true"/"1"/1 from both JSON and form-data
         $isBid = filter_var($data['is_bid'] ?? false, FILTER_VALIDATE_BOOLEAN);
-        $room  = Room::findOrFail($data['room_id']);
+        $room  = Room::with('property:id,status')->findOrFail($data['room_id']);
+
+        // The search and the room list already hide these cases; the server holds the same line
+        if (($room->property?->status ?? null) !== Property::STATUS_PUBLISHED) {
+            abort(422, 'This property is not available for booking.');
+        }
+
+        if ((int) $room->guest_capacity > 0 && (int) $data['adult'] > (int) $room->guest_capacity) {
+            abort(422, "This room takes up to {$room->guest_capacity} adult" . ($room->guest_capacity > 1 ? 's' : '') . '. Please choose a bigger room or fewer guests.');
+        }
 
         if ($isBid) {
             $this->checkBidLimit($user->id, $room->id, $data['check_in'], $data['check_out']);
