@@ -63,7 +63,7 @@ class CartController extends BaseController
                     $room, $data['check_in'], $data['check_out'], BookingCart::where('user_id', $user->id)->pluck('room_id')->all()
                 ) ?? abort(422, 'This room is not available for the selected dates.');
             }
-            $price     = $room->base_price;
+            $price     = app(RoomGrouper::class)->priceOf($room);   // same price the room card showed
             $expiresAt = Carbon::now()->addMinutes(self::CART_HOLD_MINUTES);
         }
 

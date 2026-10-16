@@ -189,7 +189,7 @@ class BookingController extends BaseController
                         'message'                 => $item->bid_message,
                         'bid_number'              => $slot,
                         'status'                  => 'Pending',
-                        'request_expiration_time' => Carbon::now()->addHours(24),
+                        'request_expiration_time' => Carbon::now()->addHours(config('bidding.pending_hours')),
                     ]);
 
                     // Real-time broadcast to admin + owner channels

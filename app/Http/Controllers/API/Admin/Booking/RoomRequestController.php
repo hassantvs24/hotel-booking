@@ -19,8 +19,7 @@ use Illuminate\Support\Facades\DB;
 class RoomRequestController extends BaseController
 {
     // Same windows the guest-facing portal controller uses
-    private const PAYMENT_HOURS = 2;
-    private const PENDING_HOURS = 24;
+    // How long an offer waits for an answer, and how long a guest has to pay: see config/bidding.php
 
     // current status => statuses it may move to. Declined/Timeout/Done are final.
     private const TRANSITIONS = [
@@ -111,7 +110,7 @@ class RoomRequestController extends BaseController
             $basePrice = $request->input('base_price');
 
             if ($status === 'Approved') {
-                $expiresAt = Carbon::now()->addHours(self::PAYMENT_HOURS);
+                $expiresAt = Carbon::now()->addHours(config('bidding.payment_hours'));
 
                 RoomRequestAccepted::updateOrCreate(
                     ['room_requests_id' => $id],
@@ -126,7 +125,7 @@ class RoomRequestController extends BaseController
                 ]);
 
             } elseif ($status === 'Counter') {
-                $expiresAt = Carbon::now()->addHours(self::PENDING_HOURS);
+                $expiresAt = Carbon::now()->addHours(config('bidding.pending_hours'));
 
                 RoomRequestAccepted::updateOrCreate(
                     ['room_requests_id' => $id],

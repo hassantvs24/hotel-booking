@@ -43,7 +43,7 @@ class BidStatusNotification extends Notification implements ShouldQueue
             'accepted' => [
                 'type'  => 'bid_accepted',
                 'title' => 'Bid accepted!',
-                'body'  => "Your offer for {$room} was accepted. Complete payment within 2 hours.",
+                'body'  => "Your offer for {$room} was accepted. Complete payment within " . config('bidding.payment_hours') . " hours.",
                 'url'   => '/profile/my-bids?bid=' . $this->bid->id,
             ],
             'countered' => [
