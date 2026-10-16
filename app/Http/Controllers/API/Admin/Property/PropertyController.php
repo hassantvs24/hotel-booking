@@ -252,6 +252,25 @@ class PropertyController extends BaseController
         }
     }
 
+    /**
+     * "Verified host" by hand, for properties that were listed before document checks existed.
+     * New applications get it automatically when the NID and the licence are verified.
+     */
+    public function setVerified(Property $property, Request $request): JsonResponse
+    {
+        abort_unless($request->user()->is_admin, 403, 'Only the platform admin can mark a property as verified.');
+
+        $verified = $request->boolean('verified');
+
+        $property->update(['verified_at' => $verified ? now() : null]);
+
+        app(\App\Services\Verification\VerificationService::class)->log(
+            $request->user(), null, ($verified ? 'marked_verified_property_' : 'removed_verified_property_') . $property->id
+        );
+
+        return $this->sendSuccess(['is_verified' => $verified], $verified ? 'Marked as Verified host.' : 'Verified host mark removed.');
+    }
+
     public function propertyAction(Property $property, Request $request): JsonResponse
     {
         $originalStatus = $property->status;

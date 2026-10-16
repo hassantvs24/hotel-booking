@@ -121,10 +121,14 @@ Route::middleware('auth:sanctum')->prefix('admin')->group(function () {
     Route::get('properties/all',                          [PropertyController::class, 'all']);
     Route::get('property/attributes',                     [PropertyController::class, 'propertyAttributes']);
     Route::put('properties/{property}/status',            [PropertyController::class, 'propertyAction']);
+    Route::put('properties/{property}/verified',          [PropertyController::class, 'setVerified']);
     Route::get('property/{property}/details',             [PropertyController::class, 'details']);
 
     Route::get('property/requests',                       [PropertyRequestController::class, 'index']);
     Route::put('property/requests/{id}/update',           [PropertyRequestController::class, 'updateStatus']);
+    Route::get('property/requests/{id}/verification',      [PropertyRequestController::class, 'verification']);
+    Route::get('property/requests/{id}/verification/file/{kind}', [PropertyRequestController::class, 'verificationFile']);
+    Route::put('property/requests/{id}/verification/{target}', [PropertyRequestController::class, 'verificationDecision']);
 
     Route::apiResource('property-categories', PropertyCategoryController::class)->except(['create', 'show', 'edit']);
     Route::get('property-categories/all', [PropertyCategoryController::class, 'all']);

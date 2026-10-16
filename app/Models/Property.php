@@ -13,7 +13,7 @@ use Illuminate\Database\Eloquent\Relations\MorphOne;
 class Property extends Model
 {
     protected $with = ['primaryImage'];
-    protected $appends = ['primary_image_url', 'lowest_room_price', 'lowest_room_price_with_tax', 'from_price'];
+    protected $appends = ['primary_image_url', 'lowest_room_price', 'lowest_room_price_with_tax', 'from_price', 'is_verified'];
 
     protected $hidden = ['bank_details'];
 
@@ -26,6 +26,12 @@ class Property extends Model
     /*----------------------------------------
      * Relationships
      ----------------------------------------*/
+    /** "Verified host": the owner's NID and the trade licence were checked by our team */
+    public function getIsVerifiedAttribute(): bool
+    {
+        return !empty($this->attributes['verified_at'] ?? null);
+    }
+
     public function request(): \Illuminate\Database\Eloquent\Relations\HasOne
     {
         return $this->hasOne(PropertyRequest::class);

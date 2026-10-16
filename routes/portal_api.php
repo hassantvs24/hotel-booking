@@ -167,6 +167,8 @@ Route::prefix('portal')->group(function () {
             Route::match(['post', 'patch'],'/{id}/step/{step}','saveStep');
             Route::post('/{id}/photos',      'uploadPhoto');
             Route::post('/{id}/submit',      'submit');
+            Route::get('/{id}/verification',  [\App\Http\Controllers\API\Portal\Vendor\PropertyVerificationController::class, 'show']);
+            Route::post('/{id}/verification', [\App\Http\Controllers\API\Portal\Vendor\PropertyVerificationController::class, 'save'])->middleware('throttle:20,1');
             Route::delete('/{id}',           'destroy');
         });
 

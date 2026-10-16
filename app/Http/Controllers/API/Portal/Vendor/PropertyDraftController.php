@@ -189,10 +189,23 @@ class PropertyDraftController extends BaseController
             return $this->sendError('Property address is required.', [], 422);
         }
 
+        // Owner verification (NID + trade licence) is part of every application
+        $verification = app(\App\Services\Verification\VerificationService::class);
+
+        if (!$verification->isComplete($request->user(), $draft)) {
+            return $this->sendError("Please complete the Verification step: the owner's NID and the trade licence.", ['step' => 8], 422);
+        }
+
+        if ($draft->license?->expires_on?->isPast()) {
+            return $this->sendError('The trade licence has expired. Please upload a valid one in the Verification step.', ['step' => 8], 422);
+        }
+
         DB::transaction(function () use ($draft) {
             $draft->update([
-                'is_draft' => false,
-                'status'   => 'pending',
+                'is_draft'      => false,
+                'status'        => 'pending',
+                'admin_message' => null,   // the reply to the last round; this is a fresh submission
+                'approved_at'   => null,
             ]);
         });
 
@@ -222,18 +235,27 @@ class PropertyDraftController extends BaseController
     public function destroy(Request $request, $id): JsonResponse
     {
         $draft = $this->getDraft($request, $id);
+        abort_unless($draft->is_draft, 403, 'Only an unfinished draft can be discarded.');
+
+        // the licence belongs to this application; the owner's NID stays on their account
+        if ($draft->license) {
+            app(\App\Services\Verification\VerificationService::class)->deleteFiles([$draft->license->file_path]);
+            $draft->license->forceDelete();
+        }
+
         $draft->delete();
 
         return $this->sendSuccess(null, 'Draft discarded.');
     }
 
     // Helper Functions
+    // A draft, or an application the admin sent back ("Edit & resubmit"); one that is waiting for review or approved stays as it is
     private function getDraft(Request $request, $id): PropertyRequest
     {
         return PropertyRequest::query()
             ->where('id', $id)
             ->where('user_id', $request->user()->id)
-            ->where('is_draft', true)
+            ->where(fn ($q) => $q->where('is_draft', true)->orWhere('status', PropertyRequest::STATUS_REJECTED))
             ->firstOrFail();
     }
 
