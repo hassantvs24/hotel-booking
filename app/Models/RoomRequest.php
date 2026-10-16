@@ -272,6 +272,28 @@ class RoomRequest extends Model
     //  HELPERS
     // ══════════════════════════════════════════════════════
 
+    /**
+     * Offers whose time has run out become "Timeout" (and an accepted offer loses its payment slot).
+     * The scheduled job does this every few minutes; the lists call it too, so nobody ever sees a lapsed
+     * offer still labelled Pending / Counter / Accepted.
+     */
+    public static function expireLapsed(): int
+    {
+        $ids = static::expired()->pluck('id');
+
+        if ($ids->isEmpty()) {
+            return 0;
+        }
+
+        return \Illuminate\Support\Facades\DB::transaction(function () use ($ids) {
+            RoomRequestAccepted::whereIn('room_requests_id', $ids)->delete();
+
+            return static::whereIn('id', $ids)
+                ->whereIn('status', self::LIVE_STATUSES)
+                ->update(['status' => 'Timeout']);
+        });
+    }
+
     public function isExpired(): bool
     {
         return $this->request_expiration_time

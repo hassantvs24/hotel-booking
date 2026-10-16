@@ -30,6 +30,8 @@ class RoomRequestController extends BaseController
 
     public function index(Request $request, RoomRequestRepository $repo): JsonResponse
     {
+        RoomRequest::expireLapsed();
+
         $propertyIds = $this->accessiblePropertyIds();
 
         $query = [

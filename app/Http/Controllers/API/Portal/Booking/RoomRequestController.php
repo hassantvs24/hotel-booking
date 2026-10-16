@@ -53,6 +53,8 @@ class RoomRequestController extends BaseController
 
     public function myBids(Request $request): JsonResponse
     {
+        RoomRequest::expireLapsed();
+
         $bids = RoomRequest::where('user_id', $request->user()->id)
             ->with([
                 // the rates are needed too: the "with taxes" amounts follow the room's and the property's own VAT / service charge
@@ -70,6 +72,8 @@ class RoomRequestController extends BaseController
 
     public function incoming(Request $request): JsonResponse
     {
+        RoomRequest::expireLapsed();
+
         $propertyIds = $request->user()->properties()->pluck('id');
 
         $bids = RoomRequest::whereIn('property_id', $propertyIds)
