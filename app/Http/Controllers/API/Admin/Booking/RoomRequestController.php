@@ -107,6 +107,17 @@ class RoomRequestController extends BaseController
             return $this->sendError('This bid has no paid booking, so it cannot be marked as done.', [], 422);
         }
 
+        // A counter needs a price, and it has to sit between the guest's offer and the room's price
+        if ($status === 'Counter') {
+            if (!is_numeric($request->input('base_price')) || (float) $request->input('base_price') <= 0) {
+                return $this->sendError('Please enter the counter price.', ['base_price' => ['Please enter the counter price.']], 422);
+            }
+
+            if ($error = $roomRequest->loadMissing('room')->counterPriceError((float) $request->input('base_price'))) {
+                return $this->sendError($error, ['base_price' => [$error]], 422);
+            }
+        }
+
         DB::beginTransaction();
         try {
             $basePrice = $request->input('base_price');

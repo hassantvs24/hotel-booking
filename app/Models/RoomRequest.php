@@ -273,6 +273,31 @@ class RoomRequest extends Model
     // ══════════════════════════════════════════════════════
 
     /**
+     * Why an owner's counter price (per night) is not allowed, or null when it is.
+     * A counter has to sit between the guest's offer and the room's price: at or below the guest's own offer the
+     * guest would get the room for less than they asked, at or above the room price it is no discount at all.
+     */
+    public function counterPriceError(float $counter): ?string
+    {
+        $nights = max(1, Carbon::parse($this->check_in)->diffInDays(Carbon::parse($this->check_out)));
+        $offer  = (float) $this->discount_price;
+        $base   = (float) ($this->room?->base_price ?? 0);
+        $money  = fn (float $n) => 'BDT ' . rtrim(rtrim(number_format($n, 2), '0'), '.');
+        $stay   = fn (float $perNight) => $money($perNight * $nights) . ($nights > 1 ? " for {$nights} nights" : '');
+        $cents  = fn (float $n) => (int) round($n * 100);
+
+        if ($cents($counter) <= $cents($offer)) {
+            return "Your counter must be higher than the guest's offer of " . $stay($offer) . '. To take the offer as it is, use Approve instead.';
+        }
+
+        if ($base > 0 && $cents($counter) >= $cents($base)) {
+            return 'Your counter must be lower than the room price of ' . $stay($base) . '. A counter at the room price is no discount.';
+        }
+
+        return null;
+    }
+
+    /**
      * Offers whose time has run out become "Timeout" (and an accepted offer loses its payment slot).
      * The scheduled job does this every few minutes; the lists call it too, so nobody ever sees a lapsed
      * offer still labelled Pending / Counter / Accepted.

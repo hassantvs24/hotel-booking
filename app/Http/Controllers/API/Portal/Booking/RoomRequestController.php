@@ -142,6 +142,10 @@ class RoomRequestController extends BaseController
             return $expired;
         }
 
+        if ($error = $bid->counterPriceError((float) $request->counter_price)) {
+            return $this->sendError($error, ['counter_price' => [$error]], 422);
+        }
+
         $bid->update([
             'status'                  => 'Counter',
             'counter_price'           => $request->counter_price,
