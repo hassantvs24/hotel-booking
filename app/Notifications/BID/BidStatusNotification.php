@@ -14,7 +14,7 @@ class BidStatusNotification extends Notification implements ShouldQueue
 {
     use Queueable;
 
-    // $action: 'accepted' | 'countered' | 'declined' | 'counter_accepted' | 'expired'
+    // $action: 'accepted' | 'countered' | 'declined' | 'withdrawn' | 'counter_accepted' | 'expired'
     public function __construct(
         public $bid,
         public string $action
@@ -57,6 +57,13 @@ class BidStatusNotification extends Notification implements ShouldQueue
                 'title' => 'Bid declined',
                 'body'  => "Your offer for {$room} was not accepted. " . $this->bidsRemaining() . " bid(s) remaining.",
                 'url'   => '/profile/my-bids',
+            ],
+            // the guest took the offer back (sent to the owner)
+            'withdrawn' => [
+                'type'  => 'bid_withdrawn',
+                'title' => 'Offer withdrawn',
+                'body'  => "The guest withdrew their offer for {$room}.",
+                'url'   => '/request?tab=incoming',
             ],
             'counter_accepted' => [
                 'type'  => 'counter_accepted',

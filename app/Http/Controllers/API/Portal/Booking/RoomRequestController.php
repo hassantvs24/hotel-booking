@@ -206,7 +206,7 @@ class RoomRequestController extends BaseController
 
         $isGuest = $bid->user_id === $user->id;
         if ($isGuest) {
-            $bid->room?->property?->user?->notify(new BidStatusNotification($bid, 'declined'));
+            $bid->room?->property?->user?->notify(new BidStatusNotification($bid, 'withdrawn'));
         } else {
             $bid->user?->notify(new BidStatusNotification($bid, 'declined'));
         }
