@@ -5,7 +5,6 @@ namespace App\Events\Booking;
 use App\Models\RoomRequest;
 use App\Models\User;
 use App\Notifications\Admin\AdminNotification;
-use App\Notifications\BID\BidReceivedNotification;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
@@ -54,7 +53,6 @@ class BidSubmitted implements ShouldBroadcastNow
     public function notifyAll(): void
     {
         $room     = $this->roomRequest->room;
-        $property = $room?->property;
         $payload  = $this->broadcastWith();
 
         // Admin DB — deduped by room_request_id
@@ -70,15 +68,9 @@ class BidSubmitted implements ShouldBroadcastNow
         ))
         );
 
-        // Owner WebPush via BidReceivedNotification
-        // Skip if owner is also an admin — they already got the admin DB notification
-        if ($property?->user && $room) {
-            if (!(bool) $property->user->is_admin) {
-                $property->user->notify(
-                    new BidReceivedNotification($this->roomRequest, $room, $this->roomRequest->user)
-                );
-            }
-        }
+        // The owner's BidReceivedNotification is sent by the caller
+        // (BookingController::checkout), not here — sending it from both
+        // used to notify non-admin owners twice per bid.
 
         // Guest DB — confirmation bid was sent
         if ($this->roomRequest->user) {

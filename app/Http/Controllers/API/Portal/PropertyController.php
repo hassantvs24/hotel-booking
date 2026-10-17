@@ -2,6 +2,9 @@
 
 namespace App\Http\Controllers\API\Portal;
 
+use App\Services\Pricing\PriceService;
+use App\Services\Refund\RefundPolicyService;
+use App\Services\Room\RoomGrouper;
 use App\Http\Controllers\BaseController;
 use Carbon\Carbon;
 use App\Models\Booking;
@@ -41,7 +44,9 @@ class PropertyController extends BaseController
 
     public function placeWiseProperties(Place $place): JsonResponse
     {
+        // same rule as the main list and search: a property shows once it has a room a guest could book
         $properties = Property::query()
+            ->whereHas('rooms')
             ->with(['images', 'facilities', 'place.city'])
             ->where([
                 'place_id' => $place->id,
@@ -57,8 +62,31 @@ class PropertyController extends BaseController
     //  GET /portal/properties/{property}/details
     // ══════════════════════════════════════════════════════
 
-    public function details(Property $property): JsonResponse
+    /**
+     * A property that is approved but not published yet is not for guests: it is missing from every list and search,
+     * and it must not open by its address or id either. Only its owner and the admins may (to get it ready).
+     */
+    private function ensureVisible(Request $request, $property): void
     {
+        $property = $property instanceof Property ? $property : Property::find($property);
+
+        if (!$property || $property->status === Property::STATUS_PUBLISHED) {
+            return;
+        }
+
+        $viewer = $request->user('sanctum');
+
+        if ($viewer && ($viewer->is_admin || (int) $viewer->id === (int) $property->user_id)) {
+            return;
+        }
+
+        abort(404, 'This property is not available.');
+    }
+
+    public function details(Request $request, Property $property): JsonResponse
+    {
+        $this->ensureVisible($request, $property);
+
         $property->load([
             'images',
             'logoImage',
@@ -72,7 +100,10 @@ class PropertyController extends BaseController
             'faqs.answer',
         ]);
 
-        return $this->sendSuccess(['property' => $property]);
+        return $this->sendSuccess([
+            'property'      => $property,
+            'refund_policy' => app(RefundPolicyService::class)->summary($property),
+        ]);
     }
 
     // ══════════════════════════════════════════════════════
@@ -87,6 +118,8 @@ class PropertyController extends BaseController
 
     public function availableRooms(Request $request, $propertyId): JsonResponse
     {
+        $this->ensureVisible($request, $propertyId);
+
         $checkIn  = $request->input('check_in');
         $checkOut = $request->input('check_out');
         $adult    = (int) $request->input('adult', 1);
@@ -117,30 +150,56 @@ class PropertyController extends BaseController
                 ->toArray();
         }
 
-        // ── 3. Split + filter by capacity + resolve price ──
+        // ── 3. Group identical rooms, then filter by availability and capacity ──
+        // Identical rooms ("Deluxe 1" ... "Deluxe 5") are one card: "Deluxe — 3 left". The card stands for the
+        // first free room of the set; the rest are listed in room_ids so the guest can add more than one.
 
-        $nights = $this->nights($checkIn, $checkOut);
+        $nights  = $this->nights($checkIn, $checkOut);
+        $grouper = app(RoomGrouper::class);
 
-        $availableRooms = $allRooms->filter(function ($room) use ($bookedRoomIds, $adult) {
-            $hasConflict              = in_array($room->id, $bookedRoomIds);
-            $isPermanentlyUnavailable = in_array($room->status, ['Maintenance', 'Disabled', 'Inactive']);
-            $hasCapacity              = $room->guest_capacity >= $adult;
+        $available      = collect();
+        $hiddenCapacity = [];
 
-            return !$hasConflict && !$isPermanentlyUnavailable && $hasCapacity;
-        })->map(function ($room) use ($nights) {
+        foreach ($grouper->group($allRooms, fn ($room) => $this->resolvePrice($room)) as $key => $members) {
+            $free = $members->filter(function ($room) use ($bookedRoomIds) {
+                return !in_array($room->id, $bookedRoomIds)
+                    && !in_array($room->status, ['Maintenance', 'Disabled', 'Inactive']);
+            })->values();
+
+            if ($free->isEmpty()) {
+                continue;
+            }
+
+            $room = $free->first();
+            $name = $members->count() > 1 ? $grouper->baseName($room->name) : $room->name;
+
+            // Too small for the party: not offered, but the guest is told, so they know why it is missing
+            if ($room->guest_capacity < $adult) {
+                $hiddenCapacity[] = ['name' => $name, 'guest_capacity' => (int) $room->guest_capacity, 'count' => $free->count()];
+                continue;
+            }
+
+            $room->name           = $name;
             $room->resolved_price = $this->resolvePrice($room);
             $room->nights         = $nights;
             $room->total_price    = $room->resolved_price * $nights;
             $room->booking_type   = 'direct';
-            return $room;
-        });
+            $room->tax            = app(PriceService::class)->forStay($room, (float) $room->resolved_price, $nights);
+            $room->group_key      = $key;
+            $room->group_total    = $members->count();
+            $room->available_count = $free->count();
+            $room->room_ids       = $free->pluck('id')->values();
+
+            $available->push($room);
+        }
 
         return $this->sendSuccess([
-            'available_rooms' => $availableRooms->values(),
-            'check_in'        => $checkIn,
-            'check_out'       => $checkOut,
-            'nights'          => $nights,
-            'adult'           => $adult,
+            'available_rooms'     => $available->values(),
+            'hidden_for_capacity' => $hiddenCapacity,
+            'check_in'            => $checkIn,
+            'check_out'           => $checkOut,
+            'nights'              => $nights,
+            'adult'               => $adult,
         ]);
     }
 
@@ -151,6 +210,8 @@ class PropertyController extends BaseController
 
     public function otherRooms(Request $request, $propertyId): JsonResponse
     {
+        $this->ensureVisible($request, $propertyId);
+
         $checkIn  = $request->input('check_in');
         $checkOut = $request->input('check_out');
 
@@ -178,6 +239,7 @@ class PropertyController extends BaseController
                 $room->nights         = $this->nights($checkIn, $checkOut);
                 $room->total_price    = $room->resolved_price * $room->nights;
                 $room->booking_type   = 'request';
+                $room->tax            = app(PriceService::class)->forStay($room, (float) $room->resolved_price, $room->nights);
                 return $room;
             });
 
@@ -190,8 +252,10 @@ class PropertyController extends BaseController
     //  Returns true if user already has a pending request
     // ══════════════════════════════════════════════════════
 
-    public function bookingRoomCheck($property): JsonResponse
+    public function bookingRoomCheck(Request $request, $property): JsonResponse
     {
+        $this->ensureVisible($request, $property);
+
         $data = RoomRequest::where('property_id', $property)->exists();
 
         return $this->sendSuccess($data);
@@ -203,8 +267,10 @@ class PropertyController extends BaseController
     //  Returns all blocked date ranges for the calendar
     // ══════════════════════════════════════════════════════
 
-    public function checkBookedDate($propertyId): JsonResponse
+    public function checkBookedDate(Request $request, $propertyId): JsonResponse
     {
+        $this->ensureVisible($request, $propertyId);
+
         try {
             // Return actual booking date ranges instead of room columns
             // This gives the calendar accurate blocked dates

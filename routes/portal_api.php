@@ -10,8 +10,6 @@ use App\Http\Controllers\API\Portal\Booking\CartController;
 use App\Http\Controllers\API\Portal\Booking\RefundController;
 use App\Http\Controllers\API\Portal\Booking\RoomRequestController;
 use App\Http\Controllers\API\Portal\HomeController;
-use App\Http\Controllers\API\Portal\LocalConfirmController;
-use App\Http\Controllers\API\Portal\Location\LocationController;
 use App\Http\Controllers\API\Portal\Notification\NotificationController;
 use App\Http\Controllers\API\Portal\Notification\PushController;
 use App\Http\Controllers\API\Portal\PaymentController;
@@ -20,7 +18,6 @@ use App\Http\Controllers\API\Portal\Property\SearchController;
 use App\Http\Controllers\API\Portal\PropertyController;
 use App\Http\Controllers\API\Portal\RequestController;
 use App\Http\Controllers\API\Portal\Review\ReviewController;
-use App\Http\Controllers\API\Portal\Vendor\PropertyDraftController;
 use App\Http\Controllers\API\Portal\Vendor\PropertyRequestController;
 use App\Http\Controllers\API\Portal\Vendor\VendorController;
 use Illuminate\Support\Facades\Route;
@@ -30,6 +27,9 @@ use Illuminate\Support\Facades\Route;
 Route::prefix('portal')->group(function () {
 
     Route::get('home', [HomeController::class, 'index']);
+
+    // the legal pages (privacy policy, terms), public
+    Route::get('legal/{slug}', [\App\Http\Controllers\API\Portal\Legal\LegalController::class, 'show'])->where('slug', '[a-z0-9-]+');
 
     Route::prefix('properties')->group(function () {
         Route::get('/', [PropertyController::class, 'index']);
@@ -112,16 +112,15 @@ Route::prefix('portal')->group(function () {
         });
 
     /*----------------- property request -----------------*/
-    Route::prefix('property-request')->group(function () {
-        Route::post('/store', [PropertyRequestController::class, 'store']);
-    });
+    // (the public POST /property-request/store was removed: it took a request without login or documents and left it as an
+    //  unseen draft. Owners now start from "List your property", sign in, and use the wizard.)
 
     // room request
     Route::prefix('room')->middleware('auth:sanctum')->group(function () {
         Route::post('/request', [RoomRequestController::class, 'roomRequest']);
         Route::get('/request-notification', [RoomRequestController::class, 'roomRequestNotification']);
         Route::delete('request-notification-remove/{propertyId}', [RoomRequestController::class, 'removeNotification']);
-        Route::get('/request-response/{propertyId}', [RoomRequestController::class, 'roomResponseList']);
+        Route::get('/request-response/{propertyId}', [RoomRequestController::class, 'roomResponselist']);
     });
 
     Route::prefix('request')->middleware('auth:sanctum')->group(function () {
@@ -146,20 +145,23 @@ Route::prefix('portal')->group(function () {
 
     // Location Routes
     Route::prefix('location')->group(function () {
-        Route::get('/suggestions', [LocationController::class, 'suggestions']);
-        Route::post('/resolve-place', [LocationController::class, 'resolvePlace']);
+        Route::get('/suggestions', [\App\Http\Controllers\API\Portal\Location\LocationController::class, 'suggestions']);
+        Route::post('/resolve-place', [\App\Http\Controllers\API\Portal\Location\LocationController::class, 'resolvePlace']);
+        // Creates the country / division / district too, so only for signed-in owners (and rate-limited)
+        Route::post('/resolve', [\App\Http\Controllers\API\Portal\Location\LocationController::class, 'resolve'])
+            ->middleware(['auth:sanctum', 'throttle:30,1']);
     });
 
     Route::middleware('auth:sanctum')->group(function () {
         Route::get('/getAllPropertyOption', [VendorController::class, 'allPropertyOption']);
-        Route::post('/property/store', [VendorController::class, 'store']);
+        // (the old POST /property/store was removed: it created a property outside the application, review and documents path, then crashed)
         Route::get('/property/request-properties', [VendorController::class, 'requestProperties']);
         Route::get('/reg-info', [VendorController::class, 'getRegInfo']);
     });
 
     Route::prefix('property/draft')
         ->middleware('auth:sanctum')
-        ->controller(PropertyDraftController::class)
+        ->controller(\App\Http\Controllers\API\Portal\Vendor\PropertyDraftController::class)
         ->group(function () {
             Route::get('/options',           'options');
             Route::get('/by-ref',            'showByRef');
@@ -167,6 +169,8 @@ Route::prefix('portal')->group(function () {
             Route::match(['post', 'patch'],'/{id}/step/{step}','saveStep');
             Route::post('/{id}/photos',      'uploadPhoto');
             Route::post('/{id}/submit',      'submit');
+            Route::get('/{id}/verification',  [\App\Http\Controllers\API\Portal\Vendor\PropertyVerificationController::class, 'show']);
+            Route::post('/{id}/verification', [\App\Http\Controllers\API\Portal\Vendor\PropertyVerificationController::class, 'save'])->middleware('throttle:20,1');
             Route::delete('/{id}',           'destroy');
         });
 
@@ -174,7 +178,7 @@ Route::prefix('portal')->group(function () {
     // ── LOCAL DEV ONLY — remove before going live ────────
     // No auth middleware — after SSLCommerz redirect, token may not be
     // rehydrated in time. LocalConfirmController checks app()->isLocal()
-    Route::post('/booking/confirm-local', [LocalConfirmController::class, 'confirm']);
+    Route::post('/booking/confirm-local', [\App\Http\Controllers\API\Portal\LocalConfirmController::class, 'confirm']);
 
     // ── Notifications ───────────────────────────────────
     Route::prefix('notifications')

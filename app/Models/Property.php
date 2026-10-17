@@ -13,9 +13,11 @@ use Illuminate\Database\Eloquent\Relations\MorphOne;
 class Property extends Model
 {
     protected $with = ['primaryImage'];
-    protected $appends = ['primary_image_url', 'lowest_room_price'];
+    protected $appends = ['primary_image_url', 'lowest_room_price', 'lowest_room_price_with_tax', 'from_price', 'is_verified'];
 
     protected $hidden = ['bank_details'];
+
+    protected $casts = ['refund_policy' => 'array'];
 
     public const STATUS_PUBLISHED = 'Published';
     public const STATUS_UNPUBLISHED = 'Unpublished';
@@ -24,6 +26,12 @@ class Property extends Model
     /*----------------------------------------
      * Relationships
      ----------------------------------------*/
+    /** "Verified host": the owner's NID and the trade licence were checked by our team */
+    public function getIsVerifiedAttribute(): bool
+    {
+        return !empty($this->attributes['verified_at'] ?? null);
+    }
+
     public function request(): \Illuminate\Database\Eloquent\Relations\HasOne
     {
         return $this->hasOne(PropertyRequest::class);
@@ -123,6 +131,23 @@ class Property extends Model
     {
         $min = $this->rooms()->min('base_price');
         return $min ? round($min / 100, 2) : 0;
+    }
+
+    /** Cheapest room per night: price before taxes, taxes and fees, total (what a search card shows) */
+    public function getFromPriceAttribute(): ?array
+    {
+        $rooms = $this->relationLoaded('rooms') ? $this->rooms : $this->rooms()->get();
+        $best  = app(\App\Services\Pricing\PriceService::class)->cheapest($rooms, $this);
+
+        return $best ? ['base' => $best['base'], 'taxes' => $best['taxes'], 'total' => $best['total']] : null;
+    }
+
+    /** The cheapest room with VAT and service charge on it (rates of the room, else this property, else the platform) */
+    public function getLowestRoomPriceWithTaxAttribute(): float|int
+    {
+        $rooms = $this->relationLoaded('rooms') ? $this->rooms : $this->rooms()->get();
+
+        return app(\App\Services\Pricing\PriceService::class)->lowestWithTax($rooms, $this) ?? 0;
     }
 
     /*----------------------------------------

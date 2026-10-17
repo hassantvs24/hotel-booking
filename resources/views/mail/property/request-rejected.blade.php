@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Property Request Rejection</title>
+    <title>Your property application needs changes</title>
     <style>
         /* Global Styles */
         body {
@@ -72,28 +72,46 @@
 <body>
 <div class="email-container">
     <div class="header">
-        <h1>Property Request Rejected</h1>
+        <h1>{{ $headline ?? (!empty($documents) ? 'Your documents need fixing' : 'Your application was sent back') }}</h1>
     </div>
-
     <div class="content">
         <p>Dear {{ $name }},</p>
+        <p>
+            @if(!empty($doc_items))
+                Our team checked the documents for <strong>{{ $property ?? 'your property' }}</strong>.
+                @if(count($doc_items) > 1)
+                    <strong>Both your NID and your trade licence could not be accepted and both need to be fixed.</strong>
+                @else
+                    <strong>Your {{ $doc_items[0]['label'] === 'NID' ? 'NID' : 'trade licence' }} could not be accepted and needs to be fixed.</strong>
+                @endif
+            @else
+                Our team reviewed <strong>{{ $property ?? 'your property' }}</strong> and sent it back to you for changes.
+            @endif
+        </p>
 
-        <p>We regret to inform you that your property request has been <strong>rejected</strong>. Please review the details below:</p>
+        @if(!empty($doc_items))
+            @foreach($doc_items as $item)
+                <div class="property-details">
+                    <h3>{{ $item['label'] }} &mdash; needs fixing</h3>
+                    <p>{{ $item['reason'] }}</p>
+                </div>
+            @endforeach
+            <p>Anything that was already accepted stays accepted. You only need to replace the document{{ count($doc_items) > 1 ? 's' : '' }} above.</p>
+        @elseif(!empty($reason))
+            <div class="property-details">
+                <h3>What needs fixing</h3>
+                <p>{{ $reason }}</p>
+            </div>
+        @endif
 
-        <div class="property-details">
-            <h3>Property Request Details</h3>
-            <p><strong>Name:</strong> {{ $name }}</p>
-            <p><strong>Email:</strong> {{ $email }}</p>
-            <p><strong>Phone:</strong> {{ $phone }}</p>
-        </div>
-
-        <p>If you believe this decision was made in error or have any further questions, please contact us at <a href="mailto:support@example.com">support@example.com</a>.</p>
-
-        <p>We value your interest and look forward to assisting you with future property requests.</p>
+        <p>To fix it, open <strong>My Properties</strong> and choose <strong>Edit &amp; resubmit</strong>.</p>
+        @if(!empty($edit_url))
+            <p><a class="cta-button" href="{{ $edit_url }}">Fix and submit again</a></p>
+        @endif
+        <p>If you have any questions, write to us at <a href="mailto:{{ $support_email ?? config('mail.from.address') }}">{{ $support_email ?? config('mail.from.address') }}</a>.</p>
     </div>
-
     <div class="footer">
-        <p>&copy; {{ date('Y') }} Property Management, All rights reserved.</p>
+        <p>&copy; {{ date('Y') }} Oystay, All rights reserved.</p>
     </div>
 </div>
 </body>

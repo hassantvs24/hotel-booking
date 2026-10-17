@@ -2,13 +2,16 @@
 
 namespace App\Http\Controllers\API\Portal\Booking;
 
+use App\Events\Booking\RefundRequested;
 use App\Http\Controllers\BaseController;
 use App\Models\Booking;
 use App\Models\RefundRequest;
 use App\Services\Refund\RefundQuoteService;
+use App\Services\Refund\RefundStatusRefresher;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
@@ -103,15 +106,26 @@ class RefundController extends BaseController
             ]);
         });
 
-        return $this->sendSuccess(
-            $refund->load(['booking.room.property', 'transaction']),
-            'Refund request submitted.',
-            201
-        );
+        $refund->load(['booking.room.property', 'transaction']);
+
+        // The bell in the admin panel (admins and the property's owner). A notification problem must never
+        // undo or hide the refund request the guest just made.
+        try {
+            $event = new RefundRequested($refund);
+            event($event);
+            $event->notifyAll();
+        } catch (\Throwable $e) {
+            Log::warning('Refund request notification failed: ' . $e->getMessage());
+        }
+
+        return $this->sendSuccess($refund, 'Refund request submitted.', 201);
     }
 
     public function index(Request $request): JsonResponse
     {
+        // Same safety net as the admin list: finish refunds SSLCommerz has completed (after this response is sent)
+        RefundStatusRefresher::afterResponse();
+
         $refunds = RefundRequest::query()
             ->where('user_id', $request->user()->id)
             ->with([

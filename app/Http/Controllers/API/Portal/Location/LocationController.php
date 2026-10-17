@@ -34,6 +34,26 @@ class LocationController extends BaseController
         return $this->sendSuccess($results);
     }
 
+    // ── Map result → place + country/division/district, all as ids ──
+    // POST /portal/location/resolve   (signed-in owners filling the property form)
+    public function resolve(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'external_id'  => 'required|string|max:60',
+            'name'         => 'required|string|max:255',
+            'lat'          => 'required|numeric',
+            'long'         => 'required|numeric',
+            'city'         => 'nullable|string|max:255',
+            'district'     => 'nullable|string|max:255',
+            'state'        => 'nullable|string|max:255',
+            'country'      => 'nullable|string|max:255',
+            'kind'         => 'nullable|string|max:40',
+            'full_address' => 'nullable|string',
+        ]);
+
+        return $this->sendSuccess($this->locationService->resolveLocation($data));
+    }
+
     // ── Store Nominatim place → return local place_id ──────
     // POST /portal/location/resolve-place
     public function resolvePlace(Request $request): JsonResponse

@@ -5,11 +5,14 @@ namespace App\Http\Controllers\API\Portal\Booking;
 use App\Http\Controllers\BaseController;
 use App\Models\Booking;
 use App\Models\BookingCart;
+use App\Models\Property;
 use App\Models\Room;
 use App\Models\RoomRequest;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use App\Services\Pricing\PriceService;
+use App\Services\Room\RoomGrouper;
 
 class CartController extends BaseController
 {
@@ -39,16 +42,38 @@ class CartController extends BaseController
 
         // filter_var handles true/false/"true"/"1"/1 from both JSON and form-data
         $isBid = filter_var($data['is_bid'] ?? false, FILTER_VALIDATE_BOOLEAN);
-        $room  = Room::findOrFail($data['room_id']);
+        $room  = Room::with('property:id,status')->findOrFail($data['room_id']);
+
+        // The search and the room list already hide these cases; the server holds the same line
+        if (($room->property?->status ?? null) !== Property::STATUS_PUBLISHED) {
+            abort(422, 'This property is not available for booking.');
+        }
+
+        if ((int) $room->guest_capacity > 0 && (int) $data['adult'] > (int) $room->guest_capacity) {
+            abort(422, "This room takes up to {$room->guest_capacity} adult" . ($room->guest_capacity > 1 ? 's' : '') . '. Please choose a bigger room or fewer guests.');
+        }
 
         if ($isBid) {
-            $this->checkBidLimit($user->id, $room->id);
+            $this->checkBidLimit($user->id, $room->id, $data['check_in'], $data['check_out']);
+            $this->checkOfferPrice($room, (float) ($data['offer_price'] ?? 0));
+
+            // Negotiation: stay above their own earlier offer, below an open counter
+            if ($err = RoomRequest::offerWindowError(
+                $user->id, $room->id, $data['check_in'], $data['check_out'], (float) $data['offer_price']
+            )) {
+                abort(422, $err);
+            }
             $price     = $data['offer_price'];
             $expiresAt = null; // bid items never expire from cart
 
         } else {
-            $this->checkAvailability($room->id, $data['check_in'], $data['check_out']);
-            $price     = $room->base_price;
+            // The room was taken after the guest saw it: another room of the same type will do
+            if ($this->isTaken($room->id, $data['check_in'], $data['check_out'])) {
+                $room = app(RoomGrouper::class)->freeSibling(
+                    $room, $data['check_in'], $data['check_out'], BookingCart::where('user_id', $user->id)->pluck('room_id')->all()
+                ) ?? abort(422, 'This room is not available for the selected dates.');
+            }
+            $price     = app(RoomGrouper::class)->priceOf($room);   // same price the room card showed
             $expiresAt = Carbon::now()->addMinutes(self::CART_HOLD_MINUTES);
         }
 
@@ -91,13 +116,14 @@ class CartController extends BaseController
             ->delete();
 
         $items = BookingCart::where('user_id', $userId)
+            ->whereHas('room')   // a deleted room cannot be booked any more
             ->with([
-                'room:id,name,base_price,property_id,status',
+                'room:id,name,base_price,vat_percent,service_charge_percent,property_id,status',
                 'room.primaryImage',
                 'room.images',
                 'room.bedType',
                 'room.roomType',
-                'room.property:id,name',
+                'room.property:id,name,vat_percent,service_charge_percent',
                 'room.property.place.city',
             ])
             ->oldest()
@@ -111,8 +137,18 @@ class CartController extends BaseController
             'items'        => $items,
             'direct_items' => $direct,
             'bid_items'    => $bids,
-            'total'        => $direct->sum('total_price'), // charged now
-            'bid_total'    => $bids->sum('total_price'),   // charged after accept
+            'total'        => $direct->sum('total_price'), // charged now (VAT and service charge included)
+            'bid_total'    => $bids->sum('total_price'),   // charged after accept (taxes included)
+            'summary'      => [
+                'subtotal'       => round($direct->sum('base_total'), 2),
+                'service_charge' => round($direct->sum('service_charge_total'), 2),
+                'vat'            => round($direct->sum('vat_total'), 2),
+                'total'          => round($direct->sum('total_price'), 2),
+                'offers_subtotal'       => round($bids->sum('base_total'), 2),
+                'offers_service_charge' => round($bids->sum('service_charge_total'), 2),
+                'offers_vat'            => round($bids->sum('vat_total'), 2),
+                'offers_total'          => round($bids->sum('total_price'), 2),
+            ],
             'rooms_count'  => $items->count(),
         ]);
     }
@@ -147,34 +183,49 @@ class CartController extends BaseController
     //  PRIVATE HELPERS
     // ─────────────────────────────────────────────────────
 
-    private function checkBidLimit(int $userId, int $roomId): void
+    private function checkBidLimit(int $userId, int $roomId, string $checkIn, string $checkOut): void
     {
-        $active = RoomRequest::where('user_id', $userId)
-            ->where('room_id', $roomId)
-            ->active() // scope on RoomRequest model: whereIn status Pending/Approved/Counter
-            ->count();
+        // Offers already spent on this room for these stay dates (live + declined).
+        // The cart row is not counted: adding another offer for the room replaces it.
+        $used = RoomRequest::offersUsed($userId, $roomId, $checkIn, $checkOut);
 
-        $inCart = BookingCart::where('user_id', $userId)
-            ->where('room_id', $roomId)
-            ->where('is_bid', true)
-            ->count();
-
-        if (($active + $inCart) >= self::MAX_BIDS) {
-            abort(422, 'You have reached the maximum of ' . self::MAX_BIDS . ' bids for this room.');
+        if ($used >= self::MAX_BIDS) {
+            abort(422, 'You have used all ' . self::MAX_BIDS . ' offers for this room and these dates.');
         }
     }
 
-    private function checkAvailability(int $roomId, string $checkIn, string $checkOut): void
+    /**
+     * The offer modal only lets a guest pick 1%–99% off the room's base price;
+     * the API has to hold the same line, since the price comes from the client.
+     */
+    private function checkOfferPrice(Room $room, float $offer): void
     {
-        $taken = Booking::where('room_id', $roomId)
+        $base = (float) $room->base_price;
+
+        if ($base <= 0) {
+            return;
+        }
+
+        // Whole cents, with one cent of slack each side: the browser rounds the
+        // discounted price itself, and it can land a cent away from PHP's rounding.
+        $baseCents = (int) round($base * 100);
+        $minCents  = (int) round($baseCents * 0.01);
+        $maxCents  = (int) round($baseCents * 0.99);
+        $offerCents = (int) round($offer * 100);
+
+        if ($offerCents < $minCents - 1 || $offerCents > $maxCents + 1) {
+            abort(422, 'Your offer must be between BDT ' . number_format($minCents / 100, 2)
+                . ' and BDT ' . number_format($maxCents / 100, 2) . ' (1%–99% off the room price).');
+        }
+    }
+
+    private function isTaken(int $roomId, string $checkIn, string $checkOut): bool
+    {
+        return Booking::where('room_id', $roomId)
             ->whereIn('status', ['reserved', 'approved'])
             ->where('checkin',  '<', $checkOut)
             ->where('checkout', '>', $checkIn)
             ->exists();
-
-        if ($taken) {
-            abort(422, 'This room is not available for the selected dates.');
-        }
     }
 
     private function enrichItem(BookingCart $item): BookingCart
@@ -184,16 +235,27 @@ class CartController extends BaseController
         // so 1 !== true — bid items would disappear from both groups
         $item->is_bid = (bool) $item->is_bid;
 
-        $nights            = max(1, Carbon::parse($item->check_in)->diffInDays($item->check_out));
-        $item->nights      = $nights;
-        $item->total_price = $item->price * $nights;
+        $nights       = max(1, Carbon::parse($item->check_in)->diffInDays($item->check_out));
+        $item->nights = $nights;
+
+        // price = the room price per night (an offer's price for a bid); VAT and service charge go on top.
+        // total_price is what the guest pays (or would pay, for an offer), so every screen that adds it up
+        // stays right; the parts are there for the price summary.
+        $tax = app(PriceService::class)->forStay($item->room, (float) $item->price, $nights);
+
+        $item->base_total            = $tax['stay']['base'];
+        $item->service_charge_total  = $tax['stay']['service_charge'];
+        $item->vat_total             = $tax['stay']['vat'];
+        $item->price_with_tax        = $tax['per_night']['total'];
+        $item->tax_rates             = $tax['rates'];
+        $item->total_price           = $tax['stay']['total'];
 
         // Bid items have no cart timer — null means "no expiry"
         // Direct items get a live countdown in seconds
         $item->seconds_left = $item->is_bid
             ? null
             : ($item->expires_at
-                ? max(0, Carbon::now()->diffInSeconds($item->expires_at, false))
+                ? max(0, (int) floor(Carbon::now()->diffInSeconds($item->expires_at, false)))   // whole seconds (Carbon 3 returns a fraction)
                 : 0);
 
         return $item;
@@ -202,6 +264,7 @@ class CartController extends BaseController
     private function cartCount(int $userId): int
     {
         return BookingCart::where('user_id', $userId)
+            ->whereHas('room')
             ->where(function ($q) {
                 $q->where('is_bid', true)
                     ->orWhere(function ($q2) {

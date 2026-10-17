@@ -13,6 +13,7 @@ use App\Models\User;
 use App\Events\Booking\BookingCreated;
 use App\Events\Booking\PaymentReceived;
 use App\Notifications\Booking\PaymentConfirmedNotification;
+use App\Services\Booking\BookingConfirmationMailer;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -281,6 +282,9 @@ class PaymentController extends BaseController
         event($paymentEvent);
         $paymentEvent->notifyAll();
 
+        // The guest's "booking confirmed" email (never allowed to fail the payment)
+        BookingConfirmationMailer::send($booking);
+
         return $this->sendSuccess(['message' => 'Payment confirmed.']);
     }
 
@@ -327,6 +331,9 @@ class PaymentController extends BaseController
 
         // ONE grouped notification for admin — not one per room
         $this->notifyGroupPayment($group, $firstBooking);
+
+        // One email for the whole group
+        BookingConfirmationMailer::send($group);
 
         return $this->sendSuccess(['message' => 'Group payment confirmed.']);
     }

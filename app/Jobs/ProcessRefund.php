@@ -3,6 +3,7 @@
 namespace App\Jobs;
 
 use App\Models\RefundRequest;
+use App\Services\Refund\RefundNotificationMailer;
 use App\Services\Refund\SslCommerzRefundService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
@@ -90,6 +91,17 @@ class ProcessRefund implements ShouldQueue, ShouldBeUnique
                     $this->completeFinancialRecords($locked);
                 }
             });
+
+            // The gateway finished it straight away: tell the guest, with the full details.
+            // (When it answers "processing", CheckRefundStatuses sends this once it completes.)
+            $refund = RefundRequest::findOrFail($this->refundId);
+
+            if ($result['status'] === 'completed') {
+                RefundNotificationMailer::sendCompleted($refund);
+            } else {
+                // Accepted by SSLCommerz, paid out later: let the guest know it is on its way
+                RefundNotificationMailer::sendProcessing($refund);
+            }
         } catch (Throwable $exception) {
             Log::error('Refund submission failed', [
                 'refund_id' => $this->refundId,

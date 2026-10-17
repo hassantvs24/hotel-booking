@@ -8,9 +8,11 @@ use Carbon\CarbonImmutable;
 
 class RefundQuoteService
 {
+    public function __construct(private RefundPolicyService $policies) {}
+
     public function quote(Booking $booking) : array
     {
-        $booking->loadMissing(['transaction', 'refundRequests']);
+        $booking->loadMissing(['transaction', 'refundRequests', 'room.property']);
 
         if ($booking->payment_status !== 'paid') {
             return $this->ineligible('Only paid bookings can be refunded.');
@@ -35,10 +37,15 @@ class RefundQuoteService
             return $this->ineligible('The check-in time has passed.');
         }
 
-        $tier = $this->resolveTier($hoursBeforeCheckIn);
+        $property = $booking->room?->property;
+        $tier = $this->policies->resolveTier($property, $hoursBeforeCheckIn);
 
         if (!$tier) {
-            return $this->ineligible('This booking is outside the refundable period.');
+            return $this->ineligible(
+                $this->policies->tiersFor($property) === []
+                    ? 'This property\'s policy does not allow refunds.'
+                    : 'This booking is outside the refundable period of the property\'s refund policy.'
+            );
         }
 
         $originalCents = min(
@@ -76,23 +83,13 @@ class RefundQuoteService
             'hours_before_checkin' => $hoursBeforeCheckIn,
             'policy_label' => $tier['label'],
             'refund_percentage' => (int) $tier['refund_percentage'],
+            'policy_lines' => $this->policies->lines($this->policies->tiersFor($property)),
             'original_amount' => $this->fromCents($originalCents),
             'remaining_refundable_balance' => $this->fromCents($remainingCents),
             'cancellation_fee' => $this->fromCents($feeCents),
             'refundable_amount' => $this->fromCents($refundCents),
             'transaction_id' => $booking->transaction->id,
         ];
-    }
-
-    private function resolveTier(int $hoursBeforeCheckIn): ?array
-    {
-        $tiers = collect(config('refund.tiers', []))
-            ->sortByDesc('minimum_hours_before_checkin');
-
-        return $tiers->first(
-            fn (array $tier) =>
-                $hoursBeforeCheckIn >= (int) $tier['minimum_hours_before_checkin']
-        );
     }
 
     private function ineligible(string $reason): array

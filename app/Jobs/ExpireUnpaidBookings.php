@@ -7,6 +7,7 @@ use Carbon\Carbon;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Foundation\Queue\Queueable;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 class ExpireUnpaidBookings implements ShouldQueue
@@ -31,7 +32,7 @@ class ExpireUnpaidBookings implements ShouldQueue
         $cutoff = Carbon::now()->subMinutes(self::TIMEOUT_MINUTES);
 
         $expired = Booking::where('status', 'reserved')
-            ->where('payment_status', '!=', 'paid')
+            ->whereIn('payment_status', ['pending', 'failed'])   // never a paid or refunded booking
             ->where('created_at', '<', $cutoff)
             ->with('room')
             ->get();
@@ -40,7 +41,7 @@ class ExpireUnpaidBookings implements ShouldQueue
             DB::transaction(function () use ($booking) {
                 $booking->update([
                     'status'         => 'cancelled',
-                    'payment_status' => 'expired',
+                    'payment_status' => 'cancelled',   // the column has no "expired" value; this is what a cancelled booking gets everywhere else
                 ]);
 
                 // Only release the room if no OTHER active booking holds it

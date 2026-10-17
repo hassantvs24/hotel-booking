@@ -4,12 +4,17 @@ namespace App\Http\Controllers\API\Admin\Property\Room;
 
 use App\Http\Controllers\BaseController;
 use App\Http\Requests\Admin\Room\RoomRequest;
+use App\Models\Media;
 use App\Models\Room;
 use App\Repositories\Admin\RoomRepository;
+use App\Services\Pricing\PriceService;
+use App\Services\Room\RoomDuplicator;
+use App\Services\Room\RoomUsage;
 use App\Traits\MediaMan;
 use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class RoomController extends BaseController
 {
@@ -19,20 +24,40 @@ class RoomController extends BaseController
      */
     public function index(Request $request)
     {
-
         $user = auth()->user();
 
+        $query = Room::with(['property', 'bedType', 'roomType', 'facilities'])->latest('id');
+
         if ($user->is_admin) {
-            $rooms = Room::with(['property', 'bedType', 'roomType', 'facilities'])->paginate();
+            if ($request->filled('property_id')) {
+                $query->where('property_id', (int) $request->input('property_id'));
+            }
         } elseif ($user->is_merchant && $user->associated_property) {
-            $rooms = Room::where('property_id', $request->user()->associated_property->id)->with(['property', 'bedType', 'roomType', 'facilities'])->paginate();
+            $query->where('property_id', $user->associated_property->id);
+        } else {
+            $query->whereRaw('1 = 0');
         }
 
-        $data = [
-            'rooms' => $rooms
-        ];
+        if ($request->filled('search')) {
+            $term = '%' . trim($request->input('search')) . '%';
+            $query->where('name', 'like', $term);
+        }
 
-        return $this->sendSuccess($data);
+        $rooms = $query->paginate(min(max((int) $request->input('per_page', 15), 1), 100));
+
+        // Show what a guest pays per night next to the room's own price
+        $rooms->getCollection()->transform(fn (Room $room) => $this->withTax($room));
+
+        return $this->sendSuccess(['rooms' => $rooms]);
+    }
+
+    /** The room with its tax-inclusive price per night and the rates behind it */
+    private function withTax(Room $room): Room
+    {
+        $room->tax = app(PriceService::class)->forStay($room, (float) $room->base_price, 1)['per_night']
+            + ['rates' => app(PriceService::class)->ratesFor($room)];
+
+        return $room;
     }
 
     /**
@@ -45,30 +70,84 @@ class RoomController extends BaseController
 
     /**
      * Store a newly created resource in storage.
+     *
+     * `quantity` makes several identical rooms at once: "Deluxe" x 5 becomes Deluxe 1 ... Deluxe 5. Each room gets
+     * its own copy of the photos.
      */
-    public function store(RoomRequest $request, RoomRepository $roomRepository): JsonResponse
+    public function store(RoomRequest $request, RoomRepository $roomRepository, RoomDuplicator $duplicator): JsonResponse
     {
+        // Several rooms with several photos take a while on a slow machine
+        @set_time_limit(300);
+
+        // The platform admin chooses the property; an owner can only add rooms to their own
+        $propertyId = $this->propertyIdForNewRoom($request);
+
+        if (!$propertyId) {
+            return $this->sendError('Please choose the property this room belongs to.', ['property_id' => ['Please choose the property this room belongs to.']], 422);
+        }
+
+        $quantity = max(1, min(20, (int) $request->input('quantity', 1)));
+        $names    = $quantity === 1 ? [$request->input('name')] : $this->numberedNames($request->input('name'), $propertyId, $quantity);
+
+        $createdIds = [];
+
+        DB::beginTransaction();
+
         try {
-            $room = $roomRepository->create(
-                array_merge($request->except('photo', 'gallery', 'room_facilities'), ['property_id' => $request->user()->associated_property->id])
+            $first = $roomRepository->create(
+                array_merge($this->roomFields($request), ['property_id' => $propertyId, 'name' => $names[0]])
             );
+            $createdIds[] = $first->id;
 
             if (is_array($request->input('room_facilities'))) {
-                $room->facilities()->attach($request->input('room_facilities'));
-            }
-            if ($request->hasFile('photo')) {
-                $primaryImage = $this->storeFile($request->file('photo'), 'room');
-                $room->primaryImage()->create(array_merge($primaryImage, ['media_role' => 'room_image']));
+                $first->facilities()->attach($request->input('room_facilities'));
             }
 
-            if ($request->hasFile('gallery')) {
-                foreach ($request->file('gallery') as $file) {
-                    $galleryImage = $this->storeFile($file, 'room');
-                    $room->images()->create(array_merge($galleryImage, ['media_role' => 'room_gallery_image']));
-                }
+            if ($request->hasFile('photo')) {
+                $primaryImage = $this->storeFile($request->file('photo'), 'room');
+                $first->primaryImage()->create(array_merge($primaryImage, ['media_role' => 'room_image']));
             }
-            return $this->sendSuccess('Room created successfully');
-        } catch (\Exception $e) {
+
+            $this->applyGallery($request, $first);
+
+            foreach (array_slice($names, 1) as $name) {
+                $createdIds[] = $duplicator->copy($first->refresh(), $name)->id;
+            }
+
+            DB::commit();
+        } catch (\Throwable $e) {
+            // all or nothing: no half-made set of rooms, and no photo files left behind
+            foreach (Media::where('media_type', Room::class)->whereIn('media_id', $createdIds)->get() as $media) {
+                $this->deleteFile($media->name, 'room');
+            }
+            DB::rollBack();
+
+            return $this->sendError($e->getMessage());
+        }
+
+        return $this->sendSuccess(
+            ['count' => count($names), 'names' => $names],
+            count($names) === 1 ? 'Room created successfully' : count($names) . ' rooms created successfully'
+        );
+    }
+    /** One more room like this one, with a new name (a "Duplicate" button) */
+    public function duplicate(Request $request, RoomRepository $roomRepository, RoomDuplicator $duplicator, $room): JsonResponse
+    {
+        try {
+            $source = $roomRepository->getModel($room);
+            $this->authorizeRoom($request, $source);
+
+            $name = trim((string) $request->input('name', ''));
+            if ($name === '') {
+                $name = $duplicator->copyName($source);
+            } elseif (Room::where('property_id', $source->property_id)->whereRaw('LOWER(name) = ?', [mb_strtolower($name)])->exists()) {
+                return $this->sendError('This property already has a room with this name.', ['name' => ['This property already has a room with this name.']], 422);
+            }
+
+            $copy = $duplicator->copy($source, $name);
+
+            return $this->sendSuccess($copy->load(['primaryImage', 'property']), 'Room duplicated as "' . $copy->name . '".');
+        } catch (Exception $e) {
             return $this->sendError($e->getMessage());
         }
     }
@@ -92,15 +171,15 @@ class RoomController extends BaseController
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, RoomRepository $roomRepository, $room)
+    public function update(RoomRequest $request, RoomRepository $roomRepository, $room)
     {
         try {
 
             $room = $roomRepository->getModel($room);
-            $data = array_merge(
-                $request->except('photo', 'gallery', 'room_facilities'),
-                ['property_id' => $request->user()->associated_property->id]
-            );
+            $this->authorizeRoom($request, $room);
+
+            // A room stays in the property it belongs to
+            $data = array_merge($this->roomFields($request), ['property_id' => $room->property_id]);
 
             $room->update($data);
 
@@ -108,21 +187,19 @@ class RoomController extends BaseController
                 $room->facilities()->sync($request->input('room_facilities'));
             }
 
+            // A new main photo replaces only the old main photo; the extra photos are changed separately
             if ($request->hasFile('photo')) {
-
-                $this->deleteImage($room);
-
+                $old   = $room->primaryImage()->first();
                 $image = $this->storeFile($request->file('photo'), 'room');
                 $room->primaryImage()->create([...$image, 'media_role' => 'room_image']);
-            }
 
-            if ($request->hasFile('gallery')) {
-                $this->deleteImage($room);
-                foreach ($request->file('gallery') as $file) {
-                    $galleryImage = $this->storeFile($file, 'room');
-                    $room->images()->create(array_merge($galleryImage, ['media_role' => 'room_gallery_image']));
+                if ($old) {
+                    $this->deleteFile($old->name, 'room');
+                    $old->delete();
                 }
             }
+
+            $this->applyGallery($request, $room);
 
             return $this->sendSuccess($room);
         } catch (Exception $e) {
@@ -132,13 +209,21 @@ class RoomController extends BaseController
 
     /**
      * Remove the specified resource from storage.
+     * A room with upcoming bookings is kept: the guests have paid for it.
      */
-    public function destroy(RoomRepository $roomRepository, $room)
+    public function destroy(Request $request, RoomRepository $roomRepository, RoomUsage $usage, $room)
     {
         try {
             $room = $roomRepository->getModel($room);
+            $this->authorizeRoom($request, $room);
+
+            if ($reason = $usage->blockReason($room)) {
+                return $this->sendError($reason, ['room' => [$reason]], 422);
+            }
+
             $this->deleteImage($room);
             $roomRepository->delete($room->id);
+            $usage->release([$room->id]);
 
             return $this->sendSuccess([], 'Room deleted successfully');
         } catch (Exception $e) {
@@ -146,6 +231,87 @@ class RoomController extends BaseController
         }
     }
 
+    /**
+     * What stands in the way of deleting these rooms, so the screen can warn before asking.
+     * GET rooms/usage?ids[]=1&ids[]=2
+     */
+    public function usage(Request $request, RoomUsage $usage): JsonResponse
+    {
+        $rooms = $this->ownedRooms($request, (array) $request->input('ids', []));
+        $map   = $usage->forRooms($rooms->pluck('id')->all());
+
+        return $this->sendSuccess([
+            'rooms' => $rooms->map(fn (Room $r) => [
+                'id'           => $r->id,
+                'name'         => $r->name,
+                'bookings'     => $map[$r->id]['bookings'],
+                'next_checkin' => $map[$r->id]['next_checkin'],
+                'offers'       => $map[$r->id]['offers'],
+                'blocked'      => $map[$r->id]['bookings'] > 0,
+                'reason'       => $usage->blockReason($r, $map[$r->id]),
+            ])->values(),
+        ]);
+    }
+
+    /** Delete several rooms at once; the ones with upcoming bookings are skipped and reported */
+    public function bulkDestroy(Request $request, RoomUsage $usage): JsonResponse
+    {
+        $request->validate(['ids' => 'required|array|min:1|max:100', 'ids.*' => 'integer']);
+
+        $rooms   = $this->ownedRooms($request, $request->input('ids'));
+        $map     = $usage->forRooms($rooms->pluck('id')->all());
+        $deleted = [];
+        $skipped = [];
+
+        foreach ($rooms as $room) {
+            if ($reason = $usage->blockReason($room, $map[$room->id])) {
+                $skipped[] = ['id' => $room->id, 'name' => $room->name, 'reason' => $reason];
+                continue;
+            }
+
+            $this->deleteImage($room);
+            $room->delete();
+            $deleted[] = $room->id;
+        }
+
+        $usage->release($deleted);
+
+        $message = count($deleted) . ' room' . (count($deleted) === 1 ? '' : 's') . ' deleted'
+            . ($skipped ? ', ' . count($skipped) . ' kept because of upcoming bookings' : '') . '.';
+
+        return $this->sendSuccess(['deleted' => $deleted, 'skipped' => $skipped], $message);
+    }
+
+    /** Change the guest capacity and / or the price of several rooms at once */
+    public function bulkUpdate(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'ids'            => 'required|array|min:1|max:100',
+            'ids.*'          => 'integer',
+            'guest_capacity' => 'nullable|integer|min:1|max:50',
+            'base_price'     => 'nullable|numeric|min:1',
+        ], [
+            'guest_capacity.min' => 'Guest capacity must be at least 1.',
+            'base_price.min'     => 'The price must be more than 0.',
+        ]);
+
+        $changes = array_filter(
+            ['guest_capacity' => $data['guest_capacity'] ?? null, 'base_price' => $data['base_price'] ?? null],
+            fn ($v) => $v !== null && $v !== ''
+        );
+
+        if (!$changes) {
+            return $this->sendError('Choose a guest capacity or a price to apply.', ['ids' => ['Nothing to change.']], 422);
+        }
+
+        $rooms = $this->ownedRooms($request, $data['ids']);
+
+        foreach ($rooms as $room) {
+            $room->update($changes);   // through the model, so the price is stored the usual way
+        }
+
+        return $this->sendSuccess(['updated' => $rooms->pluck('id')], $rooms->count() . ' room' . ($rooms->count() === 1 ? '' : 's') . ' updated.');
+    }
     public function all(RoomRepository $roomRepository): JsonResponse
     {
         $rooms = $roomRepository->get();
@@ -160,15 +326,141 @@ class RoomController extends BaseController
     {
         $rooms = $room->load([
             'primaryImage',
+            'images',
             'facilities',
             'property',
         ]);
+        $this->withTax($rooms);
 
         $data = [
             'rooms' => $rooms
         ];
         return $this->sendSuccess($data);
     }
+    /**
+     * What the form sent, minus the files. "Extra bed" is optional on the form but the column can not be
+     * empty, so a blank one is left out and the database default applies.
+     */
+    private function roomFields(Request $request): array
+    {
+        $fields = $request->only([
+            'name', 'room_size', 'guest_capacity', 'extra_bed', 'total_balcony', 'total_window', 'base_price',
+            'notes', 'bed_type_id', 'room_type_id', 'vat_percent', 'service_charge_percent',
+        ]);
+
+        if (!isset($fields['extra_bed']) || $fields['extra_bed'] === '') {
+            unset($fields['extra_bed']);
+        }
+
+        // windows and balconies are optional details
+        foreach (['total_window', 'total_balcony'] as $key) {
+            if (!isset($fields[$key]) || $fields[$key] === '') {
+                $fields[$key] = 0;
+            }
+        }
+
+        return $fields;
+    }
+
+    /** Which property a new room goes to: the admin picks one, an owner's is fixed */
+    private function propertyIdForNewRoom(Request $request): ?int
+    {
+        $user = $request->user();
+
+        if ($user->is_admin) {
+            return $request->filled('property_id') ? (int) $request->input('property_id') : null;
+        }
+
+        return $user->associated_property?->id;
+    }
+
+    /** The rooms among $ids the signed-in user may manage (all for the admin, own property for an owner) */
+    private function ownedRooms(Request $request, array $ids)
+    {
+        $user  = $request->user();
+        $query = Room::whereIn('id', array_map('intval', $ids));
+
+        if (!$user->is_admin) {
+            $query->where('property_id', $user->associated_property?->id ?? 0);
+        }
+
+        return $query->get();
+    }
+    /** Admin: any room. Owner: only rooms of their own property. */
+    private function authorizeRoom(Request $request, Room $room): void
+    {
+        $user = $request->user();
+
+        abort_unless(
+            $user->is_admin || ($user->associated_property && $user->associated_property->id === $room->property_id),
+            403,
+            'You can only manage rooms of your own property.'
+        );
+    }
+
+    /** "Deluxe 1", "Deluxe 2" ... skipping numbers the property already uses */
+    private function numberedNames(string $base, int $propertyId, int $quantity): array
+    {
+        $taken = Room::where('property_id', $propertyId)->pluck('name')->map(fn ($n) => mb_strtolower($n))->all();
+
+        $names = [];
+        for ($n = 1; count($names) < $quantity; $n++) {
+            $candidate = "{$base} {$n}";
+            if (!in_array(mb_strtolower($candidate), $taken, true)) {
+                $names[] = $candidate;
+            }
+        }
+
+        return $names;
+    }
+
+    /**
+     * The extra photos of a room, from what the form sent:
+     *   remove_gallery[]  ids of existing photos to delete
+     *   gallery[]         new files
+     *   gallery_order[]   the final order: "e:<id>" for an existing photo, "n:<i>" for the i-th new file.
+     *                     Anything not listed goes to the end.
+     */
+    private function applyGallery(Request $request, Room $room): void
+    {
+        $removeIds = array_map('intval', (array) $request->input('remove_gallery', []));
+        if ($removeIds) {
+            foreach ($room->images()->whereIn('id', $removeIds)->get() as $photo) {
+                $this->deleteFile($photo->name, 'room');
+                $photo->delete();
+            }
+        }
+
+        $created = [];   // "n:<i>" => Media
+        foreach ((array) $request->file('gallery', []) as $i => $file) {
+            $stored = $this->storeFile($file, 'room');
+            $created["n:{$i}"] = $room->images()->create(array_merge($stored, ['media_role' => 'room_gallery_image']));
+        }
+
+        // existing photos only: the ones just uploaded are already in $created
+        $newIds   = collect($created)->pluck('id')->all();
+        $existing = $room->images()->whereNotIn('id', $newIds)->get()->keyBy(fn ($m) => "e:{$m->id}");
+        $all      = $existing->all() + $created;
+
+        $sequence = [];
+        foreach ((array) $request->input('gallery_order', []) as $token) {
+            if (isset($all[$token]) && !isset($sequence[$token])) {
+                $sequence[$token] = $all[$token];
+            }
+        }
+        foreach ($all as $token => $media) {
+            $sequence[$token] ??= $media;
+        }
+
+        $position = 1;
+        foreach ($sequence as $media) {
+            if ((int) $media->sort_order !== $position) {
+                $media->update(['sort_order' => $position]);
+            }
+            $position++;
+        }
+    }
+
     private function deleteImage($room): void
     {
         if ($room->primaryImage()->exists()) {

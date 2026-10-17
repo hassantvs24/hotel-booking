@@ -43,10 +43,11 @@ class SslCommerzRefundService
             'LOCAL-TEST-'
         );
 
-        // Never send a locally generated bank reference to SSLCommerz.
-        if ($isLocalTestTransaction && !$this->shouldSimulate()) {
+        // Never send a locally generated bank reference to SSLCommerz: on a local machine it is simulated,
+        // anywhere else it is an error.
+        if ($isLocalTestTransaction && !app()->environment('local')) {
             throw new RuntimeException(
-                'LOCAL-TEST transaction detected, but local refund simulation is disabled.'
+                'LOCAL-TEST transaction detected, but local refund simulation is only available locally.'
             );
         }
 

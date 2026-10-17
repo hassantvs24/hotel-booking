@@ -17,11 +17,14 @@ use App\Models\Room;
 use App\Models\RoomRequest;
 use App\Models\Transaction;
 use App\Models\User;
+use App\Services\Pricing\PriceService;
+use App\Services\Room\RoomGrouper;
 use App\Notifications\BID\BidReceivedNotification;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 class BookingController extends BaseController
@@ -35,6 +38,10 @@ class BookingController extends BaseController
             'images', 'property', 'property.place.city',
             'activePrices', 'bedType', 'roomType',
         ]);
+
+        // VAT and service charge rates for this room (the page works out the amounts for the nights chosen)
+        $room->tax = app(PriceService::class)->forStay($room, (float) ($room->activePrices->first()?->price ?? $room->base_price), 1);
+
         return $this->sendSuccess(['room' => $room]);
     }
 
@@ -55,6 +62,7 @@ class BookingController extends BaseController
             ->delete();
 
         $cart = BookingCart::where('user_id', $user->id)
+            ->whereHas('room')
             ->with('room.property.user')
             ->get();
 
@@ -79,8 +87,13 @@ class BookingController extends BaseController
                         $group = BookingGroup::create([
                             'user_id'        => $user->id,
                             'group_ref'      => 'GRP-' . strtoupper(Str::random(8)),
+                            // what the guest pays: room prices plus VAT and service charge
                             'total_amount'   => $direct->sum(fn($i) =>
-                                $i->price * max(1, Carbon::parse($i->check_in)->diffInDays($i->check_out))
+                                app(PriceService::class)->bookingFields(
+                                    $i->room,
+                                    (float) $i->price,
+                                    max(1, Carbon::parse($i->check_in)->diffInDays($i->check_out))
+                                )['amount']
                             ),
                             'rooms_count'    => $direct->count(),
                             'payment_status' => 'pending',
@@ -92,13 +105,30 @@ class BookingController extends BaseController
                         $room = Room::lockForUpdate()->findOrFail($item->room_id);
 
                         // Conflict check
-                        if (Booking::where('room_id', $room->id)
+                        $taken = fn (Room $r) => Booking::where('room_id', $r->id)
                             ->whereIn('status', ['reserved', 'approved'])
                             ->where('checkin', '<', $item->check_out)
                             ->where('checkout', '>', $item->check_in)
-                            ->exists()
-                        ) {
-                            throw new \Exception("Room \"{$room->name}\" is no longer available.");
+                            ->exists();
+
+                        if ($taken($room)) {
+                            // Taken meanwhile. If the same room type has another free room (the guest saw one "Deluxe"
+                            // card), give them that one; only when none is left is it an error.
+                            $skip = array_merge(
+                                $direct->pluck('room_id')->all(),
+                                array_map(fn ($b) => $b->room_id, $bookings)
+                            );
+                            $other = app(RoomGrouper::class)->freeSibling($room, $item->check_in, $item->check_out, $skip);
+
+                            if (!$other) {
+                                throw new \Exception("Room \"{$room->name}\" is no longer available.");
+                            }
+
+                            $room = Room::lockForUpdate()->findOrFail($other->id);
+
+                            if ($taken($room)) {
+                                throw new \Exception("Room \"{$room->name}\" is no longer available.");
+                            }
                         }
 
                         $nights    = max(1, Carbon::parse($item->check_in)->diffInDays($item->check_out));
@@ -108,7 +138,7 @@ class BookingController extends BaseController
                             'user_id'          => $user->id,
                             'checkin'          => $item->check_in,
                             'checkout'         => $item->check_out,
-                            'amount'           => $item->price * $nights,
+                            ...app(PriceService::class)->bookingFields($room, (float) $item->price, $nights),
                             'adult'            => $item->adult,
                             'children'         => $item->children,
                             'rooms'            => $item->rooms ?? 1,
@@ -130,11 +160,22 @@ class BookingController extends BaseController
                     $room = Room::with('property.user')->find($item->room_id);
                     if (!$room) continue;
 
-                    if (RoomRequest::where('user_id', $user->id)
-                            ->where('room_id', $room->id)
-                            ->whereIn('status', ['Pending', 'Approved', 'Counter'])
-                            ->count() >= 3
-                    ) { continue; }
+                    // Offers already spent on this room for these dates (live + declined)
+                    $used = RoomRequest::offersUsed($user->id, $room->id, $item->check_in, $item->check_out);
+
+                    if ($used >= RoomRequest::MAX_BIDS) { continue; }
+
+                    // The cart was checked when the offer was added, but an owner counter
+                    // may have arrived since — hold the same negotiation window here
+                    if ($err = RoomRequest::offerWindowError(
+                        $user->id, $room->id, $item->check_in, $item->check_out, (float) $item->offer_price
+                    )) {
+                        throw new \Exception($err);
+                    }
+
+                    // "Bid N of 3": this is the next offer for the room and dates, so it can only
+                    // be 1–3 (the limit above stops a fourth)
+                    $slot = $used + 1;
 
                     $bid = RoomRequest::create([
                         'room_id'                 => $room->id,
@@ -146,24 +187,30 @@ class BookingController extends BaseController
                         'children'                => $item->children ?? 0,
                         'discount_price'          => $item->offer_price,
                         'message'                 => $item->bid_message,
-                        'bid_number'              => RoomRequest::where('user_id', $user->id)
-                                ->where('room_id', $room->id)->count() + 1,
+                        'bid_number'              => $slot,
                         'status'                  => 'Pending',
-                        'request_expiration_time' => Carbon::now()->addHours(24),
+                        'request_expiration_time' => Carbon::now()->addHours(config('bidding.pending_hours')),
                     ]);
 
                     // Real-time broadcast to admin + owner channels
                     // notifyAll() handles admin DB + guest DB
-                    // BidReceivedNotification (owner WebPush) fired separately below
+                    // BidReceivedNotification (owner) is sent only here, below
                     $bidEvent = new BidSubmitted($bid->load(['room', 'room.property', 'user']));
-                    event($bidEvent);
                     $bidEvent->notifyAll();
 
-                    // Owner WebPush — separate from real-time, fired AFTER notifyAll
-                    // to avoid duplicate since notifyAll no longer calls this
+                    // Owner notification — the only place it is sent (notifyAll skips owners)
                     $room->property->user?->notify(
                         new BidReceivedNotification($bid, $room, $user)
                     );
+
+                    // The live push is best-effort: if the websocket server (Reverb) is
+                    // down the bid must still go through — the saved notifications above
+                    // are what the owner sees on their next load
+                    try {
+                        event($bidEvent);
+                    } catch (\Throwable $e) {
+                        Log::warning('Bid broadcast failed (is Reverb running?): ' . $e->getMessage());
+                    }
 
                     $createdBids[] = $bid;
                 }
@@ -231,7 +278,7 @@ class BookingController extends BaseController
                     'user_id'        => $request->user()->id,
                     'checkin'        => $validated['check_in'],
                     'checkout'       => $validated['check_out'],
-                    'amount'         => $price * $nights,
+                    ...app(PriceService::class)->bookingFields($room, (float) $price, $nights),
                     'adult'          => $validated['adult'],
                     'children'       => $validated['children'] ?? 0,
                     'rooms'          => $validated['rooms']    ?? 1,

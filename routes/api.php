@@ -2,6 +2,7 @@
 
 //use App\Http\Controllers\API\Payment\SslCommerzPaymentController;
 use App\Http\Controllers\API\Portal\Auth\LoginController;
+use App\Http\Controllers\API\Portal\Auth\PasswordResetController;
 use App\Http\Controllers\API\Portal\Auth\ProfileController;
 use App\Http\Controllers\API\Portal\Auth\RegisterController;
 use App\Http\Controllers\API\Portal\Auth\SocialiteController;
@@ -11,6 +12,10 @@ Route::get('/user', [ProfileController::class, 'me'])->middleware('auth:sanctum'
 
 /*----------------- Auth API -----------------*/
 Route::prefix('auth')->group(function () {
+    // Forgot / reset password (declared before the '/{provider}' catch-all)
+    Route::post('forgot-password', [PasswordResetController::class, 'sendLink'])->middleware('throttle:5,1');
+    Route::post('reset-password', [PasswordResetController::class, 'reset'])->middleware('throttle:10,1');
+
     Route::get('/{provider}', [SocialiteController::class, 'redirectToProvider']);
     Route::get('/{provider}/callback', [SocialiteController::class, 'handleProviderCallback']);
 

@@ -49,6 +49,11 @@ class PropertyRequest extends Model
         return $this->belongsTo(Property::class);
     }
 
+    public function license(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(PropertyLicense::class);
+    }
+
     // ── Helpers ───────────────────────────────────────────
 
     public function isDraft(): bool
@@ -59,5 +64,11 @@ class PropertyRequest extends Model
     public function isSubmitted(): bool
     {
         return !$this->is_draft;
+    }
+
+    /** The owner can still change it: a draft, or an application the admin sent back */
+    public function isEditableByOwner(): bool
+    {
+        return $this->is_draft || $this->status === self::STATUS_REJECTED;
     }
 }

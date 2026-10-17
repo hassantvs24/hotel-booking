@@ -2,6 +2,7 @@
 
 namespace App\Traits;
 
+use App\Services\Media\ImageOptimizer;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -32,6 +33,15 @@ trait MediaMan
                 ?: 'bin'
         );
 
+        // Room and property photos are scaled down and recompressed first (a phone photo is several MB)
+        $optimized = in_array(trim($path, '/'), ['room', 'properties'], true)
+            ? app(ImageOptimizer::class)->optimize($file)
+            : null;
+
+        if ($optimized) {
+            $extension = $optimized['extension'];
+        }
+
         $fileName = sprintf(
             '%s-%s.%s',
             now()->format('Y-m-d-His'),
@@ -45,18 +55,23 @@ trait MediaMan
             Storage::disk($disk)->makeDirectory($path);
         }
 
-        Storage::disk($disk)->putFileAs(
-            $path,
-            $file,
-            $fileName
-        );
+        if ($optimized) {
+            Storage::disk($disk)->put($path . '/' . $fileName, $optimized['contents']);
+        } else {
+            Storage::disk($disk)->putFileAs(
+                $path,
+                $file,
+                $fileName
+            );
+        }
 
         return [
             'name' => $fileName,
             'path' => $path,
             'disk' => $disk,
-            'size' => $file->getSize(),
-            'mime' => $file->getMimeType()
+            'size' => $optimized ? strlen($optimized['contents']) : $file->getSize(),
+            'mime' => $optimized['mime']
+                ?? $file->getMimeType()
                 ?: $file->getClientMimeType()
                     ?: 'application/octet-stream',
             'original_name' =>

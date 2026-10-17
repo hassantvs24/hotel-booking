@@ -175,6 +175,12 @@ abstract class Repository
     private function applyWhere($query, array $conditions)
     {
         foreach ($conditions as $condition) {
+            // A closure gets the query itself, for scopes a [col, op, val] triple can't express (e.g. whereIn)
+            if ($condition instanceof \Closure) {
+                $condition($query);
+                continue;
+            }
+
             if (!is_array($condition)) continue; // ← guard against stray strings
 
             if (count($condition) === 2) {

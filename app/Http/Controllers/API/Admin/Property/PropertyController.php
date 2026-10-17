@@ -30,7 +30,7 @@ class PropertyController extends BaseController
     {
 
         $query = [
-            'with'     => ['user'],
+            'with'     => ['user', 'place.city'],
             'where'    => [],
             'order_by' => 'id',
             'order'    => 'DESC',
@@ -44,9 +44,20 @@ class PropertyController extends BaseController
 
         $properties = $propertyRepository->paginate($query);
 
+        // How many rooms each listed property really has (one query for the whole page)
+        $properties->getCollection()->loadCount('rooms');
+
+        // The tab numbers cover every property, whichever tab or page is open
+        $counts = Property::query()->selectRaw('status, COUNT(*) AS total')->groupBy('status')->pluck('total', 'status');
 
         $data = [
             'properties' => $properties,
+            'stats'      => [
+                'all'         => (int) $counts->sum(),
+                'published'   => (int) ($counts[Property::STATUS_PUBLISHED] ?? 0),
+                'pending'     => (int) ($counts[Property::STATUS_PENDING] ?? 0),
+                'unpublished' => (int) ($counts[Property::STATUS_UNPUBLISHED] ?? 0),
+            ],
         ];
 
         return $this->sendSuccess($data);
@@ -241,8 +252,29 @@ class PropertyController extends BaseController
         }
     }
 
+    /**
+     * "Verified host" by hand, for properties that were listed before document checks existed.
+     * New applications get it automatically when the NID and the licence are verified.
+     */
+    public function setVerified(Property $property, Request $request): JsonResponse
+    {
+        abort_unless($request->user()->is_admin, 403, 'Only the platform admin can mark a property as verified.');
+
+        $verified = $request->boolean('verified');
+
+        $property->update(['verified_at' => $verified ? now() : null]);
+
+        app(\App\Services\Verification\VerificationService::class)->log(
+            $request->user(), null, ($verified ? 'marked_verified_property_' : 'removed_verified_property_') . $property->id
+        );
+
+        return $this->sendSuccess(['is_verified' => $verified], $verified ? 'Marked as Verified host.' : 'Verified host mark removed.');
+    }
+
     public function propertyAction(Property $property, Request $request): JsonResponse
     {
+        $request->validate(['status' => ['required', 'in:Pending,Published,Unpublished']]);
+
         $originalStatus = $property->status;
         $statusInput = $request->input('status');
 
@@ -282,6 +314,12 @@ class PropertyController extends BaseController
             }
 
             DB::commit();
+
+            // Going live is the moment the owner has waited for: tell them (bell + email with the full details)
+            if ($statusInput === 'Published') {
+                app(\App\Services\Property\PropertyAnnouncements::class)->published($property->fresh());
+            }
+
             return $this->sendSuccess($property, 'Property status updated successfully');
         } catch (Throwable $e) {
             DB::rollBack();

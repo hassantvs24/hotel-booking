@@ -16,6 +16,9 @@ return [
     'name' => env('APP_NAME', 'Laravel'),
     'frontend_url' => env('APP_FRONTEND_URL', 'http://localhost:3000'),
 
+    // Where property owners and staff sign in (the admin panel)
+    'admin_url' => env('APP_ADMIN_URL', 'http://localhost:5174'),
+
     /*
     |--------------------------------------------------------------------------
     | Application Environment

@@ -3,11 +3,16 @@
 namespace App\Http\Controllers\API\Admin\Booking;
 
 use App\Http\Controllers\BaseController;
+use App\Jobs\CheckRefundStatuses;
 use App\Jobs\ProcessRefund;
 use App\Models\RefundRequest;
 use App\Services\Refund\RefundQuoteService;
+use App\Services\Refund\RefundStatusRefresher;
+use App\Services\Refund\SslCommerzRefundService;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
@@ -20,13 +25,16 @@ class RefundController extends BaseController
 
     public function index(Request $request): JsonResponse
     {
+        // Opening the list also finishes any refund SSLCommerz has completed (after this response is sent)
+        RefundStatusRefresher::afterResponse();
+
         $validated = $request->validate([
             'status' => ['nullable', Rule::in(RefundRequest::STATUSES)],
             'search' => ['nullable', 'string', 'max:100'],
             'per_page' => ['nullable', 'integer', 'min:1', 'max:100'],
         ]);
 
-        $query = RefundRequest::query()
+        $query = $this->scoped()
             ->with([
                 'user:id,name,email',
                 'booking:id,booking_number,room_id,checkin,checkout,amount,status,payment_status',
@@ -59,7 +67,7 @@ class RefundController extends BaseController
 
     public function stats(): JsonResponse
     {
-        $counts = RefundRequest::query()
+        $counts = $this->scoped()
             ->selectRaw('status, COUNT(*) as total')
             ->groupBy('status')
             ->pluck('total', 'status');
@@ -77,6 +85,8 @@ class RefundController extends BaseController
 
     public function show(RefundRequest $refund): JsonResponse
     {
+        $this->authorizeRefund($refund);
+
         return $this->sendSuccess($refund->load([
             'user:id,name,email',
             'booking.room.property',
@@ -87,6 +97,8 @@ class RefundController extends BaseController
 
     public function approve(Request $request, RefundRequest $refund): JsonResponse
     {
+        $this->authorizeRefund($refund);
+
         $validated = $request->validate([
             'admin_note' => ['nullable', 'string', 'max:1000'],
         ]);
@@ -130,6 +142,17 @@ class RefundController extends BaseController
                 'status' => 'cancelled',
             ]);
 
+            // Guests see the dates as free already (availability is read from the bookings). Keep the room's own
+            // label honest too, unless some other booking still holds this room or it was set aside (Maintenance...).
+            $room = $locked->booking->room;
+            $otherHold = \App\Models\Booking::where('room_id', $locked->booking->room_id)
+                ->whereIn('status', ['reserved', 'approved'])
+                ->where('id', '!=', $locked->booking->id)
+                ->exists();
+            if ($room && !$otherHold && in_array($room->status, ['Booked', 'Reserved'], true)) {
+                $room->update(['status' => 'Available']);
+            }
+
             return $locked->fresh(['user', 'booking.room.property', 'transaction', 'processor']);
         });
 
@@ -141,8 +164,37 @@ class RefundController extends BaseController
         );
     }
 
+    /**
+     * "Ask SSLCommerz now": how is this refund doing on their side? A refund they have finished is
+     * marked completed (and the guest is emailed); one they are still working on stays as it is.
+     */
+    public function checkStatus(RefundRequest $refund): JsonResponse
+    {
+        $this->authorizeRefund($refund);
+
+        $waiting = $refund->status === RefundRequest::STATUS_PROCESSING
+            && filled($refund->gateway_refund_id)
+            && !str_starts_with($refund->gateway_refund_id, 'LOCAL-REFUND-');
+
+        if (!$waiting) {
+            return $this->sendError('This refund is not waiting on SSLCommerz.', [], 422);
+        }
+
+        (new CheckRefundStatuses())->checkOne(app(SslCommerzRefundService::class), $refund);
+
+        $fresh = $refund->fresh(['user', 'booking.room.property', 'transaction', 'processor']);
+
+        return $this->sendSuccess($fresh, match ($fresh->status) {
+            RefundRequest::STATUS_COMPLETED => 'SSLCommerz has finished this refund.',
+            RefundRequest::STATUS_FAILED    => 'SSLCommerz could not complete this refund: ' . $fresh->failure_reason,
+            default                         => 'SSLCommerz is still processing this refund.',
+        });
+    }
+
     public function reject(Request $request, RefundRequest $refund): JsonResponse
     {
+        $this->authorizeRefund($refund);
+
         $validated = $request->validate([
             'admin_note' => ['required', 'string', 'max:1000'],
         ]);
@@ -167,5 +219,49 @@ class RefundController extends BaseController
         });
 
         return $this->sendSuccess($rejected, 'Refund request rejected.');
+    }
+
+    // ══════════════════════════════════════════════════════
+    //  ACCESS SCOPE
+    //  Admin: every refund. Vendor: refunds of bookings in properties they own.
+    //  Anyone else (e.g. a guest account): forbidden. Refunds move money, so no one
+    //  but the people who run the property may even see them.
+    // ══════════════════════════════════════════════════════
+
+    /** null = unrestricted (admin) */
+    private function accessiblePropertyIds(): ?Collection
+    {
+        $user = auth()->user();
+
+        if ($user->is_admin) {
+            return null;
+        }
+
+        if ($user->is_merchant) {
+            return $user->properties()->pluck('id');
+        }
+
+        abort(403, 'Unauthorized Action');
+    }
+
+    private function scoped(): Builder
+    {
+        $propertyIds = $this->accessiblePropertyIds();
+
+        return RefundRequest::query()->when(
+            $propertyIds !== null,
+            fn (Builder $query) => $query->whereHas(
+                'booking.room',
+                fn ($room) => $room->whereIn('property_id', $propertyIds)
+            )
+        );
+    }
+
+    /** A refund outside the user's scope looks like it does not exist */
+    private function authorizeRefund(RefundRequest $refund): void
+    {
+        if (!$this->scoped()->whereKey($refund->id)->exists()) {
+            abort(404);
+        }
     }
 }

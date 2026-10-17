@@ -121,15 +121,34 @@ Route::middleware('auth:sanctum')->prefix('admin')->group(function () {
     Route::get('properties/all',                          [PropertyController::class, 'all']);
     Route::get('property/attributes',                     [PropertyController::class, 'propertyAttributes']);
     Route::put('properties/{property}/status',            [PropertyController::class, 'propertyAction']);
+    Route::put('properties/{property}/verified',          [PropertyController::class, 'setVerified']);
     Route::get('property/{property}/details',             [PropertyController::class, 'details']);
 
     Route::get('property/requests',                       [PropertyRequestController::class, 'index']);
     Route::put('property/requests/{id}/update',           [PropertyRequestController::class, 'updateStatus']);
+    Route::get('property/requests/{id}/verification',      [PropertyRequestController::class, 'verification']);
+    Route::get('property/requests/{id}/verification/file/{kind}', [PropertyRequestController::class, 'verificationFile']);
+    Route::put('property/requests/{id}/verification/{target}', [PropertyRequestController::class, 'verificationDecision']);
 
     Route::apiResource('property-categories', PropertyCategoryController::class)->except(['create', 'show', 'edit']);
     Route::get('property-categories/all', [PropertyCategoryController::class, 'all']);
 
     Route::put('properties/{property}/properties-setting', [PropertySettingController::class, 'update']);
+
+    // VAT and service charge: platform rates (admin) and each property's own default (owner or admin)
+    Route::get('settings/tax',  [\App\Http\Controllers\API\Admin\Property\TaxRateController::class, 'platform']);
+    Route::put('settings/tax',  [\App\Http\Controllers\API\Admin\Property\TaxRateController::class, 'updatePlatform']);
+
+    // the legal pages the admin edits
+    Route::get('legal',         [\App\Http\Controllers\API\Admin\Legal\LegalDocumentController::class, 'index']);
+    Route::get('legal/{slug}',  [\App\Http\Controllers\API\Admin\Legal\LegalDocumentController::class, 'show']);
+    Route::put('legal/{slug}',  [\App\Http\Controllers\API\Admin\Legal\LegalDocumentController::class, 'update']);
+    Route::get('properties/{property}/tax-rates', [\App\Http\Controllers\API\Admin\Property\TaxRateController::class, 'property']);
+    Route::put('properties/{property}/tax-rates', [\App\Http\Controllers\API\Admin\Property\TaxRateController::class, 'updateProperty']);
+
+    // Refund policy: set by the property owner only (admin can view)
+    Route::get('properties/{property}/refund-policy', [\App\Http\Controllers\API\Admin\Property\PropertyRefundPolicyController::class, 'show']);
+    Route::put('properties/{property}/refund-policy', [\App\Http\Controllers\API\Admin\Property\PropertyRefundPolicyController::class, 'update']);
 
     /*----------------------------------------------------------
     | Rooms
@@ -137,6 +156,10 @@ Route::middleware('auth:sanctum')->prefix('admin')->group(function () {
     Route::apiResource('rooms', RoomController::class)->except(['create', 'show', 'edit']);
     Route::get('rooms/all',              [RoomController::class, 'all']);
     Route::get('rooms/{room}/details',   [RoomController::class, 'showDetails']);
+    Route::post('rooms/{room}/duplicate', [RoomController::class, 'duplicate']);
+    Route::get('rooms/usage',            [RoomController::class, 'usage']);
+    Route::post('rooms/bulk-delete',     [RoomController::class, 'bulkDestroy']);
+    Route::post('rooms/bulk-update',     [RoomController::class, 'bulkUpdate']);
 
     Route::apiResource('room-types',  RoomTypeController::class )->except(['create', 'show', 'edit']);
     Route::get('room-types/all',  [RoomTypeController::class,  'all']);
@@ -170,6 +193,8 @@ Route::middleware('auth:sanctum')->prefix('admin')->group(function () {
     Route::get('refunds/stats', [RefundController::class, 'stats',]);
     Route::get('refunds/{refund:refund_number}', [RefundController::class, 'show',]);
     Route::post('refunds/{refund:refund_number}/approve', [RefundController::class, 'approve',]);
+    Route::post('refunds/{refund:refund_number}/check-status', [RefundController::class, 'checkStatus',]);
+    Route::post('refunds/{refund:refund_number}/reject', [RefundController::class, 'reject',]);
 
     /*----------------------------------------------------------
     | Booking requests
