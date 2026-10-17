@@ -29,6 +29,7 @@
     <meta name="color-scheme" content="light">
     <meta name="supported-color-schemes" content="light">
     <title>{{ $processing ? 'Your refund is on its way' : 'Your refund is complete' }} — {{ $d['refund_number'] }}</title>
+    @include('emails.partials.credit-style')
 </head>
 <body style="margin:0; padding:0; background-color:{{ $mint }}; -webkit-text-size-adjust:100%;">
 
@@ -230,11 +231,12 @@
 
         {{-- ── Closing ──────────────────────────────────────────────────── --}}
         <tr>
-            <td align="center" style="background-color:#ffffff; border-radius:0 0 20px 20px; padding:18px 32px 32px;">
-                <p style="margin:0; font-family:{{ $sans }}; font-size:14px; line-height:22px; color:{{ $slate }};">
+            <td style="background-color:#ffffff; border-radius:0 0 20px 20px; padding:0;">
+                <p align="center" style="margin:0; padding:18px 32px 24px; font-family:{{ $sans }}; font-size:14px; line-height:22px; color:{{ $slate }};">
                     We are sorry your plans changed &mdash; we hope to host you another time.<br>
                     <strong style="color:{{ $tealDp }};">The Oystay team</strong>
                 </p>
+                @include('emails.partials.card-footer', ['copyText' => '&copy; ' . date('Y') . ' Oystay &middot; Same room. Your price.'])
             </td>
         </tr>
 
@@ -244,9 +246,6 @@
                 <p style="margin:0; font-family:{{ $sans }}; font-size:12px; line-height:19px; color:{{ $muted }};">
                     You are getting this email because a refund on your Oystay booking was {{ $processing ? 'approved' : 'completed' }}.<br>
                     Keep it for your records.
-                </p>
-                <p style="margin:10px 0 0; font-family:{{ $sans }}; font-size:12px; color:{{ $muted }};">
-                    &copy; {{ date('Y') }} Oystay &middot; Same room. Your price.
                 </p>
             </td>
         </tr>

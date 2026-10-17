@@ -69,3 +69,5 @@ View your bookings: {!! $d['bookings_url'] !!}
 
 We hope you have a lovely stay.
 The Oystay team
+
+@include('emails.partials.credit-text')

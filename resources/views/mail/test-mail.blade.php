@@ -61,13 +61,14 @@
             background-color: #f0f0f0;
             padding: 15px;
             text-align: center;
-            font-size: 14px;
-            color: #555;
+            font-size: 15px;
+            color: #000000;
         }
         .footer p {
             margin: 0;
         }
     </style>
+    @include('emails.partials.credit-style')
 </head>
 <body>
 <div class="email-container">
@@ -105,6 +106,7 @@
 
     <div class="footer">
         <p>&copy; {{ date('Y') }} Property Management, All rights reserved.</p>
+        @include('emails.partials.credit')
     </div>
 </div>
 </body>

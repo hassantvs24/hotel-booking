@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Reset your Oystay password</title>
+    @include('emails.partials.credit-style')
 </head>
 <body style="margin:0; padding:0; background-color:#f0fdfa; font-family:Arial, Helvetica, sans-serif; color:#334155;">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f0fdfa;">
@@ -40,8 +41,8 @@
                     <p style="margin:0;">Did not ask for this? You can ignore this email &mdash; your password stays the same.</p>
                 </td>
             </tr>
+            <tr><td>@include('emails.partials.card-footer')</td></tr>
         </table>
-        <p style="margin:16px 0 0; font-size:12px; color:#94a3b8;">&copy; {{ date('Y') }} Oystay. All rights reserved.</p>
     </td></tr>
 </table>
 </body>

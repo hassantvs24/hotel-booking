@@ -62,3 +62,5 @@ View your bookings: {!! $d['bookings_url'] !!}
 
 We are sorry your plans changed — we hope to host you another time.
 The Oystay team
+
+@include('emails.partials.credit-text')
