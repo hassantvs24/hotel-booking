@@ -15,7 +15,8 @@ class Property extends Model
     protected $with = ['primaryImage'];
     protected $appends = ['primary_image_url', 'lowest_room_price', 'lowest_room_price_with_tax', 'from_price', 'is_verified'];
 
-    protected $hidden = ['bank_details'];
+    // the bank details and the platform's commission deal with this hotel are never part of a property's JSON (public pages send it)
+    protected $hidden = ['bank_details', 'commission_percent'];
 
     protected $casts = ['refund_policy' => 'array'];
 
@@ -68,7 +69,7 @@ class Property extends Model
 
     public function user(): BelongsTo
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(User::class)->withTrashed();
     }
 
     public function staffs(): BelongsToMany

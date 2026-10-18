@@ -8,8 +8,10 @@ use App\Models\Facility;
 use App\Models\Property;
 use App\Models\PropertyCategory;
 use App\Models\PropertyRule;
+use App\Models\Room;
 use App\Models\User;
 use App\Repositories\Admin\PropertyRepository;
+use App\Services\Room\RoomUsage;
 use App\Traits\MediaMan;
 use Carbon\Carbon;
 use Exception;
@@ -22,6 +24,12 @@ use Throwable;
 class PropertyController extends BaseController
 {
     use MediaMan;
+
+    /** The fields the property form may set (everything else, e.g. the owner or the commission rate, is not the form's to change) */
+    private const FORM_FIELDS = [
+        'name', 'description', 'lat', 'long', 'address', 'zip_code', 'total_room', 'currency', 'rating', 'google_review',
+        'phone_number', 'seo_title', 'seo_meta', 'property_class', 'status', 'property_category_id', 'place_id',
+    ];
 
     /**
      * Display a listing of the resource.
@@ -82,8 +90,9 @@ class PropertyController extends BaseController
             $checkInTime = Carbon::parse($request->input('check_in_time'))->format('H:i:s');
             $checkOutTime = Carbon::parse($request->input('check_out_time'))->format('H:i:s');
 
+            // Only the fields the form has: the owner, commission rate, verified mark... are never taken from the request
             $data = array_merge(
-                $request->except(['primaryImage', 'facility_sub_ids', 'rules', 'additionalImages']),
+                $request->only(self::FORM_FIELDS),
                 [
                     'user_id' => $request->user()->id,
                     'check_in_time' => $checkInTime,
@@ -156,24 +165,25 @@ class PropertyController extends BaseController
         PropertyRepository $propertyRepository,
         $property
     ): JsonResponse {
+        $property = $propertyRepository->getModel($property);
+
+        if (!$property) {
+            return $this->sendError('Property not found.');
+        }
 
         DB::beginTransaction();
         try {
-            // Format check-in and check-out time
-            $checkInTime = Carbon::parse($request->input('check_in_time'))->format('H:i:s');
-            $checkOutTime = Carbon::parse($request->input('check_out_time'))->format('H:i:s');
+            // Only the form's own fields, and the owner stays the owner
+            $data = $request->only(self::FORM_FIELDS);
 
-            // Merge request data
-            $data = array_merge(
-                $request->except(['primaryImage', 'facility_sub_ids', 'rules', 'additionalImages']),
-                [
-                    'user_id' => $request->user()->id,
-                    'check_in_time' => $checkInTime,
-                    'check_out_time' => $checkOutTime,
-                ]
-            );
+            if ($request->filled('check_in_time')) {
+                $data['check_in_time'] = Carbon::parse($request->input('check_in_time'))->format('H:i:s');
+            }
+            if ($request->filled('check_out_time')) {
+                $data['check_out_time'] = Carbon::parse($request->input('check_out_time'))->format('H:i:s');
+            }
 
-            $propertyRepository->update($data);
+            $propertyRepository->update($data, $property);
 
             if (is_array($request->input('facility_sub_ids'))) {
                 $property->facilities()->sync($request->input('facility_sub_ids'));
@@ -224,6 +234,16 @@ class PropertyController extends BaseController
     {
         try {
             $property = $propertyRepository->getModel($property);
+
+            // Guests have paid for stays here: the property cannot simply vanish. (Unpublishing it stops new bookings.)
+            $roomIds = Room::where('property_id', $property->id)->pluck('id')->all();
+            $upcoming = array_sum(array_column(app(RoomUsage::class)->forRooms($roomIds), 'bookings'));
+
+            if ($upcoming > 0) {
+                return $this->sendError("This property has {$upcoming} booking(s) whose stay is not over yet, so it cannot be deleted. Unpublish it to stop new bookings, and delete it after the stays are over.", [], 422);
+            }
+
+            app(RoomUsage::class)->release($roomIds);
             $this->deleteImage($property);
             $propertyRepository->delete($property->id);
 
@@ -235,7 +255,9 @@ class PropertyController extends BaseController
 
     public function all(PropertyRepository $propertyRepository): JsonResponse
     {
-        $properties = $propertyRepository->get();
+        // the admin sees every property; an owner only their own
+        $user       = auth()->user();
+        $properties = $propertyRepository->get($user->is_admin ? [] : ['where' => [['user_id', '=', $user->id]]]);
 
         $data = [
             'properties' => $properties
@@ -352,6 +374,9 @@ class PropertyController extends BaseController
 
     public function details(Property $property): JsonResponse
     {
+        // another owner's property is not theirs to read (it carries the owner's contact details)
+        abort_unless(auth()->user()->is_admin || $property->user_id === auth()->id(), 404);
+
         $property->load([
             'primaryImage',
             'images',

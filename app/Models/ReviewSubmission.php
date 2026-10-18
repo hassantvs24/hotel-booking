@@ -22,12 +22,12 @@ class ReviewSubmission extends Model
 
     public function user() : BelongsTo
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(User::class)->withTrashed();
     }
 
     public function adminReplier() : BelongsTo
     {
-        return $this->belongsTo(User::class, 'admin_replied_by');
+        return $this->belongsTo(User::class, 'admin_replied_by')->withTrashed();
     }
 
     public function categoryRatings() : HasMany

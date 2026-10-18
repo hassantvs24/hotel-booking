@@ -41,7 +41,7 @@ class BookingRequestController extends BaseController
         $booking_requests = $bookingRequestRepository->paginate($query);
 
         foreach ($booking_requests as $booking_request) {
-            $isAccepted = BookingAccepted::where('booking_requests_id', $booking_request->id)
+            $isAccepted = $userProperty && BookingAccepted::where('booking_requests_id', $booking_request->id)
                 ->where('property_id', $userProperty->id)
                 ->exists();
 
@@ -133,7 +133,7 @@ class BookingRequestController extends BaseController
     {
         DB::beginTransaction();
         $status = $request->input('status');
-        $requestData = $request->all();
+        $requestData = $request->only(['status']);   // nothing else of the request is saved
         try {
             if ($status === 'Approved') {
                 BookingAccepted::create([
@@ -142,10 +142,7 @@ class BookingRequestController extends BaseController
                     'request_expiration_time' => Carbon::now()->addMinutes(6),
                 ]);
 
-                BookingRequest::updateOrCreate(
-                    ['id' => $bookingRequest],
-                    $requestData
-                );
+                BookingRequest::where('id', $bookingRequest)->update($requestData);
                 DB::commit();
                 return response()->json(['status' => $status]);
             } else {

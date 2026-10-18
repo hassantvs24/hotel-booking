@@ -164,7 +164,7 @@ class BookingConfirmationMailer
 
         foreach ($bookings as $booking) {
             $property = $booking->room?->property;
-            $rows     = $service->lines($service->tiersFor($property));
+            $rows     = $service->lines($service->tiersForBooking($booking, $property));
             $key      = md5(json_encode($rows));
 
             $blocks[$key]['rows']     = $rows;

@@ -26,6 +26,14 @@ return Application::configure(basePath: dirname(__DIR__))
         ['prefix' => 'api', 'middleware' => ['api', 'auth:sanctum']],
     )
     ->withMiddleware(function (Middleware $middleware) {
+    $middleware->alias([
+        'staff'       => \App\Http\Middleware\EnsureAdminPanelUser::class,
+        'admin.only'  => \App\Http\Middleware\EnsureAdmin::class,
+        'admin.write' => \App\Http\Middleware\EnsureAdmin::class . ':write',
+    ]);
+    // the role check comes before an id in the address is looked up, so a guest gets "403" and never learns whether that id exists
+    $middleware->prependToPriorityList(before: \Illuminate\Routing\Middleware\SubstituteBindings::class, prepend: \App\Http\Middleware\EnsureAdminPanelUser::class);
+    $middleware->prependToPriorityList(before: \Illuminate\Routing\Middleware\SubstituteBindings::class, prepend: \App\Http\Middleware\EnsureAdmin::class);
     // $middleware->validateCsrfTokens(except: [
     //     '/success',
     //     '/cancel',

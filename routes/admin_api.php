@@ -31,7 +31,8 @@ use App\Http\Controllers\API\Admin\Notification\NotificationController;
 use App\Http\Controllers\API\ChatController;
 use Illuminate\Support\Facades\Route;
 
-Route::middleware('auth:sanctum')->prefix('admin')->group(function () {
+// 'staff': only the admin and property owners get in at all; a guest account (anyone can sign up) gets a 403 on every route here
+Route::middleware(['auth:sanctum', 'staff'])->prefix('admin')->group(function () {
 
     Route::prefix('chat')->controller(ChatController::class)->group(function () {
         Route::get('/conversations', 'index');
@@ -47,7 +48,7 @@ Route::middleware('auth:sanctum')->prefix('admin')->group(function () {
     /*----------------------------------------------------------
     | ACL
     ----------------------------------------------------------*/
-    Route::prefix('acl')->group(function () {
+    Route::prefix('acl')->middleware('admin.only')->group(function () {
         Route::apiResource('users',       UserController::class      )->except(['create', 'show', 'edit']);
         Route::apiResource('roles',       RoleController::class      )->except(['create', 'show', 'edit']);
         Route::apiResource('permissions', PermissionController::class)->except(['create', 'show', 'edit']);
@@ -59,7 +60,7 @@ Route::middleware('auth:sanctum')->prefix('admin')->group(function () {
     /*----------------------------------------------------------
     | Location
     ----------------------------------------------------------*/
-    Route::prefix('location')->group(function () {
+    Route::prefix('location')->middleware('admin.write')->group(function () {
         Route::apiResource('countries', CountryController::class)->except(['create', 'show', 'edit']);
         Route::apiResource('states',    StateController::class  )->except(['create', 'show', 'edit']);
         Route::apiResource('cities',    CityController::class   )->except(['create', 'show', 'edit']);
@@ -92,10 +93,10 @@ Route::middleware('auth:sanctum')->prefix('admin')->group(function () {
     /*----------------------------------------------------------
     | Reviews
     ----------------------------------------------------------*/
-    Route::apiResource('review-categories', ReviewCategoryController::class)->except(['create', 'show', 'edit']);
+    Route::apiResource('review-categories', ReviewCategoryController::class)->except(['create', 'show', 'edit'])->middleware('admin.write');
     Route::get('review-categories/all', [ReviewCategoryController::class, 'all']);
 
-    Route::apiResource('reviews', ReviewController::class)->except(['create', 'show', 'edit']);
+    Route::apiResource('reviews', ReviewController::class)->except(['create', 'show', 'edit'])->middleware('admin.write');
     Route::get('reviews/all', [ReviewController::class, 'all']);
 
     Route::prefix('review-submissions')
@@ -111,16 +112,17 @@ Route::middleware('auth:sanctum')->prefix('admin')->group(function () {
     /*----------------------------------------------------------
     | Property rules
     ----------------------------------------------------------*/
-    Route::apiResource('property-rules', PropertyRuleController::class)->except(['create', 'show', 'edit']);
+    Route::apiResource('property-rules', PropertyRuleController::class)->except(['create', 'show', 'edit'])->middleware('admin.write');
     Route::get('property-rules/all', [PropertyRuleController::class, 'all']);
 
     /*----------------------------------------------------------
     | Properties
     ----------------------------------------------------------*/
-    Route::apiResource('properties', PropertyController::class)->except(['create', 'show', 'edit']);
+    // Listing, adding, editing and deleting properties here is the admin's job; an owner manages their own property under property settings
+    Route::apiResource('properties', PropertyController::class)->except(['create', 'show', 'edit'])->middleware('admin.only');
     Route::get('properties/all',                          [PropertyController::class, 'all']);
     Route::get('property/attributes',                     [PropertyController::class, 'propertyAttributes']);
-    Route::put('properties/{property}/status',            [PropertyController::class, 'propertyAction']);
+    Route::put('properties/{property}/status',            [PropertyController::class, 'propertyAction'])->middleware('admin.only');
     Route::put('properties/{property}/verified',          [PropertyController::class, 'setVerified']);
     Route::get('property/{property}/details',             [PropertyController::class, 'details']);
 
@@ -130,7 +132,7 @@ Route::middleware('auth:sanctum')->prefix('admin')->group(function () {
     Route::get('property/requests/{id}/verification/file/{kind}', [PropertyRequestController::class, 'verificationFile']);
     Route::put('property/requests/{id}/verification/{target}', [PropertyRequestController::class, 'verificationDecision']);
 
-    Route::apiResource('property-categories', PropertyCategoryController::class)->except(['create', 'show', 'edit']);
+    Route::apiResource('property-categories', PropertyCategoryController::class)->except(['create', 'show', 'edit'])->middleware('admin.write');
     Route::get('property-categories/all', [PropertyCategoryController::class, 'all']);
 
     Route::put('properties/{property}/properties-setting', [PropertySettingController::class, 'update']);
@@ -138,6 +140,23 @@ Route::middleware('auth:sanctum')->prefix('admin')->group(function () {
     // VAT and service charge: platform rates (admin) and each property's own default (owner or admin)
     Route::get('settings/tax',  [\App\Http\Controllers\API\Admin\Property\TaxRateController::class, 'platform']);
     Route::put('settings/tax',  [\App\Http\Controllers\API\Admin\Property\TaxRateController::class, 'updatePlatform']);
+
+    // money: commission and payout rules (platform admin only)
+    Route::prefix('money')->controller(\App\Http\Controllers\API\Admin\Money\MoneySettingsController::class)->group(function () {
+        Route::get('settings',               'show');
+        Route::put('settings',               'update');
+        Route::post('settings/confirm',      'confirm');
+        Route::get('properties/{property}',  'property');
+        Route::put('properties/{property}',  'updateProperty');
+    });
+    Route::prefix('money')->controller(\App\Http\Controllers\API\Admin\Money\MoneyReportController::class)->group(function () {
+        Route::get('overview',                'overview');
+        Route::get('vendors',                 'vendors');
+        Route::get('vendors/{vendor}',        'vendor')->whereNumber('vendor');
+        Route::get('bookings/{number}',       'booking')->whereNumber('number');
+        Route::post('bookings/{number}/review', 'review')->whereNumber('number');
+        Route::get('lines',                   'lines');
+    });
 
     // the legal pages the admin edits
     Route::get('legal',         [\App\Http\Controllers\API\Admin\Legal\LegalDocumentController::class, 'index']);

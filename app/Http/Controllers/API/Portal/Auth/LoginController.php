@@ -6,6 +6,8 @@ use App\Http\Controllers\BaseController;
 use App\Http\Requests\Auth\LoginRequest;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Str;
 
 class LoginController extends BaseController
 {
@@ -18,9 +20,20 @@ class LoginController extends BaseController
         try {
             $credentials = $request->only('email', 'password');
 
+            // Guessing passwords: 5 wrong tries for one email from one address, then a one-minute wait
+            $limitKey = 'login:' . Str::lower((string) $request->input('email')) . '|' . $request->ip();
+
+            if (RateLimiter::tooManyAttempts($limitKey, 5)) {
+                return $this->sendError('Too many sign-in attempts. Please wait ' . RateLimiter::availableIn($limitKey) . ' seconds and try again.', [], 429);
+            }
+
             if (!auth()->attempt($credentials)) {
+                RateLimiter::hit($limitKey, 60);
+
                 return $this->sendError('These credentials do not match our records', ['error' => 'Unauthorized'], 401);
             }
+
+            RateLimiter::clear($limitKey);
 
             $user = auth()->user();
 
@@ -39,7 +52,9 @@ class LoginController extends BaseController
             ], 'User logged in successfully.');
 
         } catch (\Exception $e) {
-            return $this->sendError('Error', ['errors' => $e->getMessage()], 500);
+            report($e);
+
+            return $this->sendError('Something went wrong. Please try again.', [], 500);
         }
     }
 

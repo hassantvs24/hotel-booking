@@ -30,7 +30,8 @@ class RefundQuoteService
             return $this->ineligible('The bank transaction reference is missing.');
         }
 
-        $checkIn = CarbonImmutable::parse($booking->checkin)->startOfDay();
+        // Check-in day starts at midnight where the hotel is (Dhaka), not at midnight UTC, which is six hours later
+        $checkIn = CarbonImmutable::parse(substr((string) $booking->checkin, 0, 10), config('refund.timezone', 'Asia/Dhaka'))->startOfDay();
         $hoursBeforeCheckIn = (int) floor(now()->diffInHours($checkIn, false));
 
         if ($hoursBeforeCheckIn <= 0) {
@@ -38,11 +39,12 @@ class RefundQuoteService
         }
 
         $property = $booking->room?->property;
-        $tier = $this->policies->resolveTier($property, $hoursBeforeCheckIn);
+        // the rules the guest was promised when booking, not whatever the owner has set since
+        $tier = $this->policies->resolveTierForBooking($booking, $property, $hoursBeforeCheckIn);
 
         if (!$tier) {
             return $this->ineligible(
-                $this->policies->tiersFor($property) === []
+                $this->policies->tiersForBooking($booking, $property) === []
                     ? 'This property\'s policy does not allow refunds.'
                     : 'This booking is outside the refundable period of the property\'s refund policy.'
             );
@@ -83,7 +85,7 @@ class RefundQuoteService
             'hours_before_checkin' => $hoursBeforeCheckIn,
             'policy_label' => $tier['label'],
             'refund_percentage' => (int) $tier['refund_percentage'],
-            'policy_lines' => $this->policies->lines($this->policies->tiersFor($property)),
+            'policy_lines' => $this->policies->lines($this->policies->tiersForBooking($booking, $property)),
             'original_amount' => $this->fromCents($originalCents),
             'remaining_refundable_balance' => $this->fromCents($remainingCents),
             'cancellation_fee' => $this->fromCents($feeCents),

@@ -2,7 +2,9 @@
 
 // SSLCommerz configuration
 
-$apiDomain = env('SSLCZ_TESTMODE', true) ? "https://sandbox.sslcommerz.com" : "https://securepay.sslcommerz.com";
+// SSLCZ_TESTMODE=false in .env means the LIVE gateway. Every part of the site (new payments, checking a payment, refunds) reads it from here.
+$sandbox   = filter_var(env('SSLCZ_TESTMODE', true), FILTER_VALIDATE_BOOL);
+$apiDomain = $sandbox ? "https://sandbox.sslcommerz.com" : "https://securepay.sslcommerz.com";
 return [
     'apiCredentials' => [
         'store_id' => env("SSLCOMM_STORE_ID"),
@@ -15,6 +17,7 @@ return [
         'refund_payment' => "/validator/api/merchantTransIDvalidationAPI.php",
         'refund_status' => "/validator/api/merchantTransIDvalidationAPI.php",
     ],
+    'sandbox' => $sandbox,
     'apiDomain' => $apiDomain,
     'refund' => [
         'timeout' => (int) env('SSLCZ_REFUND_TIMEOUT', 20),

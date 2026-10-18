@@ -614,6 +614,11 @@ class BookingController extends BaseController
      */
     private function confirmBooking(Booking $booking, Request $request): void
     {
+        // a callback that comes again after a refund must not bring the booking back to life
+        if ($booking->payment_status === 'refunded' || $booking->status === 'refunded') {
+            return;
+        }
+
         $booking->update([
             'status'         => 'approved',
             'payment_status' => 'paid',

@@ -20,6 +20,9 @@ return [
 
     'currency' => 'BDT',
 
+    // Where the hotels are: "check-in day starts" means midnight here
+    'timezone' => 'Asia/Dhaka',
+
     'reasons' => [
         'change_of_plans' => 'Change of travel plans',
         'medical_emergency' => 'Medical emergency',

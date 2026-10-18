@@ -9,9 +9,12 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Booking extends Model
 {
+    /** refund_policy: the refund rules the guest was shown when booking (see RefundPolicyService::snapshot) */
+    protected $casts = ['refund_policy' => 'array'];
+
     public function user(): BelongsTo
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(User::class)->withTrashed();
     }
 
     public function room(): BelongsTo

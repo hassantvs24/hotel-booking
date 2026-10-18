@@ -180,6 +180,10 @@ Route::prefix('portal')->group(function () {
     // rehydrated in time. LocalConfirmController checks app()->isLocal()
     Route::post('/booking/confirm-local', [\App\Http\Controllers\API\Portal\LocalConfirmController::class, 'confirm']);
 
+    // The success page (live and local): asks SSLCommerz whether the payment was really made, then confirms. No login needed,
+    // for the same reason; it can only ever confirm a payment SSLCommerz itself vouches for.
+    Route::post('/booking/confirm-payment', [\App\Http\Controllers\API\Portal\LocalConfirmController::class, 'confirmPayment'])->middleware('throttle:30,1');
+
     // ── Notifications ───────────────────────────────────
     Route::prefix('notifications')
         ->middleware('auth:sanctum')

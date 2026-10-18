@@ -6,6 +6,7 @@ use App\Http\Controllers\BaseController;
 use App\Models\Booking;
 use App\Models\Room;
 use App\Repositories\Admin\BookingRepository;
+use App\Services\Booking\PaidBookingGuard;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -63,7 +64,7 @@ class BookingController extends BaseController
             'room.facilities',
             'user',
             'transaction',
-        ])->findOrFail($id);
+        ])->whereIn('id', $this->visible()->select('id'))->findOrFail($id);
 
         return $this->sendSuccess($booking);
     }
@@ -71,7 +72,7 @@ class BookingController extends BaseController
     public function update(Request $request, BookingRepository $repo, $id): JsonResponse
     {
         try {
-            $booking = $repo->getModel($id);
+            $booking = $this->visible()->findOrFail($id);
 
             $data = $request->validate([
                 'adult'    => 'sometimes|integer|min:1',
@@ -80,6 +81,16 @@ class BookingController extends BaseController
                 'checkin'  => 'sometimes|date',
                 'checkout' => 'sometimes|date|after:checkin',
             ]);
+
+            // a vendor can only move a booking to a room of their own
+            if (isset($data['room_id']) && $this->isVendor() && !Room::where('id', $data['room_id'])->whereIn('property_id', auth()->user()->properties()->pluck('id'))->exists()) {
+                return $this->sendError('You can only choose a room of your own property.', [], 422);
+            }
+
+            // once the guest has paid, the room and dates are fixed: money and refund rules depend on them
+            if ($why = app(PaidBookingGuard::class)->whyNotChange($booking, $data)) {
+                return $this->sendError($why, [], 422);
+            }
 
             $booking = $repo->update($data, $booking);
 
@@ -101,7 +112,11 @@ class BookingController extends BaseController
     public function destroy(BookingRepository $repo, $id): JsonResponse
     {
         try {
-            $booking = $repo->getModel($id);
+            $booking = $this->visible()->findOrFail($id);
+
+            if ($why = app(PaidBookingGuard::class)->whyNotDelete($booking)) {
+                return $this->sendError($why, [], 422);
+            }
 
             // Free the room
             Room::where('id', $booking->room_id)->update([
@@ -125,7 +140,12 @@ class BookingController extends BaseController
                 'status' => 'required|string|in:pending,reserved,approved,cancelled,refunded,completed',
             ]);
 
-            $booking = Booking::findOrFail($id);
+            $booking = $this->visible()->findOrFail($id);
+
+            if ($why = app(PaidBookingGuard::class)->whyNotStatus($booking, $request->input('status'))) {
+                return $this->sendError($why, [], 422);
+            }
+
             $booking->update(['status' => $request->input('status')]);
 
             // Free room if cancelled/refunded
@@ -185,5 +205,25 @@ class BookingController extends BaseController
             ->get(['id', 'name']);
 
         return $this->sendSuccess(['rooms' => $availableRooms]);
+    }
+
+    private function isVendor(): bool
+    {
+        $user = auth()->user();
+
+        return $user->is_merchant && !$user->is_admin;
+    }
+
+    /** The bookings this person may touch: all of them for the admin, only the bookings of their own properties for a vendor */
+    private function visible()
+    {
+        $query = Booking::query();
+
+        if ($this->isVendor()) {
+            $propertyIds = auth()->user()->properties()->pluck('id');
+            $query->whereHas('room', fn ($q) => $q->whereIn('property_id', $propertyIds));
+        }
+
+        return $query;
     }
 }

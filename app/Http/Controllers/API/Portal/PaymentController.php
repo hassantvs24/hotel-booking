@@ -23,26 +23,42 @@ use Illuminate\Support\Facades\Log;
 
 class PaymentController extends BaseController
 {
+    // Everything about SSLCommerz comes from config/sslcommerz.php (which reads .env). Nothing is read straight from
+    // env() here, and there are no built-in store credentials: on a site that caches its config, env() returns nothing,
+    // and a built-in fallback would quietly make real guests pay a test store.
     private function storeId(): string
     {
-        return config('services.sslcommerz.store_id', env('SSLCOMM_STORE_ID', 'hotel674dd7e831e76'));
+        return (string) config('sslcommerz.apiCredentials.store_id');
     }
 
     private function storePassword(): string
     {
-        return config('services.sslcommerz.store_password', env('SSLCOMM_STORE_PASSWORD', 'hotel674dd7e831e76@ssl'));
+        return (string) config('sslcommerz.apiCredentials.store_password');
     }
 
     private function isSandbox(): bool
     {
-        return config('services.sslcommerz.sandbox', true);
+        return (bool) config('sslcommerz.sandbox', true);
     }
 
     private function validationUrl(): string
     {
-        return $this->isSandbox()
-            ? 'https://sandbox.sslcommerz.com/validator/api/validationserverAPI.php'
-            : 'https://securepay.sslcommerz.com/validator/api/validationserverAPI.php';
+        return rtrim((string) config('sslcommerz.apiDomain'), '/') . config('sslcommerz.apiUrl.order_validate');
+    }
+
+    /** The gateway session for a new payment, talking to the test server or the live one as the settings say */
+    protected function paymentGateway(): Payments
+    {
+        $frontendUrl = rtrim((string) config('app.frontend_url'), '/');
+
+        return (new Payments(SSLCommSession::create([
+            'store_id'       => $this->storeId(),
+            'store_password' => $this->storePassword(),
+            'success_url'    => $frontendUrl . '/success',
+            'fail_url'       => $frontendUrl . '/failed',
+            'cancel_url'     => $frontendUrl . '/cancelled',
+            'currency'       => 'BDT',
+        ])))->setMode($this->isSandbox() ? 'sandbox' : 'live');
     }
 
     // ══════════════════════════════════════════════════════
@@ -141,29 +157,40 @@ class PaymentController extends BaseController
             return $this->sendError('Invalid callback payload.', [], 422);
         }
 
-        // ── Verify with SSLCommerz Validation API ─────────
-        $verified = $this->verifyPayment($valId);
-
-        if (!$verified) {
-            Log::error('SSLComm payment validation FAILED', ['tran_id' => $tranId, 'val_id' => $valId]);
-            return $this->sendError('Payment could not be verified.', [], 422);
+        // A live site must never accept payments validated on the SSLCommerz test server (anyone can make those for free)
+        if (app()->isProduction() && $this->isSandbox()) {
+            Log::critical('SSLComm is in sandbox mode on a production site: payment callbacks are refused until services.sslcommerz.sandbox is false');
+            return $this->sendError('The payment gateway is not ready.', [], 503);
         }
 
         // ── tran_id is either a booking_number or a group_ref ──
-        $group = BookingGroup::where('group_ref', $tranId)->first();
+        $group = BookingGroup::where('group_ref', $tranId)->with('bookings')->first();
 
         if ($group) {
-            return $this->confirmGroupPayment($group, $request);
+            $numbers  = $group->bookings->pluck('booking_number')->all();
+            $expected = $this->groupTotal($group);
+        } else {
+            $booking = Booking::where('booking_number', $tranId)->with('room')->first();
+
+            if (!$booking) {
+                Log::error('SSLComm callback — booking not found', ['tran_id' => $tranId]);
+                return $this->sendError('Booking not found.', [], 404);
+            }
+
+            $numbers  = [$booking->booking_number];
+            $expected = (float) $booking->amount;
         }
 
-        $booking = Booking::where('booking_number', $tranId)->with('room')->first();
+        // ── Ask SSLCommerz, and check its answer is about THIS payment and THIS amount ──
+        $validated = $this->validatePayment($valId, (string) $tranId, $expected, $numbers);
 
-        if (!$booking) {
-            Log::error('SSLComm callback — booking not found', ['tran_id' => $tranId]);
-            return $this->sendError('Booking not found.', [], 404);
+        if (!$validated) {
+            return $this->sendError('Payment could not be verified.', [], 422);
         }
 
-        return $this->confirmSingleBooking($booking, $request);
+        return $group
+            ? $this->confirmGroupPayment($group, $request, $validated)
+            : $this->confirmSingleBooking($booking, $request, $validated);
     }
 
     // ══════════════════════════════════════════════════════
@@ -198,52 +225,129 @@ class PaymentController extends BaseController
     // ══════════════════════════════════════════════════════
 
     /**
-     * Verify the val_id against SSLCommerz's server-side
-     * Validation API. This is the ONLY trustworthy check —
-     * the POST callback itself can be spoofed by anyone.
+     * Ask SSLCommerz's Validation API about a payment, and accept it only when its answer matches what we asked the
+     * guest to pay. The callback itself can be sent by anyone, so a "VALID" status alone is not enough: a guest could
+     * pay a small booking and reuse that payment's val_id to "confirm" a bigger one.
+     *
+     * Returns SSLCommerz's own answer when everything matches, otherwise null (and says why in the log).
+     *
+     * @param  float $expected       what the guest was asked to pay, in BDT
+     * @param  int[] $bookingNumbers the bookings this payment is meant to cover
+     * @return array<string,mixed>|null
      */
-    private function verifyPayment(string $valId): bool
+    private function validatePayment(string $valId, string $tranId, float $expected, array $bookingNumbers): ?array
     {
+        $reject = function (string $why, array $extra = []) use ($valId, $tranId, $expected) {
+            Log::critical('SSLComm payment REJECTED: ' . $why, ['tran_id' => $tranId, 'val_id' => $valId, 'expected' => $expected] + $extra);
+
+            return null;
+        };
+
         try {
             $response = Http::get($this->validationUrl(), [
-                'val_id'    => $valId,
-                'store_id'  => $this->storeId(),
+                'val_id'       => $valId,
+                'store_id'     => $this->storeId(),
                 'store_passwd' => $this->storePassword(),
-                'format'    => 'json',
+                'format'       => 'json',
             ]);
-
-            if (!$response->successful()) {
-                Log::error('SSLComm validation API request failed', ['status' => $response->status()]);
-                return false;
-            }
-
-            $data = $response->json();
-
-            $statusOk = in_array($data['status'] ?? null, ['VALID', 'VALIDATED']);
-
-            if (!$statusOk) {
-                Log::warning('SSLComm validation returned non-valid status', $data);
-            }
-
-            return $statusOk;
-
         } catch (\Exception $e) {
-            Log::error('SSLComm validation exception: ' . $e->getMessage());
-            return false;
+            return $reject('validation request failed: ' . $e->getMessage());
         }
+
+        if (!$response->successful()) {
+            return $reject('validation API answered HTTP ' . $response->status());
+        }
+
+        $data = $response->json();
+
+        if (!is_array($data) || !in_array($data['status'] ?? null, ['VALID', 'VALIDATED'], true)) {
+            return $reject('status is not VALID', ['answer' => $data]);
+        }
+
+        // 1. It must be the payment for this booking or group, not some other payment on the store
+        if ((string) ($data['tran_id'] ?? '') !== $tranId) {
+            return $reject('the payment belongs to another transaction', ['answer_tran_id' => $data['tran_id'] ?? null]);
+        }
+
+        // 2. In BDT, and for the full amount (a single paisa under is refused)
+        $currency = strtoupper((string) ($data['currency_type'] ?? $data['currency'] ?? 'BDT'));
+        if ($currency !== 'BDT') {
+            return $reject('currency is not BDT', ['currency' => $currency]);
+        }
+
+        if (!isset($data['amount']) || !is_numeric($data['amount']) || abs((float) $data['amount'] - $expected) > 0.001) {
+            return $reject('the amount paid is not the amount due', ['paid' => $data['amount'] ?? null]);
+        }
+
+        // 3. The bank's own reference must exist, and must not already belong to a payment for different bookings
+        $bank = (string) ($data['bank_tran_id'] ?? '');
+        if ($bank === '') {
+            return $reject('no bank transaction id in the answer');
+        }
+
+        $usedElsewhere = Transaction::query()
+            ->where('transaction_reference', $bank)
+            ->whereNotIn('booking_id', $bookingNumbers)
+            ->exists();
+
+        if ($usedElsewhere) {
+            return $reject('this payment was already used for other bookings');
+        }
+
+        if ((string) ($data['risk_level'] ?? '0') === '1') {
+            Log::warning('SSLComm says this payment is risky: it is held for a look in the money records', ['tran_id' => $tranId]);
+        }
+
+        return $data;
     }
 
+    /** What a group of bookings costs: the bookings added up. If the group's own total disagrees, nothing is accepted. */
+    private function groupTotal(BookingGroup $group): float
+    {
+        $sum = round((float) $group->bookings->sum('amount'), 2);
+
+        if (abs($sum - (float) $group->total_amount) > 0.001) {
+            Log::critical('Booking group total does not match its bookings', ['group_ref' => $group->group_ref, 'group_total' => $group->total_amount, 'sum' => $sum]);
+
+            return -1.0;   // no payment can equal this
+        }
+
+        return $sum;
+    }
+
+    /** What is kept about a payment: the bank's own answer (amount, fee, card type, risk) next to the callback as it came in */
+    private function paymentMeta(Request $request, array $validated): string
+    {
+        return json_encode(['callback' => $request->all(), 'validated' => $validated]);
+    }
     /**
      * Confirm a single-room booking after validated payment.
      */
-    private function confirmSingleBooking(Booking $booking, Request $request): JsonResponse
+    private function confirmSingleBooking(Booking $booking, Request $request, array $validated): JsonResponse
     {
         if ($booking->payment_status === 'paid') {
             // Already processed — IPN can fire more than once
             return $this->sendSuccess(['message' => 'Already confirmed.']);
         }
 
-        DB::transaction(function () use ($booking, $request) {
+        // A bank callback that arrives again after the booking was refunded must not bring it back to life
+        if ($booking->payment_status === 'refunded' || $booking->status === 'refunded') {
+            return $this->sendSuccess(['message' => 'Already processed.']);
+        }
+
+        $alreadyDone = false;
+
+        DB::transaction(function () use ($booking, $request, $validated, &$alreadyDone) {
+            // The same payment can be reported twice at the very same moment (the guest's browser, the bank's server, the
+            // 5-minute check). The second one waits here, then sees it is done: one payment record, one email.
+            $locked = Booking::where('id', $booking->id)->lockForUpdate()->first();
+
+            if (!$locked || in_array($locked->payment_status, ['paid', 'refunded'], true) || $locked->status === 'refunded') {
+                $alreadyDone = true;
+
+                return;
+            }
+
             $booking->update([
                 'status'         => 'approved',
                 'payment_status' => 'paid',
@@ -258,12 +362,16 @@ class PaymentController extends BaseController
                     'user_id'               => $booking->user_id,
                     'amount'                => $booking->amount,
                     'payment_method'        => 'SSLComm',
-                    'transaction_reference' => $request->input('bank_tran_id'),
+                    'transaction_reference' => $validated['bank_tran_id'],
                     'status'                => 'completed',
-                    'meta'                  => json_encode($request->all()),
+                    'meta'                  => $this->paymentMeta($request, $validated),
                 ]
             );
         });
+
+        if ($alreadyDone) {
+            return $this->sendSuccess(['message' => 'Already confirmed.']);
+        }
 
         $booking->load(['room', 'room.property', 'user', 'transaction']);
 
@@ -291,17 +399,28 @@ class PaymentController extends BaseController
     /**
      * Confirm all bookings inside a group after validated payment.
      */
-    private function confirmGroupPayment(BookingGroup $group, Request $request): JsonResponse
+    private function confirmGroupPayment(BookingGroup $group, Request $request, array $validated): JsonResponse
     {
         if ($group->payment_status === 'paid') {
             return $this->sendSuccess(['message' => 'Already confirmed.']);
         }
 
-        DB::transaction(function () use ($group, $request) {
+        $alreadyDone = false;
+
+        DB::transaction(function () use ($group, $request, $validated, &$alreadyDone) {
+            // the same payment reported twice at the same moment: the second one waits here and finds it done
+            $locked = BookingGroup::where('id', $group->id)->lockForUpdate()->first();
+
+            if (!$locked || $locked->payment_status === 'paid') {
+                $alreadyDone = true;
+
+                return;
+            }
+
             $group->load('bookings.room.property');
 
             foreach ($group->bookings as $booking) {
-                if ($booking->payment_status === 'paid') continue;
+                if (in_array($booking->payment_status, ['paid', 'refunded'], true) || $booking->status === 'refunded') continue;
 
                 $booking->update([
                     'status'         => 'approved',
@@ -316,15 +435,19 @@ class PaymentController extends BaseController
                         'user_id'               => $booking->user_id,
                         'amount'                => $booking->amount,
                         'payment_method'        => 'SSLComm',
-                        'transaction_reference' => $request->input('bank_tran_id'),
+                        'transaction_reference' => $validated['bank_tran_id'],
                         'status'                => 'completed',
-                        'meta'                  => json_encode($request->all()),
+                        'meta'                  => $this->paymentMeta($request, $validated),
                     ]
                 );
             }
 
             $group->update(['payment_status' => 'paid']);
         });
+
+        if ($alreadyDone) {
+            return $this->sendSuccess(['message' => 'Already confirmed.']);
+        }
 
         $group->load('bookings.room.property.user');
         $firstBooking = $group->bookings->first()->load(['room', 'room.property', 'user', 'transaction']);
@@ -413,6 +536,10 @@ class PaymentController extends BaseController
      */
     private function initiateSSLPayment(Booking $booking, User $user, ?BookingGroup $group = null)
     {
+        if ($group && $this->groupTotal($group->loadMissing('bookings')) < 0) {
+            return $this->sendError('The price of this booking changed. Please start the booking again.', [], 422);
+        }
+
         $amount    = $group ? $group->total_amount : $booking->amount;
         $tranId    = $group ? $group->group_ref : $booking->booking_number;
 
@@ -422,16 +549,7 @@ class PaymentController extends BaseController
         // happens via SSLComm's server-to-server IPN call to
         // /payment/success which is registered separately in routes
         // and is NOT the same as this success_url.
-        $frontendUrl = rtrim(env('APP_FRONTEND_URL', 'http://hotel-booking.test:5173'), '/');
-
-        $paymentSession = new Payments(SSLCommSession::create([
-            'store_id'       => $this->storeId(),
-            'store_password' => $this->storePassword(),
-            'success_url'    => $frontendUrl . '/success',
-            'fail_url'       => $frontendUrl . '/failed',
-            'cancel_url'     => $frontendUrl . '/cancelled',
-            'currency'       => 'BDT',
-        ]));
+        $paymentSession = $this->paymentGateway();
 
         // Profile may not exist yet — guard against null
         $profile = $user->profile;

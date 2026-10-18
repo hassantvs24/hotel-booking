@@ -12,7 +12,7 @@ class LegalConsent extends Model
 
     public function user(): BelongsTo
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(User::class)->withTrashed();
     }
 
     /** Record that this owner agreed to the host documents, as they read at this moment (once per submission) */

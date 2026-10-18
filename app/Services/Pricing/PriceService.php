@@ -161,6 +161,8 @@ class PriceService
             'vat_amount'             => $stay['vat'],
             'vat_percent'            => $stay['vat_percent'],
             'service_charge_percent' => $stay['service_charge_percent'],
+            // the refund rules the guest is shown now: they stay with this booking even if the owner changes the policy later
+            'refund_policy'          => app(\App\Services\Refund\RefundPolicyService::class)->snapshot($room?->property),
         ];
     }
 

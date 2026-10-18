@@ -4,7 +4,13 @@ namespace App\Http\Controllers\API\Admin\ACL;
 
 use App\Http\Controllers\BaseController;
 use App\Http\Requests\Admin\Acl\UserRequest;
+use App\Models\Booking;
+use App\Models\Property;
+use App\Models\Room;
+use App\Models\User;
 use App\Repositories\Admin\UserRepository;
+use App\Services\Booking\PaidBookingGuard;
+use App\Services\Room\RoomUsage;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -125,12 +131,50 @@ class UserController extends BaseController
                 return $this->sendError('User not found.');
             }
 
+            if ($user->id === auth()->id()) {
+                DB::rollBack();
+
+                return $this->sendError('You cannot delete your own account.', [], 422);
+            }
+
+            if ($user->is_admin && User::admins()->where('id', '!=', $user->id)->doesntExist()) {
+                DB::rollBack();
+
+                return $this->sendError('This is the only admin. Make someone else an admin before deleting this account.', [], 422);
+            }
+
+            // A guest who is about to stay, or an owner whose property is about to host a paid stay, cannot just disappear.
+            $ownRooms = fn ($q) => $q->whereHas('property', fn ($p) => $p->where('user_id', $user->id));
+            $upcoming = app(PaidBookingGuard::class)->upcomingWithMoney(
+                Booking::query()->where(fn ($q) => $q->where('user_id', $user->id)->orWhereHas('room', $ownRooms))
+            );
+
+            if ($upcoming->isNotEmpty()) {
+                DB::rollBack();
+
+                return $this->sendError(
+                    "This user still has {$upcoming->count()} paid booking(s) whose stay is not over yet (as the guest, or as the owner of the property). Refund them, or wait until the stays are over.",
+                    [],
+                    422
+                );
+            }
+
+            // The account is hidden, not erased: bookings, payments, refunds, reviews and agreements stay for the records.
+            $propertyIds = Property::where('user_id', $user->id)->pluck('id');
+            if ($propertyIds->isNotEmpty()) {
+                Property::whereIn('id', $propertyIds)->where('status', 'Published')->update(['status' => 'Unpublished']);
+                app(RoomUsage::class)->release(Room::whereIn('property_id', $propertyIds)->pluck('id')->all());
+            }
+
+            $user->tokens()->delete();            // nobody can stay signed in as this account
             $user->roles()->detach();
-            $userRepository->delete($user->id);
+            $user->email = substr('deleted-' . $user->id . '-' . $user->email, 0, 190);   // frees the address for a new sign-up
+            $user->save();
+            $userRepository->delete($user->id);   // soft delete
 
             DB::commit();
 
-            return $this->sendSuccess([], 'User deleted successfully.');
+            return $this->sendSuccess([], 'User deleted. Their bookings, payments and reviews are kept for the records.');
 
         } catch (\Exception $e) {
             DB::rollBack();

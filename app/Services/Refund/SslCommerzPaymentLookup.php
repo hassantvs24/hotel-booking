@@ -14,6 +14,9 @@ use Illuminate\Support\Facades\Log;
  */
 class SslCommerzPaymentLookup
 {
+    /** True when the last question could not be put to SSLCommerz at all (no answer / error), as opposed to "no payment found" */
+    public bool $failed = false;
+
     /**
      * The payment as SSLCommerz knows it, or null when no valid payment exists for this id.
      *
@@ -21,6 +24,8 @@ class SslCommerzPaymentLookup
      */
     public function findPaid(string $tranId): ?array
     {
+        $this->failed = false;
+
         $storeId       = config('sslcommerz.apiCredentials.store_id');
         $storePassword = config('sslcommerz.apiCredentials.store_password');
 
@@ -35,12 +40,15 @@ class SslCommerzPaymentLookup
             );
 
             if (!$response->successful()) {
+                $this->failed = true;
+
                 return null;
             }
 
             $elements = $response->json('element') ?? [];
         } catch (\Throwable $e) {
             Log::warning('SSLCommerz payment lookup failed: ' . $e->getMessage());
+            $this->failed = true;
 
             return null;
         }

@@ -1,6 +1,5 @@
 <?php
 
-use App\Http\Controllers\API\Portal\PaymentController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 
@@ -17,9 +16,3 @@ Route::middleware('auth')->group(function () {
 });
 
 require __DIR__ . '/auth.php';
-
-Route::prefix('payments')->name('payment.')->group(function () {
-    Route::post('/success', [PaymentController::class, 'success'])->name('success');
-    Route::post('/fail', [PaymentController::class, 'fail'])->name('fail');
-    Route::post('/cancel', [PaymentController::class, 'cancel'])->name('cancel');
-});

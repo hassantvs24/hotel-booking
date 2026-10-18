@@ -17,6 +17,9 @@ class PropertySettingController extends BaseController
 
     public function update(Request $request, Property $property): JsonResponse
     {
+        // an owner changes their own property's settings, never another owner's
+        abort_unless($request->user()->is_admin || $property->user_id === $request->user()->id, 404);
+
         try {
             DB::beginTransaction();
 
@@ -60,7 +63,8 @@ class PropertySettingController extends BaseController
                 $property->update([
                     'seo_meta' => $data['seo_meta'],
                     'seo_title' => $data['seo_title'],
-                    'status' => $data['status'],
+                    // an owner may publish or unpublish, but a property still waiting for the admin's approval stays pending
+                    'status' => ($request->user()->is_admin || $property->status !== Property::STATUS_PENDING) ? $data['status'] : $property->status,
                 ]);
             }
 

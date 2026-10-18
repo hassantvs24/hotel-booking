@@ -28,6 +28,36 @@ class LocalConfirmController extends BaseController
     //  IMPORTANT: Remove or disable this route before going live.
     // ══════════════════════════════════════════════════════
 
+    /**
+     * The success page asks this once the guest is back from the bank. It works on a LIVE site too: it never believes the
+     * browser, it asks SSLCommerz whether this payment really was made (and for how much) and confirms only then.
+     * POST /portal/booking/confirm-payment
+     */
+    public function confirmPayment(Request $request): JsonResponse
+    {
+        $request->validate(['tran_id' => 'required|string|max:64']);
+
+        $tranId  = (string) $request->input('tran_id');
+        $group   = BookingGroup::where('group_ref', $tranId)->first();
+        $booking = $group ? null : Booking::where('booking_number', $tranId)->first();
+        $subject = $group ?? $booking;
+
+        if (!$subject) {
+            return $this->sendError('Booking not found.', [], 404);
+        }
+
+        if ($subject->payment_status === 'paid') {
+            return $this->sendSuccess(['status' => 'paid'], 'Payment confirmed.');
+        }
+
+        if ($real = $this->confirmRealPayment($tranId, $request)) {
+            return $real;
+        }
+
+        // not paid (yet): the page waits a little and asks again; a payment SSLCommerz knows of is also picked up within 5 minutes
+        return $this->sendError('We have not received the bank\'s confirmation yet.', ['pending' => true], 409);
+    }
+
     public function confirm(Request $request): JsonResponse
     {
         // Only allow in local/development environment
@@ -125,7 +155,7 @@ class LocalConfirmController extends BaseController
             $group->load('bookings.room.property');
 
             foreach ($group->bookings as $booking) {
-                if ($booking->payment_status === 'paid') continue;
+                if (in_array($booking->payment_status, ['paid', 'refunded'], true) || $booking->status === 'refunded') continue;
 
                 $booking->update([
                     'status'         => 'approved',
@@ -182,6 +212,10 @@ class LocalConfirmController extends BaseController
     {
         if ($booking->payment_status === 'paid') {
             return $this->sendSuccess(['message' => 'Already confirmed.', 'status' => 'paid']);
+        }
+
+        if ($booking->payment_status === 'refunded' || $booking->status === 'refunded') {
+            return $this->sendSuccess(['message' => 'Already processed.', 'status' => 'refunded']);
         }
 
         DB::transaction(function () use ($booking) {

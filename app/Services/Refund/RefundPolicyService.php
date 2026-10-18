@@ -2,6 +2,7 @@
 
 namespace App\Services\Refund;
 
+use App\Models\Booking;
 use App\Models\Property;
 use Illuminate\Validation\ValidationException;
 
@@ -57,6 +58,61 @@ class RefundPolicyService
             ->sortByDesc('minimum_hours_before_checkin')
             ->values()
             ->all();
+    }
+
+    /**
+     * A copy of the policy as it stands now, ready to be saved with a booking. It holds the finished tiers (the platform
+     * default included), so neither a later change by the owner nor a later change of the platform default can touch it.
+     */
+    public function snapshot(?Property $property): array
+    {
+        $policy = $property?->refund_policy;
+        $custom = is_array($policy) && array_key_exists('tiers', $policy);
+
+        return [
+            'source' => $custom ? 'property' : 'platform',
+            'preset' => $custom ? ($policy['preset'] ?? 'custom') : 'platform',
+            'tiers'  => array_map(fn (array $t) => [
+                'minimum_hours_before_checkin' => (int) $t['minimum_hours_before_checkin'],
+                'refund_percentage'            => (int) $t['refund_percentage'],
+                'label'                        => (string) $t['label'],
+            ], $this->tiersFor($property)),
+        ];
+    }
+
+    /**
+     * The tiers that apply to ONE booking: the copy saved when it was made, or, for a booking made before copies
+     * were saved, the property's policy as it is now.
+     */
+    public function tiersForBooking(Booking $booking, ?Property $property): array
+    {
+        $saved = $booking->refund_policy;
+
+        if (is_array($saved) && isset($saved['tiers']) && is_array($saved['tiers'])) {
+            return collect($saved['tiers'])
+                ->map(fn (array $t) => [
+                    'minimum_hours_before_checkin' => (int) $t['minimum_hours_before_checkin'],
+                    'refund_percentage'            => (int) $t['refund_percentage'],
+                    'label'                        => (string) ($t['label'] ?? ((int) $t['refund_percentage'] >= 100 ? 'Free cancellation' : (100 - (int) $t['refund_percentage']) . '% cancellation fee')),
+                ])
+                ->sortByDesc('minimum_hours_before_checkin')
+                ->values()
+                ->all();
+        }
+
+        return $this->tiersFor($property);
+    }
+
+    /** Like resolveTier(), for a booking: what it was promised when it was made */
+    public function resolveTierForBooking(Booking $booking, ?Property $property, int $hoursBeforeCheckIn): ?array
+    {
+        foreach ($this->tiersForBooking($booking, $property) as $tier) {
+            if ($hoursBeforeCheckIn >= (int) $tier['minimum_hours_before_checkin']) {
+                return (int) $tier['refund_percentage'] > 0 ? $tier : null;
+            }
+        }
+
+        return null;
     }
 
     /** The first tier a cancellation made this many hours before check-in falls into (null = no refund) */
