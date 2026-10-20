@@ -51,6 +51,7 @@ class PayoutController extends BaseController
             'meta'       => ['page' => $statements->currentPage(), 'last_page' => $statements->lastPage(), 'total' => $statements->total(), 'per_page' => $statements->perPage()],
             'totals'     => ['paid_paisa' => (int) $sums->paid, 'in_drafts_paisa' => (int) $sums->draft, 'drafts' => (int) $sums->drafts],
             'schedule'   => $this->schedule(),
+            'bank'       => ReconcileController::summary(),
             'problems'   => $this->payouts->problems(),
         ]);
     }

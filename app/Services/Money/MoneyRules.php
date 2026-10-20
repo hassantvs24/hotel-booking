@@ -22,6 +22,7 @@ class MoneyRules
         'payout_weekday'            => '1',
         'payout_wait_days'          => '2',
         'payout_minimum'            => '500',
+        'bank_check_days'           => '7',        // how many days between checks of what SSLCommerz paid into the bank
         'payout_settings_confirmed' => '0',
     ];
 

@@ -132,13 +132,11 @@ class SslCommerzRefundService
             ]));
         } catch (ConnectionException $exception) {
             Log::error('SSLCommerz refund connection failed', [
-                'message' => $exception->getMessage(),
+                'message' => SecretScrubber::describe($exception),
             ]);
 
-            throw new RuntimeException(
-                'Could not connect to SSLCommerz.',
-                previous: $exception
-            );
+            // no previous exception on purpose: its message carries the web address, and with it the store password
+            throw new RuntimeException('Could not connect to SSLCommerz.');
         }
 
         if (!$response->successful()) {

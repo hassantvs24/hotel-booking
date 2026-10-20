@@ -38,6 +38,7 @@ class MoneySettingsController extends BaseController
             'payout_weekday'     => ['required', 'integer', 'between:1,7'],
             'payout_wait_days'   => ['required', 'integer', 'between:0,30'],
             'payout_minimum'     => ['required', 'numeric', 'min:0', 'max:10000000'],
+            'bank_check_days'    => ['sometimes', 'integer', 'between:1,90'],
             'money_start_date'   => ['required', 'date_format:Y-m-d'],
         ]);
 
@@ -109,6 +110,7 @@ class MoneySettingsController extends BaseController
                 'payout_weekday'     => (int) $all['payout_weekday'],
                 'payout_wait_days'   => (int) $all['payout_wait_days'],
                 'payout_minimum'     => (float) $all['payout_minimum'],
+                'bank_check_days'    => (int) ($all['bank_check_days'] ?? 7),
                 'money_start_date'   => $this->rules->startsAt()->toDateString(),
             ],
             'confirmed' => $this->rules->isConfirmed(),
@@ -137,6 +139,9 @@ class MoneySettingsController extends BaseController
     {
         if (in_array($key, ['commission_percent', 'payout_minimum'], true)) {
             return rtrim(rtrim(number_format((float) $value, 2, '.', ''), '0'), '.');
+        }
+        if (in_array($key, ['payout_weekday', 'payout_wait_days', 'bank_check_days'], true)) {
+            return (string) (int) $value;   // "07" and 7 are one value
         }
 
         return (string) $value;

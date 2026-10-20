@@ -158,7 +158,7 @@ Route::middleware(['auth:sanctum', 'staff'])->prefix('admin')->group(function ()
         Route::get('lines',                   'lines');
     });
     // money: payouts to vendors (platform admin only)
-    Route::prefix('money')->controller(\App\Http\Controllers\API\Admin\Money\PayoutController::class)->group(function () {
+    Route::prefix('money')->middleware('admin.only')->controller(\App\Http\Controllers\API\Admin\Money\PayoutController::class)->group(function () {
         Route::get('payouts',                        'index');
         Route::post('payouts/generate',              'generate')->middleware('throttle:20,1');
         Route::get('payouts/{statement}',            'show')->where('statement', '[0-9]{1,18}');
@@ -169,6 +169,15 @@ Route::middleware(['auth:sanctum', 'staff'])->prefix('admin')->group(function ()
         Route::post('payouts/{statement}/reverse',   'reverse')->where('statement', '[0-9]{1,18}')->middleware('throttle:20,1');
         Route::post('bookings/{number}/hold',        'holdBooking')->where('number', '[0-9]{1,18}');
         Route::delete('bookings/{number}/hold',      'unholdBooking')->where('number', '[0-9]{1,18}');
+    });
+    // money: does SSLCommerz agree with our records, and did the bank receive what it should (platform admin only)
+    Route::prefix('money/reconcile')->middleware('admin.only')->controller(\App\Http\Controllers\API\Admin\Money\ReconcileController::class)->group(function () {
+        Route::get('/',                         'index');
+        Route::get('expected',                  'expected');
+        Route::post('run',                      'run')->middleware('throttle:10,1');
+        Route::post('problems/{check}/resolve', 'resolve')->where('check', '[0-9]{1,18}');
+        Route::post('deposits',                 'record')->middleware('throttle:20,1');
+        Route::post('deposits/{deposit}/void',  'void')->where('deposit', '[0-9]{1,18}')->middleware('throttle:20,1');
     });
     // where a vendor wants to be paid: the vendor's own account (the admin names the vendor)
     Route::get('payout-account', [\App\Http\Controllers\API\Admin\Money\PayoutAccountController::class, 'show']);

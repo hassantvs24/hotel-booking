@@ -18,6 +18,40 @@ class SslCommerzPaymentLookup
     public bool $failed = false;
 
     /**
+     * Everything SSLCommerz says about one transaction id, as it said it.
+     *
+     * @return array{reachable:bool, configured:bool, elements:array<int,array<string,mixed>>}
+     *         reachable = false when SSLCommerz could not be asked at all (no answer, an error); an unknown id still gives
+     *         reachable = true with an element whose status is INVALID
+     */
+    public function query(string $tranId): array
+    {
+        $storeId       = config('sslcommerz.apiCredentials.store_id');
+        $storePassword = config('sslcommerz.apiCredentials.store_password');
+
+        if (!$storeId || !$storePassword) {
+            return ['reachable' => false, 'configured' => false, 'elements' => []];
+        }
+
+        try {
+            $response = Http::acceptJson()->connectTimeout(5)->timeout(10)->get(
+                rtrim((string) config('sslcommerz.apiDomain'), '/') . config('sslcommerz.apiUrl.transaction_status'),
+                ['tran_id' => $tranId, 'store_id' => $storeId, 'store_passwd' => $storePassword, 'format' => 'json']
+            );
+
+            if (!$response->successful() || ($response->json('APIConnect') ?? 'DONE') !== 'DONE') {
+                return ['reachable' => false, 'configured' => true, 'elements' => []];
+            }
+
+            return ['reachable' => true, 'configured' => true, 'elements' => array_values($response->json('element') ?? [])];
+        } catch (\Throwable $e) {
+            Log::warning('SSLCommerz transaction query failed: ' . SecretScrubber::describe($e));
+
+            return ['reachable' => false, 'configured' => true, 'elements' => []];
+        }
+    }
+
+    /**
      * The payment as SSLCommerz knows it, or null when no valid payment exists for this id.
      *
      * @return array{tran_id:string, val_id:string, bank_tran_id:string, amount:float, status:string}|null
@@ -47,7 +81,7 @@ class SslCommerzPaymentLookup
 
             $elements = $response->json('element') ?? [];
         } catch (\Throwable $e) {
-            Log::warning('SSLCommerz payment lookup failed: ' . $e->getMessage());
+            Log::warning('SSLCommerz payment lookup failed: ' . SecretScrubber::describe($e));
             $this->failed = true;
 
             return null;

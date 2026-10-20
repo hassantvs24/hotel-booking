@@ -40,6 +40,7 @@ class MoneyReportController extends BaseController
             'problems'  => $this->report->problems(8),
             'settings'  => $this->settingsNote(),
             'today'     => $this->report->today(),
+            'reconcile' => ReconcileController::summary(),
         ]);
     }
 
