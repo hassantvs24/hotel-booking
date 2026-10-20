@@ -15,8 +15,9 @@ use Illuminate\Support\Facades\DB;
  *   ready     the guest has checked out and the wait is over: payable now
  *   not_due   the guest has not checked out yet, or the wait is not over
  *   held      a person must look first (the line is flagged "needs_review", or there is no check-out date)
- * The four money buckets always add up to what came in:
- *   gross = vat + platform_service + commission + vendor(ready + not_due + held)
+ *   paid      the line is in a payout statement the admin has marked PAID: the vendor already has this money
+ * The money buckets always add up to what came in:
+ *   gross = vat + platform_service + commission + vendor(ready + not_due + held + paid_out)
  */
 class MoneyReport
 {
@@ -57,11 +58,83 @@ class MoneyReport
     /** Which bucket one ledger line belongs to */
     public function bucketOf(LedgerEntry $e): string
     {
+        if ($this->isPaidOut($e->id)) {
+            return 'paid';
+        }
+
         if ($e->hasFlag('needs_review') || $e->hasFlag('gateway_risk') || !$e->checkout_date || $this->checks->reasonFor($e->booking_number)) {
             return 'held';
         }
 
         return $e->checkout_date->toDateString() <= $this->payableCutoff() ? 'ready' : 'not_due';
+    }
+
+    /** @var array<int,bool> ledger line id => is in a PAID payout statement */
+    private array $paidOut = [];
+
+    /** Look up, in one query, which of these lines have already been paid out to the vendor (call before presenting a page of lines) */
+    public function loadPaidOut(iterable $entries): void
+    {
+        $ids = collect($entries)->pluck('id')->filter()->map(fn ($id) => (int) $id)->unique()->values()->all();
+
+        if (!$ids) {
+            return;
+        }
+
+        $paid = DB::table('payout_statement_lines as pl')
+            ->join('payout_statements as ps', 'ps.id', '=', 'pl.statement_id')
+            ->whereIn('pl.ledger_entry_id', $ids)->where('pl.active', 1)->where('ps.status', 'paid')
+            ->pluck('pl.ledger_entry_id')->flip();
+
+        foreach ($ids as $id) {
+            $this->paidOut[$id] = isset($paid[$id]);
+        }
+    }
+
+    public function isPaidOut(int $ledgerId): bool
+    {
+        if (!array_key_exists($ledgerId, $this->paidOut)) {
+            $this->loadPaidOut([['id' => $ledgerId]]);
+        }
+
+        return $this->paidOut[$ledgerId] ?? false;
+    }
+
+    /** Forget what was looked up (after a payout was paid or reversed) */
+    public function forgetPaidOut(): void
+    {
+        $this->paidOut = [];
+    }
+
+    /**
+     * SQL: this ledger line is in a PAID payout statement. Only valid in a query built by scope(), which joins the paid
+     * lines as `paid_x` (a join, not a subquery, so it can be used inside the sums of a GROUP BY query).
+     */
+    public function paidSql(): string
+    {
+        return 'paid_x.paid_entry_id is not null';
+    }
+
+    /** SQL: this ledger line is in any LIVE payout statement (a draft or a paid one) */
+    public static function inStatementSql(): string
+    {
+        return 'exists (select 1 from payout_statement_lines psl where psl.ledger_entry_id = ledger_entries.id and psl.active = 1)';
+    }
+
+    /** SQL: this line is held back (a person must look first) */
+    public function heldSql(): string
+    {
+        $unsafe = array_map('intval', array_keys($this->checks->unsafe()));
+
+        return "(coalesce(json_contains(flags, '\"needs_review\"'), 0) = 1 or coalesce(json_contains(flags, '\"gateway_risk\"'), 0) = 1 or checkout_date is null" . ($unsafe ? ' or booking_number in (' . implode(',', $unsafe) . ')' : '') . ')';
+    }
+
+    /** SQL: not held, and the guest checked out long enough ago: payable now (whether or not it is already in a statement) */
+    public function readySql(): string
+    {
+        $cut = DB::getPdo()->quote($this->payableCutoff());
+
+        return '(not ' . $this->heldSql() . " and checkout_date <= {$cut})";
     }
 
     /**
@@ -186,20 +259,28 @@ class MoneyReport
             ->get()
             ->groupBy('booking_number');
 
-        return $lines->map(function ($group, $number) use ($unsafe) {
-            $first = $group->first();
-            $code  = $unsafe[$number] ?? null;
-            $flag  = collect($first->flags ?? [])->first(fn ($f) => $f !== 'needs_review') ?? 'needs_review';
+        $this->loadPaidOut($lines->flatten(1));
+        $rows = [];
 
-            return [
-                'booking_number' => $number ?: null,
-                'property_name'  => $first->property_name,
-                'vendor_name'    => $first->vendor_name,
-                'code'           => $code ?? $flag,
-                'text'           => $code ? MoneyChecks::text($code) : self::flagText($flag),
-                'held_paisa'     => (int) $group->sum('vendor_paisa'),
-            ];
-        })->filter(fn ($p) => $p['held_paisa'] !== 0)->sortByDesc('held_paisa')->take($limit)->values()->all();
+        foreach ($lines as $number => $group) {
+            $first  = $group->first();
+            $code   = $unsafe[$number] ?? null;
+            $flag   = collect($first->flags ?? [])->first(fn ($f) => $f !== 'needs_review') ?? 'needs_review';
+            $paid   = (int) $group->filter(fn ($l) => $this->isPaidOut($l->id))->sum('vendor_paisa');
+            $unpaid = (int) $group->sum('vendor_paisa') - $paid;
+            $base   = ['booking_number' => $number ?: null, 'property_name' => $first->property_name, 'vendor_name' => $first->vendor_name];
+
+            if ($unpaid !== 0) {
+                $rows[] = $base + ['code' => $code ?? $flag, 'text' => $code ? MoneyChecks::text($code) : self::flagText($flag), 'held_paisa' => $unpaid];
+            }
+
+            // the vendor already has this money and the booking has changed since: nothing to hold, but a person must know
+            if ($paid !== 0 && $code) {
+                $rows[] = $base + ['code' => 'paid_then_changed', 'text' => 'The vendor was already paid for this booking, and the booking has changed since. ' . MoneyChecks::text($code), 'held_paisa' => $paid];
+            }
+        }
+
+        return collect($rows)->sortByDesc('held_paisa')->take($limit)->values()->all();
     }
 
     private static function flagText(string $flag): string
@@ -250,6 +331,7 @@ class MoneyReport
             'to_look_at'       => count($this->problems(1000)),
             'waiting'          => $this->waitingToBeRecorded(),
             'test_lines'       => LedgerEntry::where('is_test', true)->count(),
+            'payout_problems'  => app(PayoutService::class)->problems(),
             'balanced'         => $off + $parts === 0,
         ];
     }
@@ -258,27 +340,30 @@ class MoneyReport
 
     private function scope(?string $from, ?string $to, ?int $vendorId = null): Builder
     {
-        $q = LedgerEntry::query();
+        $q = LedgerEntry::query()->leftJoin(
+            DB::raw("(select distinct psl.ledger_entry_id as paid_entry_id from payout_statement_lines psl join payout_statements pst on pst.id = psl.statement_id where psl.active = 1 and pst.status = 'paid') as paid_x"),
+            'paid_x.paid_entry_id', '=', 'ledger_entries.id'
+        );
 
-        if ($from) { $q->where('occurred_on', '>=', $from); }
-        if ($to)   { $q->where('occurred_on', '<=', $to); }
-        if ($vendorId) { $q->where('vendor_id', $vendorId); }
+        if ($from) { $q->where('ledger_entries.occurred_on', '>=', $from); }
+        if ($to)   { $q->where('ledger_entries.occurred_on', '<=', $to); }
+        if ($vendorId) { $q->where('ledger_entries.vendor_id', $vendorId); }
 
         return $q;
     }
 
     private function columns(): array
     {
-        return ['gross', 'vat', 'platform_service', 'commission', 'vendor', 'gateway_fee', 'ready', 'not_due', 'held', 'paid_in', 'refunded'];
+        return ['gross', 'vat', 'platform_service', 'commission', 'vendor', 'gateway_fee', 'ready', 'not_due', 'held', 'paid_out', 'paid_in', 'refunded'];
     }
 
     /** The aggregate expressions. "held" is judged per line, so the buckets are summed with CASE. */
     private function sums(): string
     {
         $cut     = DB::getPdo()->quote($this->payableCutoff());
-        $unsafe  = array_map('intval', array_keys($this->checks->unsafe()));
-        $isHeld  = "(coalesce(json_contains(flags, '\"needs_review\"'), 0) = 1 or coalesce(json_contains(flags, '\"gateway_risk\"'), 0) = 1 or checkout_date is null" . ($unsafe ? ' or booking_number in (' . implode(',', $unsafe) . ')' : '') . ')';
-        $isReady = "(not {$isHeld} and checkout_date <= {$cut})";
+        $isPaid  = '(' . $this->paidSql() . ')';
+        $isHeld  = '(not ' . $isPaid . ' and ' . $this->heldSql() . ')';
+        $isReady = "(not {$isPaid} and not {$this->heldSql()} and checkout_date <= {$cut})";
 
         return implode(', ', [
             'coalesce(sum(gross_paisa), 0) as gross',
@@ -288,8 +373,9 @@ class MoneyReport
             'coalesce(sum(vendor_paisa), 0) as vendor',
             'coalesce(sum(gateway_fee_paisa), 0) as gateway_fee',
             "coalesce(sum(case when {$isReady} then vendor_paisa else 0 end), 0) as ready",
-            "coalesce(sum(case when not {$isHeld} and not {$isReady} then vendor_paisa else 0 end), 0) as not_due",
+            "coalesce(sum(case when not {$isPaid} and not {$this->heldSql()} and not {$isReady} then vendor_paisa else 0 end), 0) as not_due",
             "coalesce(sum(case when {$isHeld} then vendor_paisa else 0 end), 0) as held",
+            "coalesce(sum(case when {$isPaid} then vendor_paisa else 0 end), 0) as paid_out",
             "coalesce(sum(case when type = 'payment' then gross_paisa else 0 end), 0) as paid_in",
             "coalesce(-sum(case when type = 'refund' then gross_paisa else 0 end), 0) as refunded",
         ]);

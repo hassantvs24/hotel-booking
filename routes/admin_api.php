@@ -152,11 +152,27 @@ Route::middleware(['auth:sanctum', 'staff'])->prefix('admin')->group(function ()
     Route::prefix('money')->controller(\App\Http\Controllers\API\Admin\Money\MoneyReportController::class)->group(function () {
         Route::get('overview',                'overview');
         Route::get('vendors',                 'vendors');
-        Route::get('vendors/{vendor}',        'vendor')->whereNumber('vendor');
-        Route::get('bookings/{number}',       'booking')->whereNumber('number');
-        Route::post('bookings/{number}/review', 'review')->whereNumber('number');
+        Route::get('vendors/{vendor}',        'vendor')->where('vendor', '[0-9]{1,18}');
+        Route::get('bookings/{number}',       'booking')->where('number', '[0-9]{1,18}');
+        Route::post('bookings/{number}/review', 'review')->where('number', '[0-9]{1,18}');
         Route::get('lines',                   'lines');
     });
+    // money: payouts to vendors (platform admin only)
+    Route::prefix('money')->controller(\App\Http\Controllers\API\Admin\Money\PayoutController::class)->group(function () {
+        Route::get('payouts',                        'index');
+        Route::post('payouts/generate',              'generate')->middleware('throttle:20,1');
+        Route::get('payouts/{statement}',            'show')->where('statement', '[0-9]{1,18}');
+        Route::get('payouts/{statement}/csv',        'csv')->where('statement', '[0-9]{1,18}');
+        Route::post('payouts/{statement}/hold',      'hold')->where('statement', '[0-9]{1,18}');
+        Route::post('payouts/{statement}/cancel',    'cancel')->where('statement', '[0-9]{1,18}');
+        Route::post('payouts/{statement}/paid',      'paid')->where('statement', '[0-9]{1,18}')->middleware('throttle:20,1');
+        Route::post('payouts/{statement}/reverse',   'reverse')->where('statement', '[0-9]{1,18}')->middleware('throttle:20,1');
+        Route::post('bookings/{number}/hold',        'holdBooking')->where('number', '[0-9]{1,18}');
+        Route::delete('bookings/{number}/hold',      'unholdBooking')->where('number', '[0-9]{1,18}');
+    });
+    // where a vendor wants to be paid: the vendor's own account (the admin names the vendor)
+    Route::get('payout-account', [\App\Http\Controllers\API\Admin\Money\PayoutAccountController::class, 'show']);
+    Route::put('payout-account', [\App\Http\Controllers\API\Admin\Money\PayoutAccountController::class, 'update'])->middleware('throttle:20,1');
 
     // the legal pages the admin edits
     Route::get('legal',         [\App\Http\Controllers\API\Admin\Legal\LegalDocumentController::class, 'index']);

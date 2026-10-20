@@ -19,6 +19,11 @@ class AppServiceProvider extends ServiceProvider
         $this->app->singleton(MailService::class, function ($app) {
             return new MailService();
         });
+
+        // The money screens and the payout service must all look at the SAME "which bookings disagree with their money" answer,
+        // so that forgetting it after a change reaches every one of them
+        $this->app->singleton(\App\Services\Money\MoneyChecks::class);
+        $this->app->singleton(\App\Services\Money\MoneyReport::class);
     }
 
     /**

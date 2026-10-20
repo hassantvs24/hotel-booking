@@ -27,6 +27,15 @@ class MoneyRules
 
     private static ?array $cache = null;
 
+    /**
+     * A moment (stored in UTC) as Dhaka time, so a screen that shows only the day shows the Dhaka calendar day:
+     * something done at 1 a.m. in Dhaka is the next day there, but still the day before in UTC.
+     */
+    public static function local(mixed $moment): ?string
+    {
+        return $moment ? CarbonImmutable::parse($moment, 'UTC')->setTimezone(self::TZ)->toIso8601String() : null;
+    }
+
     public static function forget(): void
     {
         self::$cache = null;

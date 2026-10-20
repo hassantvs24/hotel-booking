@@ -25,6 +25,7 @@ class MoneyChecks
         'dates_changed'     => 'The booking dates were changed after the guest paid.',
         'room_moved'        => 'The booking was moved to a room of another property after the guest paid.',
         'duplicate_payment' => 'The guest was charged more than once for this booking.',
+        'manual_hold'       => 'The money for this booking is on hold (set by the admin).',
     ];
 
     /** @var array<int,string>|null booking number => reason code */
@@ -83,6 +84,11 @@ class MoneyChecks
                 ->mapWithKeys(fn ($r) => [$r->booking_number . '|' . $r->reason => true]);
 
             $out = array_filter($out, fn ($reason, $number) => !isset($released[$number . '|' . $reason]), ARRAY_FILTER_USE_BOTH);
+        }
+
+        // A hold the admin put on a booking always counts, and a review cannot lift it (only lifting the hold does)
+        foreach (DB::table('money_holds')->pluck('booking_number') as $number) {
+            $out[(int) $number] = 'manual_hold';
         }
 
         return $this->cache = $out;

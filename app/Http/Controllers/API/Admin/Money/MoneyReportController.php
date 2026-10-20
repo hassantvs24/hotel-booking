@@ -75,6 +75,7 @@ class MoneyReportController extends BaseController
         abort_if($page->total() === 0, 404, 'No money has been recorded for this vendor yet.');
 
         $entries = $this->report->lines(['vendor_id' => $vendor])->reorder()->whereIn('booking_number', $page->pluck('booking_number'))->orderBy('id')->get();
+        $this->report->loadPaidOut($entries);
 
         $bookings = $entries->groupBy('booking_number')->map(function ($lines) {
             $payment = $lines->firstWhere('type', LedgerEntry::TYPE_PAYMENT) ?? $lines->first();
@@ -107,6 +108,7 @@ class MoneyReportController extends BaseController
 
         $lines = $this->report->lines(['booking_number' => $number])->reorder('occurred_at')->orderBy('id')->get();
         abort_if($lines->isEmpty(), 404, 'This booking is not in the money records.');
+        $this->report->loadPaidOut($lines);
 
         $booking = Booking::withTrashed()->with('user:id,name')->where('booking_number', $number)->first();
 
@@ -121,8 +123,10 @@ class MoneyReportController extends BaseController
                 'deleted'        => $booking->trashed(),
             ] : null,
             'problem'        => ($code = $this->report->problemCode($number)) ? ['code' => $code, 'text' => MoneyChecks::text($code)] : null,
+            'hold'           => ($h = DB::table('money_holds')->where('booking_number', $number)->first(['note', 'held_by_name', 'created_at'])) ? ['note' => $h->note, 'held_by_name' => $h->held_by_name, 'created_at' => MoneyRules::local($h->created_at)] : null,
+            'statements'     => DB::table('payout_statement_lines as pl')->join('payout_statements as ps', 'ps.id', '=', 'pl.statement_id')->where('pl.booking_number', $number)->where('pl.active', 1)->distinct()->get(['ps.id', 'ps.number', 'ps.status']),
             'reviews'        => DB::table('money_reviews')->where('booking_number', $number)->orderBy('id')->get(['reason', 'note', 'reviewed_by_name', 'created_at'])
-                ->map(fn ($r) => ['reason' => $r->reason, 'text' => MoneyChecks::text($r->reason), 'note' => $r->note, 'by' => $r->reviewed_by_name, 'at' => $r->created_at]),
+                ->map(fn ($r) => ['reason' => $r->reason, 'text' => MoneyChecks::text($r->reason), 'note' => $r->note, 'by' => $r->reviewed_by_name, 'at' => MoneyRules::local($r->created_at)]),
             'lines'          => $lines->map(fn ($l) => $this->report->present($l)),
             'totals'         => [
                 'gross'      => (int) $lines->sum('gross_paisa'),
@@ -147,6 +151,7 @@ class MoneyReportController extends BaseController
         $this->ledger->run(2.0);
         $code = $this->report->problemCode($number);
         abort_if(!$code, 422, 'Nothing is held back for this booking that can be released here.');
+        abort_if($code === 'manual_hold', 422, 'This booking is on hold by an admin. Lift the hold instead.');
 
         DB::table('money_reviews')->insert([
             'booking_number' => $number, 'reason' => $code, 'note' => trim($data['note']),
@@ -170,6 +175,7 @@ class MoneyReportController extends BaseController
 
         $page = $this->report->lines($request->only(['vendor_id', 'booking_number', 'type', 'from', 'to', 'flagged', 'search']))
             ->paginate((int) $request->input('per_page', 25));
+        $this->report->loadPaidOut($page->getCollection());
 
         return $this->sendSuccess([
             'lines' => $page->getCollection()->map(fn ($l) => $this->report->present($l))->values(),
