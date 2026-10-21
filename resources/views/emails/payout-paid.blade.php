@@ -71,17 +71,7 @@
                                 <td align="right" style="padding:5px 0; font-family:{{ $sans }}; font-size:14px; font-weight:600; color:{{ $ink }};">{{ $money($d['gross']) }}</td>
                             </tr>
                             <tr>
-                                <td style="padding:5px 0; font-family:{{ $sans }}; font-size:14px; color:{{ $slate }};">VAT collected for the government</td>
-                                <td align="right" style="padding:5px 0; font-family:{{ $sans }}; font-size:14px; font-weight:600; color:#b91c1c;">&minus; {{ $money($d['vat']) }}</td>
-                            </tr>
-                            @if (($d['platform_service'] ?? 0) > 0)
-                            <tr>
-                                <td style="padding:5px 0; font-family:{{ $sans }}; font-size:14px; color:{{ $slate }};">Service charge kept by Oystay</td>
-                                <td align="right" style="padding:5px 0; font-family:{{ $sans }}; font-size:14px; font-weight:600; color:#b91c1c;">&minus; {{ $money($d['platform_service']) }}</td>
-                            </tr>
-                            @endif
-                            <tr>
-                                <td style="padding:5px 0; font-family:{{ $sans }}; font-size:14px; color:{{ $slate }};">Oystay commission</td>
+                                <td style="padding:5px 0; font-family:{{ $sans }}; font-size:14px; color:{{ $slate }};">Oystay commission{{ $d['commission_percent'] !== null ? ' (' . rtrim(rtrim(number_format($d['commission_percent'], 2, '.', ''), '0'), '.') . '%)' : '' }}</td>
                                 <td align="right" style="padding:5px 0; font-family:{{ $sans }}; font-size:14px; font-weight:600; color:#b91c1c;">&minus; {{ $money($d['commission']) }}</td>
                             </tr>
                         </table>
@@ -91,6 +81,7 @@
                                 <td align="right" style="padding-top:14px; font-family:{{ $serif }}; font-size:28px; line-height:32px; color:{{ $tealDp }};">{{ $money($d['amount']) }}</td>
                             </tr>
                         </table>
+                        <div style="margin-top:12px; font-family:{{ $sans }}; font-size:13px; line-height:20px; color:{{ $slate }};">Included in the amount sent to you: VAT {{ $money($d['vat']) }}, service charge {{ $money($d['service']) }}.</div>
                     </td></tr>
                 </table>
             </td>

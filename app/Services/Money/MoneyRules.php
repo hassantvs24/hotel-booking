@@ -17,7 +17,6 @@ class MoneyRules
     public const DEFAULTS = [
         'money_start_date'          => null,       // filled with the day the ledger was created
         'commission_percent'        => '10',
-        'service_charge_to'         => 'vendor',
         'payout_frequency'          => 'weekly',
         'payout_weekday'            => '1',
         'payout_wait_days'          => '2',
@@ -75,10 +74,10 @@ class MoneyRules
         return $this->clamp($own !== null && $own !== '' ? (float) $own : (float) $this->get('commission_percent'));
     }
 
-    /** "vendor" or "admin": who the service charge belongs to */
+    /** The service charge is always the vendor's (kept so old code and old ledger lines that mention it keep working) */
     public function serviceChargeTo(): string
     {
-        return $this->get('service_charge_to') === 'admin' ? 'admin' : 'vendor';
+        return 'vendor';
     }
 
     public function waitDays(): int

@@ -3,10 +3,18 @@
 namespace App\Services\Money;
 
 /**
- * The one place that splits a payment into VAT, commission and the vendor's share.
+ * The one place that splits a payment between the platform and the vendor.
  * Works in whole paisa only, so the parts always add up to the whole:
  *
- *     gross = vat + platform_service + commission + vendor
+ *     gross = commission + vendor            (the platform keeps ONLY its commission)
+ *
+ * The VAT and the service charge are part of the vendor's money: they are paid to the vendor in full, and paying the VAT
+ * to the government is the vendor's own business. They are still written down on every line (so the vendor can see
+ * them) and they add up with the room price to the whole:
+ *
+ *     gross = base + service + vat
+ *
+ * `platform_service` is kept at 0 (it used to be the service charge when the platform kept it).
  *
  * Nothing here reads the database. Pure arithmetic, easy to test.
  */
@@ -34,7 +42,7 @@ class MoneySplitter
      * @param array{base:int,service:int,vat:int}|null $tax  what the booking saved; null when it saved nothing
      * @return array{base:int,service:int,vat:int,platform_service:int,commission:int,vendor:int,flags:string[]}
      */
-    public function payment(int $gross, ?array $tax, float $commissionPercent, string $serviceChargeTo): array
+    public function payment(int $gross, ?array $tax, float $commissionPercent): array
     {
         $flags = [];
 
@@ -51,16 +59,17 @@ class MoneySplitter
             $tax = ['base' => $gross, 'service' => 0, 'vat' => 0];
         }
 
-        $platformService = $serviceChargeTo === 'admin' ? $tax['service'] : 0;
+        // The commission is a percentage of the ROOM PRICE only (not of the VAT or the service charge).
         // whole-number maths (rate in hundredths of a percent, half a paisa rounds up): a float here is 1 paisa off now and then
-        $commission      = intdiv($tax['base'] * (int) round($commissionPercent * 100) + 5000, 10000);
-        $vendor          = $gross - $tax['vat'] - $platformService - $commission;
+        $commission = intdiv($tax['base'] * (int) round($commissionPercent * 100) + 5000, 10000);
+        // Everything else, the VAT and the service charge included, is the vendor's.
+        $vendor     = $gross - $commission;
 
         return [
             'base'             => $tax['base'],
             'service'          => $tax['service'],
             'vat'              => $tax['vat'],
-            'platform_service' => $platformService,
+            'platform_service' => 0,
             'commission'       => $commission,
             'vendor'           => $vendor,
             'flags'            => array_values(array_unique($flags)),
@@ -119,19 +128,21 @@ class MoneySplitter
     {
         $cumulativeRefund = max(0, min($cumulativeRefund, $payment['gross']));
 
+        // who gives the money back: the platform its commission, the vendor the rest (in proportion to what each kept)
         $money = $this->allocate($cumulativeRefund, [
-            'vat'              => $payment['vat'],
             'platform_service' => $payment['platform_service'],
             'commission'       => $payment['commission'],
             'vendor'           => $payment['vendor'],
         ]);
 
-        $rooms = $this->allocate($cumulativeRefund - $money['vat'], [
+        // and the same refund seen as room price, service charge and VAT (information for the vendor)
+        $parts = $this->allocate($cumulativeRefund, [
             'base'    => $payment['base'],
             'service' => $payment['service'],
+            'vat'     => $payment['vat'],
         ]);
 
-        $cumulative = ['gross' => $cumulativeRefund] + $money + $rooms;
+        $cumulative = ['gross' => $cumulativeRefund] + $money + $parts;
 
         $now = [];
         foreach ($cumulative as $key => $value) {

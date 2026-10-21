@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 
 /**
- * The money settings: commission, who keeps the service charge, how often vendors are paid.
+ * The money settings: the commission, how often vendors are paid, and the other payout rules.
  * Only the platform admin can see or change them, and every change is written down (who, from what, to what).
  * A change applies to payments that come in AFTER it; payments already booked keep the rate they were booked with.
  */
@@ -33,7 +33,6 @@ class MoneySettingsController extends BaseController
 
         $data = $request->validate([
             'commission_percent' => ['required', 'numeric', 'min:0', 'max:100'],
-            'service_charge_to'  => ['required', Rule::in(['vendor', 'admin'])],
             'payout_frequency'   => ['required', Rule::in(['daily', 'weekly', 'biweekly', 'monthly'])],
             'payout_weekday'     => ['required', 'integer', 'between:1,7'],
             'payout_wait_days'   => ['required', 'integer', 'between:0,30'],
@@ -105,7 +104,6 @@ class MoneySettingsController extends BaseController
         return [
             'settings' => [
                 'commission_percent' => (float) $all['commission_percent'],
-                'service_charge_to'  => $this->rules->serviceChargeTo(),
                 'payout_frequency'   => $all['payout_frequency'],
                 'payout_weekday'     => (int) $all['payout_weekday'],
                 'payout_wait_days'   => (int) $all['payout_wait_days'],

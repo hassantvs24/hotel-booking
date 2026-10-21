@@ -141,14 +141,14 @@ class PayoutController extends BaseController
             fwrite($out, "\xEF\xBB\xBF");
             fputcsv($out, ['Statement', $statement->number, 'Vendor', $safe((string) $statement->vendor_name), 'Status', $statement->status, 'Paid on', $statement->paid_at?->timezone(MoneyRules::TZ)->toDateString(), 'Reference', $safe((string) $statement->reference)]);
             fputcsv($out, []);
-            fputcsv($out, ['Booking', 'Property', 'Check-out', 'Type', 'Paid by guest (BDT)', 'VAT (BDT)', 'Service charge kept by Oystay (BDT)', 'Commission (BDT)', 'To vendor (BDT)']);
+            fputcsv($out, ['Booking', 'Property', 'Check-out', 'Type', 'Paid by guest (BDT)', 'Room price (BDT)', 'Service charge (BDT, yours)', 'VAT (BDT, yours)', 'Commission rate (%)', 'Commission (BDT)', 'To you (BDT)']);
 
             foreach ($rows as $l) {
-                fputcsv($out, [$l->booking_number, $safe((string) $l->property_name), $l->checkout_date?->toDateString(), $l->type, $taka($l->gross_paisa), $taka($l->vat_paisa), $taka($l->platform_service_paisa), $taka($l->commission_paisa), $taka($l->vendor_paisa)]);
+                fputcsv($out, [$l->booking_number, $safe((string) $l->property_name), $l->checkout_date?->toDateString(), $l->type, $taka($l->gross_paisa), $taka($l->base_paisa), $taka($l->service_paisa), $taka($l->vat_paisa), $l->commission_percent === null ? '' : rtrim(rtrim(number_format((float) $l->commission_percent, 2, '.', ''), '0'), '.'), $taka($l->commission_paisa), $taka($l->vendor_paisa)]);
             }
 
             fputcsv($out, []);
-            fputcsv($out, ['Total', '', '', '', $taka((int) $statement->gross_paisa), $taka((int) $statement->vat_paisa), $taka((int) $statement->platform_service_paisa), $taka((int) $statement->commission_paisa), $taka((int) $statement->vendor_paisa)]);
+            fputcsv($out, ['Total', '', '', '', $taka((int) $statement->gross_paisa), $taka((int) $statement->base_paisa), $taka((int) $statement->service_paisa), $taka((int) $statement->vat_paisa), '', $taka((int) $statement->commission_paisa), $taka((int) $statement->vendor_paisa)]);
             fclose($out);
         }, ($statement->number ?: 'statement') . '.csv', ['Content-Type' => 'text/csv; charset=UTF-8']);
     }
@@ -201,8 +201,8 @@ class PayoutController extends BaseController
 
             return [
                 'booking_number' => $number ?: null, 'property_name' => $f->property_name, 'checkout_date' => $f->checkout_date?->toDateString(),
-                'gross_paisa' => (int) $g->sum('gross_paisa'), 'vat_paisa' => (int) $g->sum('vat_paisa'), 'commission_paisa' => (int) $g->sum('commission_paisa'),
-                'platform_service_paisa' => (int) $g->sum('platform_service_paisa'),
+                'gross_paisa' => (int) $g->sum('gross_paisa'), 'base_paisa' => (int) $g->sum('base_paisa'), 'service_paisa' => (int) $g->sum('service_paisa'), 'vat_paisa' => (int) $g->sum('vat_paisa'), 'commission_paisa' => (int) $g->sum('commission_paisa'),
+                'commission_percent' => $f->commission_percent === null ? null : (float) $f->commission_percent,
                 'vendor_paisa' => (int) $g->sum('vendor_paisa'), 'lines' => $g->count(),
                 'no_longer_ready' => in_array((int) $number, $notReady, true), 'hold' => ($h = $holds[$number] ?? null) ? $h->note : null,
             ];
@@ -224,7 +224,7 @@ class PayoutController extends BaseController
         return array_merge($this->summary($s), [
             'payable_until' => $s->payable_until?->toDateString(),
             'lines_count' => $s->lines_count,
-            'gross_paisa' => (int) $s->gross_paisa, 'vat_paisa' => (int) $s->vat_paisa, 'platform_service_paisa' => (int) $s->platform_service_paisa,
+            'gross_paisa' => (int) $s->gross_paisa, 'base_paisa' => (int) $s->base_paisa, 'service_paisa' => (int) $s->service_paisa, 'vat_paisa' => (int) $s->vat_paisa,
             'commission_paisa' => (int) $s->commission_paisa,
             'created_by_name' => $s->created_by_name, 'paid_by_name' => $s->paid_by_name, 'note' => $s->note,
             'emailed_at' => MoneyRules::local($s->emailed_at), 'account_recently_changed' => $s->account_recently_changed,

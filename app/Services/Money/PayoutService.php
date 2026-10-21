@@ -127,8 +127,8 @@ class PayoutService
                 PayoutStatementLine::insert($chunk->map(fn ($e) => [
                     'statement_id' => $statement->id, 'ledger_entry_id' => $e->id, 'active' => 1,
                     'booking_number' => $e->booking_number, 'type' => $e->type, 'checkout_date' => $e->checkout_date?->toDateString(),
-                    'property_name' => $e->property_name, 'gross_paisa' => $e->gross_paisa, 'vat_paisa' => $e->vat_paisa,
-                    'platform_service_paisa' => $e->platform_service_paisa, 'commission_paisa' => $e->commission_paisa, 'vendor_paisa' => $e->vendor_paisa,
+                    'property_name' => $e->property_name, 'gross_paisa' => $e->gross_paisa, 'base_paisa' => $e->base_paisa, 'service_paisa' => $e->service_paisa, 'vat_paisa' => $e->vat_paisa,
+                    'platform_service_paisa' => $e->platform_service_paisa, 'commission_paisa' => $e->commission_paisa, 'commission_percent' => $e->commission_percent, 'vendor_paisa' => $e->vendor_paisa,
                     'created_at' => $now, 'updated_at' => $now,
                 ])->all());
             }
@@ -356,7 +356,7 @@ class PayoutService
         $s->update([
             'bookings_count' => $lines->pluck('booking_number')->unique()->count(),
             'lines_count' => $lines->count(),
-            'gross_paisa' => (int) $lines->sum('gross_paisa'), 'vat_paisa' => (int) $lines->sum('vat_paisa'),
+            'gross_paisa' => (int) $lines->sum('gross_paisa'), 'base_paisa' => (int) $lines->sum('base_paisa'), 'service_paisa' => (int) $lines->sum('service_paisa'), 'vat_paisa' => (int) $lines->sum('vat_paisa'),
             'platform_service_paisa' => (int) $lines->sum('platform_service_paisa'), 'commission_paisa' => (int) $lines->sum('commission_paisa'),
             'vendor_paisa' => (int) $lines->sum('vendor_paisa'),
         ]);
@@ -411,14 +411,19 @@ class PayoutService
     {
         $rows = $s->lines()->where('active', 1)->orderBy('booking_number')->get()->groupBy('booking_number')->map(fn ($g, $n) => [
             'booking_number' => $n, 'property' => $g->first()->property_name, 'checkout' => $g->first()->checkout_date?->toDateString(),
+            'gross' => (int) $g->sum('gross_paisa') / 100, 'commission' => (int) $g->sum('commission_paisa') / 100, 'percent' => $g->first()->commission_percent === null ? null : (float) $g->first()->commission_percent,
             'amount' => (int) $g->sum('vendor_paisa') / 100,
         ])->values()->all();
 
+        // one rate for the whole statement when every booking used the same one (otherwise the rows each carry their own)
+        $rates = $s->lines()->where('active', 1)->whereNotNull('commission_percent')->distinct()->pluck('commission_percent');
+
         return [
+            'commission_percent' => $rates->count() === 1 ? (float) $rates->first() : null,
             'vendor_name' => $vendor->name, 'number' => $s->number, 'amount' => $s->vendor_paisa / 100,
             'method' => $s->method, 'reference' => $s->reference, 'paid_on' => $s->paid_at?->timezone(MoneyRules::TZ)->format('j M Y'),
             'bookings_count' => $s->bookings_count, 'commission' => $s->commission_paisa / 100, 'gross' => $s->gross_paisa / 100,
-            'vat' => $s->vat_paisa / 100, 'platform_service' => $s->platform_service_paisa / 100, 'rows' => array_slice($rows, 0, 40), 'more_rows' => max(0, count($rows) - 40),
+            'base' => $s->base_paisa / 100, 'vat' => $s->vat_paisa / 100, 'service' => $s->service_paisa / 100, 'rows' => array_slice($rows, 0, 40), 'more_rows' => max(0, count($rows) - 40),
             'account' => $s->account_snapshot,
         ];
     }

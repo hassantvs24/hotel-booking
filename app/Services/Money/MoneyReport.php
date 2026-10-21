@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 
 /**
- * Reads the ledger and answers the admin's questions: how much came in, what is mine, what is VAT, what do I owe each vendor.
+ * Reads the ledger and answers the admin's questions: how much came in, what is mine (the commission), what do I owe each vendor.
  * Every number is whole paisa, taken straight from ledger lines. Nothing is recalculated here.
  *
  * Each ledger line's vendor share lands in one bucket:
@@ -17,7 +17,8 @@ use Illuminate\Support\Facades\DB;
  *   held      a person must look first (the line is flagged "needs_review", or there is no check-out date)
  *   paid      the line is in a payout statement the admin has marked PAID: the vendor already has this money
  * The money buckets always add up to what came in:
- *   gross = vat + platform_service + commission + vendor(ready + not_due + held + paid_out)
+ *   gross = platform_service (always 0) + commission + vendor(ready + not_due + held + paid_out)
+ * The VAT and the service charge are inside the vendor's part; they are only reported (the vendor sees them), not a bucket.
  */
 class MoneyReport
 {
@@ -313,7 +314,7 @@ class MoneyReport
     {
         $this->forget();
         $off = LedgerEntry::query()
-            ->whereRaw('(vat_paisa + platform_service_paisa + commission_paisa + vendor_paisa) <> gross_paisa')
+            ->whereRaw('(platform_service_paisa + commission_paisa + vendor_paisa) <> gross_paisa')
             ->count();
         $parts = LedgerEntry::query()
             ->whereRaw('(base_paisa + service_paisa + vat_paisa) <> gross_paisa')
@@ -354,7 +355,7 @@ class MoneyReport
 
     private function columns(): array
     {
-        return ['gross', 'vat', 'platform_service', 'commission', 'vendor', 'gateway_fee', 'ready', 'not_due', 'held', 'paid_out', 'paid_in', 'refunded'];
+        return ['gross', 'vat', 'service', 'platform_service', 'commission', 'vendor', 'gateway_fee', 'ready', 'not_due', 'held', 'paid_out', 'paid_in', 'refunded'];
     }
 
     /** The aggregate expressions. "held" is judged per line, so the buckets are summed with CASE. */
@@ -367,7 +368,8 @@ class MoneyReport
 
         return implode(', ', [
             'coalesce(sum(gross_paisa), 0) as gross',
-            'coalesce(sum(vat_paisa), 0) as vat',
+            'coalesce(sum(vat_paisa), 0) as vat',                  // (inside the vendors' money: only reported)
+            'coalesce(sum(service_paisa), 0) as service',          // (the same for the service charge)
             'coalesce(sum(platform_service_paisa), 0) as platform_service',
             'coalesce(sum(commission_paisa), 0) as commission',
             'coalesce(sum(vendor_paisa), 0) as vendor',

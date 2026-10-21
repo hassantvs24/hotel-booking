@@ -126,9 +126,8 @@ class LedgerSync
             'vat'     => MoneySplitter::toPaisa($booking->vat_amount),
         ] : null;
 
-        $percent   = $this->rules->commissionPercentFor($property);
-        $serviceTo = $this->rules->serviceChargeTo();
-        $split     = $this->splitter->payment($gross, $tax, $percent, $serviceTo);
+        $percent = $this->rules->commissionPercentFor($property);
+        $split   = $this->splitter->payment($gross, $tax, $percent);
 
         // A payment still in "completed" was last touched when it was paid. One already "refunded" was touched again by the
         // refund, so only its created_at is left to go by.
@@ -161,7 +160,7 @@ class LedgerSync
             'vendor_paisa'           => $split['vendor'],
             'gateway_fee_paisa'      => $fee,
             'commission_percent'     => $percent,
-            'service_charge_to'      => $serviceTo,
+            'service_charge_to'      => 'vendor',   // (always: the service charge is the vendor's)
             'is_test'                => str_starts_with((string) $t->transaction_reference, 'LOCAL-TEST'),
             'flags'                  => array_values(array_unique(array_merge($flags, $split['flags']))) ?: null,
         ]);
@@ -318,8 +317,8 @@ class LedgerSync
 
     private function write(array $row): ?LedgerEntry
     {
-        // The seven parts must add up. If they ever do not, stop: a wrong line is worse than a missing one.
-        $sum = $row['vat_paisa'] + $row['platform_service_paisa'] + $row['commission_paisa'] + $row['vendor_paisa'];
+        // The parts must add up. If they ever do not, stop: a wrong line is worse than a missing one.
+        $sum = $row['platform_service_paisa'] + $row['commission_paisa'] + $row['vendor_paisa'];
         if ($sum !== $row['gross_paisa']) {
             Log::error('[Ledger] Parts do not add up for ' . $row['unique_key'], $row);
             return null;

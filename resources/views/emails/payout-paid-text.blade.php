@@ -13,12 +13,9 @@ Statement number: {!! $d['number'] !!}
 ------------------------------------------------------------
 HOW THE AMOUNT WAS WORKED OUT
 Paid by your guests (after refunds):  {!! $money($d['gross']) !!}
-VAT collected for the government:   - {!! $money($d['vat']) !!}
-@if (($d['platform_service'] ?? 0) > 0)
-Service charge kept by Oystay:      - {!! $money($d['platform_service']) !!}
-@endif
-Oystay commission:                  - {!! $money($d['commission']) !!}
+Oystay commission{!! $d['commission_percent'] !== null ? ' (' . rtrim(rtrim(number_format($d['commission_percent'], 2, '.', ''), '0'), '.') . '%)' : '' !!}:  - {!! $money($d['commission']) !!}
 Sent to you:                          {!! $money($d['amount']) !!}
+Included in the amount sent to you:   VAT {!! $money($d['vat']) !!}, service charge {!! $money($d['service']) !!}
 
 ------------------------------------------------------------
 HOW IT WAS SENT
