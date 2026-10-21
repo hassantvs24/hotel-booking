@@ -5,6 +5,8 @@ namespace App\Http\Controllers\API\Admin\Booking;
 use App\Http\Controllers\BaseController;
 use App\Models\RefundRequest;
 use App\Models\Transaction;
+use App\Services\Money\LedgerSync;
+use App\Services\Money\VendorMoney;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -83,10 +85,14 @@ class TransactionController extends BaseController
             );
         }
 
-        // A refunded booking's cancellation fee is money the property still
-        // keeps, so it counts toward revenue even though the transaction's
-        // own status moved from "completed" to "refunded".
-        $keptFromRefunds = (clone $refundQuery)->sum('cancellation_fee');
+        // What the card "income" means depends on who is looking, and comes from the money ledger (not from adding up payments):
+        // the platform admin earns the commission; a vendor earns their share (the VAT and the service charge included).
+        app(LedgerSync::class)->run(2.0);
+        $money    = app(VendorMoney::class);
+        $isVendor = !$user->is_admin;   // (the same rule as the dashboard: the platform admin, or else a vendor)
+        $mine     = $isVendor ? $money->summary($user) : $money->platform();
+        $income   = $isVendor ? $mine['share_paisa'] : $mine['commission_paisa'];
+        $received = $mine['guest_paid_paisa'];
 
         return $this->sendSuccess([
             'total'        => (clone $query)->count(),
@@ -94,7 +100,9 @@ class TransactionController extends BaseController
             'pending'      => (clone $query)->where('status', 'pending')->count(),
             'failed'       => (clone $query)->where('status', 'failed')->count(),
             'total_refund' => (float) (clone $refundQuery)->sum('approved_amount'),
-            'revenue'      => (float) (clone $query)->where('status', 'completed')->sum('amount') + $keptFromRefunds,
+            'received'     => $received / 100,                                  // what the guests paid, after refunds (the VAT and the service charge are in it)
+            'income'       => $income / 100,                                    // admin: the commission; vendor: their share
+            'income_label' => $isVendor ? 'Your share' : 'Your commission',
         ]);
     }
 }

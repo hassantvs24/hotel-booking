@@ -32,6 +32,22 @@ class PayoutService
 {
     public function __construct(private readonly MoneyRules $rules, private readonly MoneyReport $report, private readonly MoneyChecks $checks) {}
 
+    /** When the next payout is due, from the settings (a reminder only: the admin decides when to pay) */
+    public function schedule(): array
+    {
+        $freq = (string) $this->rules->get('payout_frequency');
+        $day  = max(1, min(7, (int) $this->rules->get('payout_weekday')));
+        $now  = CarbonImmutable::now(MoneyRules::TZ)->startOfDay();
+
+        $next = match ($freq) {
+            'daily'   => $now,
+            'monthly' => $now->day === 1 ? $now : $now->addMonthNoOverflow()->startOfMonth(),
+            default   => $now->dayOfWeekIso === $day ? $now : $now->next($day === 7 ? 0 : $day),
+        };
+
+        return ['frequency' => $freq, 'weekday' => $day, 'next_payout_on' => $next->toDateString(), 'today' => $now->toDateString()];
+    }
+
     /** The smallest balance that is paid out (smaller balances wait for the next payout) */
     public function minimumPaisa(): int
     {

@@ -183,6 +183,14 @@ Route::middleware(['auth:sanctum', 'staff'])->prefix('admin')->group(function ()
     Route::get('payout-account', [\App\Http\Controllers\API\Admin\Money\PayoutAccountController::class, 'show']);
     Route::put('payout-account', [\App\Http\Controllers\API\Admin\Money\PayoutAccountController::class, 'update'])->middleware('throttle:20,1');
 
+    // a vendor's own money: what has been paid, what comes next, their own paid statements (always the signed-in user's own)
+    Route::prefix('my-money')->middleware('throttle:60,1')->controller(\App\Http\Controllers\API\Admin\Money\MyMoneyController::class)->group(function () {
+        Route::get('/',                          'summary');
+        Route::get('statements',                 'statements');
+        Route::get('statements/{statement}',     'statement')->where('statement', '[0-9]{1,18}');
+        Route::get('statements/{statement}/csv', 'csv')->where('statement', '[0-9]{1,18}');
+    });
+
     // the legal pages the admin edits
     Route::get('legal',         [\App\Http\Controllers\API\Admin\Legal\LegalDocumentController::class, 'index']);
     Route::get('legal/{slug}',  [\App\Http\Controllers\API\Admin\Legal\LegalDocumentController::class, 'show']);
