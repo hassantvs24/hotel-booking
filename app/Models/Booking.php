@@ -10,7 +10,10 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 class Booking extends Model
 {
     /** refund_policy: the refund rules the guest was shown when booking (see RefundPolicyService::snapshot) */
-    protected $casts = ['refund_policy' => 'array'];
+    protected $casts = ['refund_policy' => 'array', 'main_guest_id_number' => 'encrypted'];
+
+    /** The ID of the person who will stay never goes out in a normal answer: the owner and the admin ask for it on purpose */
+    protected $hidden = ['main_guest_id_number'];
 
     public function user(): BelongsTo
     {

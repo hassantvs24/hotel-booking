@@ -17,6 +17,7 @@ use App\Models\Room;
 use App\Models\RoomRequest;
 use App\Models\Transaction;
 use App\Models\User;
+use App\Services\Booking\GuestIdentity;
 use App\Services\Pricing\PriceService;
 use App\Services\Room\RoomGrouper;
 use App\Notifications\BID\BidReceivedNotification;
@@ -74,8 +75,12 @@ class BookingController extends BaseController
         $bids   = $cart->where('is_bid', true)->values();
         $notes  = $request->input('notes');
 
+        // Rooms booked now need the name and ID of the person who will stay (offers do not: that is asked when an accepted offer is paid).
+        // A missing or wrong ID is a 422 with the reason, before anything is created.
+        $guestId = $direct->isNotEmpty() ? app(GuestIdentity::class)->fromRequest($request, $user) : null;
+
         try {
-            $result = DB::transaction(function () use ($direct, $bids, $user, $notes) {
+            $result = DB::transaction(function () use ($direct, $bids, $user, $notes, $guestId) {
 
                 $group    = null;
                 $bookings = [];
@@ -146,6 +151,7 @@ class BookingController extends BaseController
                             'payment_status'   => 'pending',
                             'notes'            => $notes,
                             'booking_group_id' => $group?->id,
+                            ...app(GuestIdentity::class)->attributes($guestId),
                         ]);
 
                         // Lock the room
@@ -225,6 +231,11 @@ class BookingController extends BaseController
         }
 
         $bookings    = $result['bookings'] ?? [];
+
+        if ($guestId && $bookings) {
+            app(GuestIdentity::class)->remember($user, $guestId);   // asked once: next time it is filled in
+        }
+
         $group       = $result['group']    ?? null;
         $createdBids = $result['bids']     ?? [];
         $hasDirect   = count($bookings) > 0;
@@ -256,8 +267,10 @@ class BookingController extends BaseController
             'notes'     => 'nullable|string',
         ]);
 
+        $guestId = app(GuestIdentity::class)->fromRequest($request, $request->user());
+
         try {
-            $booking = DB::transaction(function () use ($validated, $request) {
+            $booking = DB::transaction(function () use ($validated, $request, $guestId) {
                 $room = Room::lockForUpdate()->findOrFail($validated['room_id']);
 
                 if (Booking::where('room_id', $room->id)
@@ -285,6 +298,7 @@ class BookingController extends BaseController
                     'status'         => 'reserved',
                     'payment_status' => 'pending',
                     'notes'          => $validated['notes'] ?? null,
+                    ...app(GuestIdentity::class)->attributes($guestId),
                 ]);
 
                 $room->update([
@@ -295,6 +309,8 @@ class BookingController extends BaseController
 
                 return $booking;
             });
+
+            app(GuestIdentity::class)->remember($request->user(), $guestId);
 
             return $this->sendSuccess([
                 'message'        => 'Room reserved. Proceed to payment.',

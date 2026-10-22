@@ -26,6 +26,8 @@ Route::prefix('auth')->group(function () {
     Route::prefix('profile/update')->middleware(['auth:sanctum'])->group(function () {
         Route::post('personal-info', [ProfileController::class, 'updatePersonalInfo']);
         Route::post('preference', [ProfileController::class, 'updatePreferenceInfo']);
+        Route::post('photo', [ProfileController::class, 'updatePhoto']);
+        Route::post('photo/remove', [ProfileController::class, 'removePhoto']);
     });
 });
 

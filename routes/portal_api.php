@@ -143,6 +143,9 @@ Route::prefix('portal')->group(function () {
         Route::delete('/notification/{propertyId}', [RoomRequestController::class, 'removeNotification']);
     });
 
+    // the countries a guest can choose in their profile (public: the list is the same for everybody)
+    Route::get('/countries', [\App\Http\Controllers\API\Portal\Location\CountryListController::class, 'index']);
+
     // Location Routes
     Route::prefix('location')->group(function () {
         Route::get('/suggestions', [\App\Http\Controllers\API\Portal\Location\LocationController::class, 'suggestions']);

@@ -229,6 +229,7 @@ Route::middleware(['auth:sanctum', 'staff'])->prefix('admin')->group(function ()
     Route::get('booking-check',         [BookingController::class, 'bookingCheck']);
     Route::apiResource('bookings', BookingController::class)->except(['create', 'show', 'edit']);
     Route::get('bookings/{id}/show',    [BookingController::class, 'show']);
+    Route::get('bookings/{id}/guest-id', [BookingController::class, 'guestId']);
     Route::put('bookings/{id}/update',  [BookingController::class, 'updateStatus']);
 
     // ── Transactions ──────────────────────────────────────────────

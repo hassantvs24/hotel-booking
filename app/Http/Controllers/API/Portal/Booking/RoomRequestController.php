@@ -13,6 +13,7 @@ use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use App\Services\Booking\GuestIdentity;
 use App\Services\Pricing\PriceService;
 use App\Services\Room\RoomGrouper;
 
@@ -240,6 +241,9 @@ class RoomRequestController extends BaseController
             );
         }
 
+        // An accepted offer becomes a booking now: it needs the name and ID of the person who will stay (the saved one, or typed here)
+        $guestId = app(GuestIdentity::class)->fromRequest($request, $request->user());
+
         // A guest who reached the gateway and came back to pay again already has an
         // unpaid booking for this bid — reuse it, and don't mistake it for someone else's.
         $existing = Booking::where('room_request_id', $bid->id)
@@ -292,7 +296,14 @@ class RoomRequestController extends BaseController
             'status'          => 'reserved',
             'payment_status'  => 'pending',
             'room_request_id' => $bid->id, // links back so bid marked Done after payment
+            ...app(GuestIdentity::class)->attributes($guestId),
         ]);
+
+        if ($existing) {
+            $existing->update(app(GuestIdentity::class)->attributes($guestId));
+        }
+
+        app(GuestIdentity::class)->remember($request->user(), $guestId);
 
         // Lock the room
         $bid->room?->update(['status' => 'Reserved']);

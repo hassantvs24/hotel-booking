@@ -26,27 +26,90 @@ class ProfileController extends BaseController
         return $this->sendSuccess($data, 'User profile fetched successfully.');
     }
 
+    /**
+     * Saves the parts of the profile that were sent, and only those (the page changes one row at a time).
+     * The email is not changed here: it is what the guest signs in with and where confirmations go.
+     */
     public function updatePersonalInfo(ProfileRequest $request): JsonResponse
     {
         try {
             $user = $request->user();
+            $v = $request->validated();
 
-            $userData = array_merge($request->only(['email', 'phone']), [
-                'name' => $request->input('first_name') . ' ' . $request->input('last_name'),
-            ]);
+            $profileData = array_intersect_key($v, array_flip([
+                'first_name', 'last_name', 'date_of_birth', 'gender', 'address', 'city', 'state', 'zip_code', 'country', 'nid', 'passport',
+            ]));
 
-            $userProfileData = $request->except(['name', 'email', 'phone']);
+            $userData = [];
 
-            $user->update($userData);
+            if (array_key_exists('phone', $v)) {
+                $userData['phone'] = $v['phone'];
+            }
 
-            $user->profile()->updateOrCreate(
-                ['user_id' => $user->id],
-                $userProfileData
-            );
+            if (array_key_exists('first_name', $v) || array_key_exists('last_name', $v)) {
+                $known = $user->profile;
+                $first = $v['first_name'] ?? ($known?->first_name ?: explode(' ', trim((string) $user->name))[0]);
+                $last  = array_key_exists('last_name', $v) ? $v['last_name'] : $known?->last_name;
+                $name  = trim($first . ' ' . $last);
 
-            return $this->sendSuccess($user->load('profile'), 'Profile updated successfully.');
+                if ($name !== '') {
+                    $userData['name'] = $name;
+                }
+            }
+
+            if ($userData) {
+                $user->update($userData);
+            }
+
+            if ($profileData) {
+                $user->profile()->updateOrCreate(['user_id' => $user->id], $profileData);
+            }
+
+            return $this->sendSuccess($user->fresh()->load('profile'), 'Profile updated successfully.');
         } catch (\Exception $e) {
             return $this->sendError('Something went wrong.', [$e->getMessage()]);
+        }
+    }
+
+    /** A new profile photo: a picture of any common kind, scaled down, kept on the public disk. The old one is removed. */
+    public function updatePhoto(Request $request): JsonResponse
+    {
+        $request->validate(['photo' => ['required', 'file', 'image', 'mimes:jpg,jpeg,png,webp', 'max:8192']], [
+            'photo.image' => 'Please choose a picture (JPG, PNG or WebP).',
+            'photo.mimes' => 'Please choose a picture (JPG, PNG or WebP).',
+            'photo.max' => 'The picture is too big. Please choose one under 8 MB.',
+        ]);
+
+        $user = $request->user();
+        $file = $request->file('photo');
+        $optimized = app(\App\Services\Media\ImageOptimizer::class)->optimize($file);
+        $extension = $optimized['extension'] ?? (strtolower($file->extension() ?: 'jpg'));
+        $path = 'profile-photos/' . $user->id . '/' . now()->format('YmdHis') . '-' . \Illuminate\Support\Str::lower(\Illuminate\Support\Str::random(12)) . '.' . $extension;
+
+        \Illuminate\Support\Facades\Storage::disk('public')->put($path, $optimized['contents'] ?? file_get_contents($file->getRealPath()));
+        $this->forgetPhoto($user);
+        $user->update(['profile_photo' => $path]);
+
+        return $this->sendSuccess($user->fresh()->load('profile'), 'Photo updated.');
+    }
+
+    public function removePhoto(Request $request): JsonResponse
+    {
+        $user = $request->user();
+
+        $this->forgetPhoto($user);
+        $user->update(['profile_photo' => null]);
+
+        return $this->sendSuccess($user->fresh()->load('profile'), 'Photo removed.');
+    }
+
+    /** Deletes the file of the current photo, if it is one this page saved */
+    private function forgetPhoto($user): void
+    {
+        $old = $user->getRawOriginal('profile_photo');
+
+        if ($old && str_starts_with($old, 'profile-photos/')) {
+            \Illuminate\Support\Facades\Storage::disk('public')->delete($old);
         }
     }
 

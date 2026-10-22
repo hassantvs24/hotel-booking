@@ -28,7 +28,7 @@ class User extends Authenticatable
         'user_type',
     ];
 
-    protected $appends = ['is_admin', 'is_merchant', 'associated_property'];
+    protected $appends = ['is_admin', 'is_merchant', 'associated_property', 'profile_photo_url'];
 
     protected $hidden = [
         'password',
@@ -59,6 +59,18 @@ class User extends Authenticatable
     /*----------------------------------------
     | Accessors
     ----------------------------------------*/
+    /** The address of the profile photo (it is saved as a path on the public disk), or null when there is none */
+    public function getProfilePhotoUrlAttribute(): ?string
+    {
+        $p = $this->attributes['profile_photo'] ?? null;
+
+        if (!$p) {
+            return null;
+        }
+
+        return str_starts_with($p, 'http') ? $p : asset('storage/' . ltrim($p, '/'));
+    }
+
     public function getIsAdminAttribute(): bool
     {
         return $this->hasRole(config('site.adminGroup'));

@@ -207,6 +207,27 @@ class BookingController extends BaseController
         return $this->sendSuccess(['rooms' => $availableRooms]);
     }
 
+    /**
+     * The name and the ID (NID or passport) of the person who will stay. Only the admin and the owner of the booked property ask for
+     * it, one booking at a time; it never travels inside the booking lists. Every look is written to the log.
+     */
+    public function guestId($id): JsonResponse
+    {
+        $booking = $this->visible()->findOrFail($id);
+
+        \Illuminate\Support\Facades\Log::info('Guest ID looked at', ['booking' => $booking->booking_number, 'by' => auth()->id()]);
+
+        $number = $booking->main_guest_id_number;
+
+        return $this->sendSuccess([
+            'provided' => filled($number),
+            'name' => $booking->main_guest_name,
+            'type' => $booking->main_guest_id_type,
+            'number' => $number,
+            'masked' => $number ? \App\Services\Booking\GuestIdentity::mask($number) : null,
+        ]);
+    }
+
     private function isVendor(): bool
     {
         $user = auth()->user();
