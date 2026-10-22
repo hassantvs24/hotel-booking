@@ -20,7 +20,8 @@ return [
     'sandbox' => $sandbox,
     'apiDomain' => $apiDomain,
     'refund' => [
-        'timeout' => (int) env('SSLCZ_REFUND_TIMEOUT', 20),
+        // two tries of 10 s stay inside the web server's 30 s limit (a request killed in the middle leaves the refund half done)
+        'timeout' => (int) env('SSLCZ_REFUND_TIMEOUT', 10),
         'retry_times' => (int) env('SSLCZ_REFUND_RETRY_TIMES', 2),
         'retry_delay_ms' => (int) env('SSLCZ_REFUND_RETRY_DELAY_MS', 300),
         'remarks_max_length' => 255,

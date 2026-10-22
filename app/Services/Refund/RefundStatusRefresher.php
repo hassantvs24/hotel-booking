@@ -33,10 +33,7 @@ class RefundStatusRefresher
 
     public static function run(): void
     {
-        $waiting = RefundRequest::where('status', RefundRequest::STATUS_PROCESSING)
-            ->whereNotNull('gateway_refund_id')
-            ->where('gateway_refund_id', 'not like', 'LOCAL-REFUND-%')
-            ->exists();
+        $waiting = CheckRefundStatuses::needsAttention()->exists();
 
         // Nothing waiting → do not even touch the cache; and one asker at a time
         if (!$waiting || !Cache::add('refund-status-refresh', 1, self::PAUSE_SECONDS)) {

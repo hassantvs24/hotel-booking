@@ -41,6 +41,7 @@ class MoneyReportController extends BaseController
             'settings'  => $this->settingsNote(),
             'today'     => $this->report->today(),
             'reconcile' => ReconcileController::summary(),
+            'refunds'   => $this->report->refundsWaiting(),
         ]);
     }
 
@@ -153,6 +154,7 @@ class MoneyReportController extends BaseController
         $code = $this->report->problemCode($number);
         abort_if(!$code, 422, 'Nothing is held back for this booking that can be released here.');
         abort_if($code === 'manual_hold', 422, 'This booking is on hold by an admin. Lift the hold instead.');
+        abort_if($code === 'refund_pending', 422, 'A refund for this booking is not finished. Decide the refund first (Refund requests); the money is released when it is settled.');
 
         DB::table('money_reviews')->insert([
             'booking_number' => $number, 'reason' => $code, 'note' => trim($data['note']),

@@ -3,6 +3,7 @@
 namespace App\Jobs;
 
 use App\Models\RefundRequest;
+use App\Services\Refund\GatewayUnreachableException;
 use App\Services\Refund\RefundNotificationMailer;
 use App\Services\Refund\SslCommerzRefundService;
 use Illuminate\Bus\Queueable;
@@ -22,7 +23,8 @@ class ProcessRefund implements ShouldQueue, ShouldBeUnique
     public int $tries = 1;
     public int $timeout = 60;
     public bool $failOnTimeout = true;
-    public int $uniqueFor = 3600;
+    // only to stop two copies running at once (the row lock does the real guarding); a crashed run must not block a retry for long
+    public int $uniqueFor = 90;
 
     public function __construct(public readonly int $refundId)
     {
@@ -108,14 +110,21 @@ class ProcessRefund implements ShouldQueue, ShouldBeUnique
                 'message' => $exception->getMessage(),
             ]);
 
+            // "unknown": SSLCommerz gave no readable answer, so it may have the request. That changes what the admin must do.
+            $unknown = $exception instanceof GatewayUnreachableException;
+
             RefundRequest::query()
                 ->whereKey($this->refundId)
                 ->where('status', RefundRequest::STATUS_PROCESSING)
                 ->whereNull('gateway_refund_id')
                 ->update([
                     'status' => RefundRequest::STATUS_FAILED,
-                    'gateway_status' => 'failed',
-                    'failure_reason' => $exception->getMessage(),
+                    'gateway_status' => $unknown ? 'unknown' : 'failed',
+                    // once SSLCommerz may have the request, it stays that way until the admin resolves it (see the migration)
+                    'gateway_maybe_paid' => $unknown ? true : DB::raw('gateway_maybe_paid'),
+                    'failure_reason' => $unknown
+                        ? $exception->getMessage() . ' SSLCommerz may or may not have received the refund: look in the SSLCommerz panel before trying again.'
+                        : $exception->getMessage(),
                 ]);
 
             throw $exception;

@@ -10,8 +10,16 @@ class RefundQuoteService
 {
     public function __construct(private RefundPolicyService $policies) {}
 
-    public function quote(Booking $booking) : array
+    /**
+     * What a refund of this booking comes to.
+     *
+     * $asOf is the moment the guest is judged at. A guest who ASKS for a refund is judged on the day they asked, not on the
+     * day the admin gets round to approving (the admin's delay must never cost the guest money). Left empty it means "now".
+     */
+    public function quote(Booking $booking, ?\DateTimeInterface $asOf = null) : array
     {
+        $now = $asOf ? CarbonImmutable::instance($asOf) : CarbonImmutable::now();
+
         $booking->loadMissing(['transaction', 'refundRequests', 'room.property']);
 
         if ($booking->payment_status !== 'paid') {
@@ -32,7 +40,7 @@ class RefundQuoteService
 
         // Check-in day starts at midnight where the hotel is (Dhaka), not at midnight UTC, which is six hours later
         $checkIn = CarbonImmutable::parse(substr((string) $booking->checkin, 0, 10), config('refund.timezone', 'Asia/Dhaka'))->startOfDay();
-        $hoursBeforeCheckIn = (int) floor(now()->diffInHours($checkIn, false));
+        $hoursBeforeCheckIn = (int) floor($now->diffInHours($checkIn, false));
 
         if ($hoursBeforeCheckIn <= 0) {
             return $this->ineligible('The check-in time has passed.');
@@ -83,6 +91,9 @@ class RefundQuoteService
             'reason' => null,
             'currency' => config('refund.currency', 'BDT'),
             'hours_before_checkin' => $hoursBeforeCheckIn,
+            'days_before_checkin' => intdiv($hoursBeforeCheckIn, 24),
+            'as_of' => $now->toIso8601String(),
+            'check_in' => $checkIn->toDateString(),
             'policy_label' => $tier['label'],
             'refund_percentage' => (int) $tier['refund_percentage'],
             'policy_lines' => $this->policies->lines($this->policies->tiersForBooking($booking, $property)),
@@ -92,6 +103,14 @@ class RefundQuoteService
             'refundable_amount' => $this->fromCents($refundCents),
             'transaction_id' => $booking->transaction->id,
         ];
+    }
+
+    /** Has the check-in day of this booking begun (Dhaka midnight)? After that the guest may already be in the hotel. */
+    public function checkInStarted(Booking $booking, ?\DateTimeInterface $now = null): bool
+    {
+        $checkIn = CarbonImmutable::parse(substr((string) $booking->checkin, 0, 10), config('refund.timezone', 'Asia/Dhaka'))->startOfDay();
+
+        return ($now ? CarbonImmutable::instance($now) : CarbonImmutable::now())->gte($checkIn);
     }
 
     private function ineligible(string $reason): array

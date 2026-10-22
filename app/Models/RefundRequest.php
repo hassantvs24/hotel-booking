@@ -25,6 +25,12 @@ class RefundRequest extends Model
         self::STATUS_CANCELLED,
     ];
 
+    /** What only the platform admin may see (a guest or a host never gets these) */
+    public const INTERNAL_FIELDS = [
+        'admin_note', 'failure_reason', 'gateway_response', 'gateway_refund_id', 'gateway_status', 'gateway_attempt',
+        'gateway_maybe_paid', 'processed_by', 'processed_at', 'idempotency_key', 'not_stayed_confirmed_at',
+    ];
+
     protected $casts = [
         'original_amount' => 'decimal:2',
         'requested_amount' => 'decimal:2',

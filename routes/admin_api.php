@@ -246,6 +246,7 @@ Route::middleware(['auth:sanctum', 'staff'])->prefix('admin')->group(function ()
     Route::get('refunds/{refund:refund_number}', [RefundController::class, 'show',]);
     Route::post('refunds/{refund:refund_number}/approve', [RefundController::class, 'approve',]);
     Route::post('refunds/{refund:refund_number}/check-status', [RefundController::class, 'checkStatus',]);
+    Route::post('refunds/{refund:refund_number}/mark-refunded', [RefundController::class, 'markRefunded',]);
     Route::post('refunds/{refund:refund_number}/reject', [RefundController::class, 'reject',]);
 
     /*----------------------------------------------------------

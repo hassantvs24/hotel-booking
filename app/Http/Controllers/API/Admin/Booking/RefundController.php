@@ -6,14 +6,17 @@ use App\Http\Controllers\BaseController;
 use App\Jobs\CheckRefundStatuses;
 use App\Jobs\ProcessRefund;
 use App\Models\RefundRequest;
+use App\Services\Refund\RefundNotificationMailer;
 use App\Services\Refund\RefundQuoteService;
 use App\Services\Refund\RefundStatusRefresher;
+use App\Services\Refund\SecretScrubber;
 use App\Services\Refund\SslCommerzRefundService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
@@ -60,9 +63,15 @@ class RefundController extends BaseController
             });
         }
 
-        return $this->sendSuccess(
-            $query->latest('requested_at')->paginate($validated['per_page'] ?? 15)
-        );
+        // Requests that wait for a decision: the one whose check-in comes first is at the top
+        if (($validated['status'] ?? null) === RefundRequest::STATUS_REQUESTED) {
+            $query->orderBy(DB::raw('(select substr(bookings.checkin, 1, 10) from bookings where bookings.id = refund_requests.booking_id)'));
+        }
+
+        $page = $query->latest('requested_at')->paginate($validated['per_page'] ?? 15);
+        $page->getCollection()->each(fn (RefundRequest $r) => $this->forViewer($r));
+
+        return $this->sendSuccess($page);
     }
 
     public function stats(): JsonResponse
@@ -87,20 +96,75 @@ class RefundController extends BaseController
     {
         $this->authorizeRefund($refund);
 
-        return $this->sendSuccess($refund->load([
+        $refund->load([
             'user:id,name,email',
             'booking.room.property',
             'transaction',
             'processor:id,name',
+        ]);
+
+        $this->forViewer($refund);
+
+        // For a request still waiting: exactly what Approve will do (so the admin never has to know the policies by heart)
+        return $this->sendSuccess(array_merge($refund->toArray(), [
+            'review' => $refund->status === RefundRequest::STATUS_REQUESTED ? $this->review($refund) : null,
         ]));
+    }
+
+    /**
+     * The platform admin sees everything about a refund. A host sees the refunds of their own bookings (guest, amounts, status),
+     * not the platform's private notes, SSLCommerz's answers, or the inside of the payment record (the platform's gateway fee,
+     * card details).
+     */
+    private function forViewer(RefundRequest $refund): RefundRequest
+    {
+        if (auth()->user()?->is_admin) {
+            return $refund;
+        }
+
+        $refund->makeHidden(RefundRequest::INTERNAL_FIELDS);
+        $refund->unsetRelation('processor');
+        $refund->transaction?->makeHidden(['meta', 'transaction_reference']);
+
+        return $refund;
+    }
+
+    /**
+     * What approving this request will do, judged on the day the guest asked: the property's refund policy as it was promised
+     * when the booking was made, how many days before check-in the guest asked, the % that gives and the amount.
+     */
+    private function review(RefundRequest $refund): array
+    {
+        $booking = $refund->booking;
+        $quote = $this->refundQuoteService->quote($booking, $refund->requested_at ?? $refund->created_at);
+        $started = $this->refundQuoteService->checkInStarted($booking);
+
+        return [
+            'property_name' => $booking?->room?->property?->name,
+            'asked_at' => ($refund->requested_at ?? $refund->created_at)?->toIso8601String(),
+            'eligible' => $quote['eligible'],
+            'reason' => $quote['reason'] ?? null,
+            'policy_lines' => $quote['policy_lines'] ?? [],
+            'policy_label' => $quote['policy_label'] ?? null,
+            'days_before_checkin' => $quote['days_before_checkin'] ?? null,
+            'hours_before_checkin' => $quote['hours_before_checkin'] ?? null,
+            'refund_percentage' => $quote['refund_percentage'] ?? null,
+            'original_amount' => $quote['original_amount'] ?? null,
+            'will_pay' => $quote['refundable_amount'] ?? null,
+            'cancellation_fee' => $quote['cancellation_fee'] ?? null,
+            'check_in_started' => $started,
+            'needs_stay_confirmation' => $started,
+        ];
     }
 
     public function approve(Request $request, RefundRequest $refund): JsonResponse
     {
         $this->authorizeRefund($refund);
+        $this->adminOnly();
 
         $validated = $request->validate([
             'admin_note' => ['nullable', 'string', 'max:1000'],
+            'confirm_not_stayed' => ['nullable', 'boolean'],
         ]);
 
         $approved = DB::transaction(function () use ($request, $refund, $validated) {
@@ -115,11 +179,49 @@ class RefundController extends BaseController
                 ]);
             }
 
-            // Recalculate at approval time; never trust the amount stored by the UI.
-            $quote = $this->refundQuoteService->quote($locked->booking);
+            // A refund that FAILED (SSLCommerz said no, or could not be reached) is tried again for the SAME amount the guest was
+            // already owed: nothing is worked out again (the booking is already cancelled, so it would no longer look refundable).
+            if ($locked->status === RefundRequest::STATUS_FAILED) {
+                if ((float) $locked->approved_amount <= 0 || $locked->booking->payment_status !== 'paid' || $locked->transaction?->status !== 'completed') {
+                    throw ValidationException::withMessages([
+                        'refund' => 'This refund cannot be tried again: the payment is no longer refundable.',
+                    ]);
+                }
+
+                $note = trim(($validated['admin_note'] ?? '') . ($locked->gateway_refund_id ? " (try again; the failed SSLCommerz reference was {$locked->gateway_refund_id})" : ' (try again)'));
+                $locked->update([
+                    'status' => RefundRequest::STATUS_APPROVED,
+                    'processed_by' => $request->user()->id,
+                    'admin_note' => $note !== '' ? $note : null,
+                    'approved_at' => now(),
+                    'processed_at' => null,
+                    'failure_reason' => null,
+                    'gateway_refund_id' => null,
+                    'gateway_status' => null,
+                    // SSLCommerz refused it: a new request, a new id. SSLCommerz may already HAVE it (no answer came back): the
+                    // same id, so that SSLCommerz knows it is the same request and the guest can never be paid twice.
+                    'gateway_attempt' => (int) $locked->gateway_attempt + ($locked->gateway_maybe_paid ? 0 : 1),
+                ]);
+
+                return $locked->fresh(['user', 'booking.room.property', 'transaction', 'processor']);
+            }
+
+            // Worked out again here (never trust an amount sent by the screen), but AS OF THE DAY THE GUEST ASKED: the guest
+            // is owed what the policy said that day, however long the admin took.
+            $asked = $locked->requested_at ?? $locked->created_at;
+            $quote = $this->refundQuoteService->quote($locked->booking, $asked);
             if (!$quote['eligible']) {
                 throw ValidationException::withMessages([
                     'refund' => $quote['reason'],
+                ]);
+            }
+
+            // Once the check-in day has begun the guest may already be in the hotel: the admin must say they checked that
+            // the guest did not stay.
+            $started = $this->refundQuoteService->checkInStarted($locked->booking);
+            if ($started && empty($validated['confirm_not_stayed'])) {
+                throw ValidationException::withMessages([
+                    'confirm_not_stayed' => 'The check-in day has begun. Check with the hotel that the guest did not stay, then tick the box to confirm.',
                 ]);
             }
 
@@ -127,6 +229,7 @@ class RefundController extends BaseController
                 'status' => RefundRequest::STATUS_APPROVED,
                 'approved_amount' => $quote['refundable_amount'],
                 'cancellation_fee' => $quote['cancellation_fee'],
+                'not_stayed_confirmed_at' => $started ? now() : null,
                 'processed_by' => $request->user()->id,
                 'admin_note' => $validated['admin_note'] ?? null,
                 'approved_at' => now(),
@@ -156,12 +259,73 @@ class RefundController extends BaseController
             return $locked->fresh(['user', 'booking.room.property', 'transaction', 'processor']);
         });
 
-        ProcessRefund::dispatch($approved->id);
+        // Where the queue runs the job straight away (sync), a refusal by SSLCommerz comes back as an exception. The approval
+        // itself is saved and the job has already marked the refund failed, so the admin gets an answer about that, not a 500.
+        try {
+            ProcessRefund::dispatch($approved->id);
+        } catch (\Throwable $e) {
+            Log::warning('Refund job ended with an error', ['refund_id' => $approved->id, 'message' => SecretScrubber::describe($e)]);
+        }
 
-        return $this->sendSuccess(
-            $approved->fresh(['user', 'booking.room.property', 'transaction', 'processor']),
-            'Refund approved and queued for payment processing.'
-        );
+        $fresh = $approved->fresh(['user', 'booking.room.property', 'transaction', 'processor']);
+
+        return $this->sendSuccess($fresh, match ($fresh->status) {
+            RefundRequest::STATUS_FAILED => $fresh->gateway_maybe_paid
+                ? 'Approved, but SSLCommerz may already have paid this refund (no clear answer was received): ' . $fresh->failure_reason . ' It is marked Failed. The guest\'s money and the host\'s payout stay on hold until it is settled.'
+                : 'Approved, but the refund did not go through: ' . $fresh->failure_reason . ' It is marked Failed. Fix the cause and press "Try again". The guest\'s money and the host\'s payout stay on hold until it is settled.',
+            RefundRequest::STATUS_COMPLETED => 'Refund approved and paid back to the guest.',
+            default => 'Refund approved and queued for payment processing.',
+        });
+    }
+
+    /**
+     * A refund that failed with "no answer" may in fact have been paid by SSLCommerz. The admin looks in the SSLCommerz panel;
+     * if the refund is there, this records it (with SSLCommerz's own reference) instead of paying the guest a second time.
+     * The reconciliation later asks SSLCommerz about that reference, so a wrong entry shows up as a mismatch.
+     */
+    public function markRefunded(Request $request, RefundRequest $refund): JsonResponse
+    {
+        $this->authorizeRefund($refund);
+        $this->adminOnly();
+
+        $validated = $request->validate([
+            'gateway_reference' => ['required', 'string', 'min:3', 'max:100'],
+            'admin_note' => ['required', 'string', 'min:3', 'max:1000'],
+        ]);
+        $reference = trim($validated['gateway_reference']);
+
+        $done = DB::transaction(function () use ($request, $refund, $validated, $reference) {
+            $locked = RefundRequest::query()->with(['booking', 'transaction'])->lockForUpdate()->findOrFail($refund->id);
+
+            if ($locked->status !== RefundRequest::STATUS_FAILED) {
+                throw ValidationException::withMessages(['refund' => "Only a failed refund can be marked as refunded by hand (this one is {$locked->status})."]);
+            }
+            if ($locked->booking?->payment_status !== 'paid' || $locked->transaction?->status !== 'completed') {
+                throw ValidationException::withMessages(['refund' => 'The payment of this booking is not waiting for a refund any more.']);
+            }
+            if (str_starts_with(strtoupper($reference), 'LOCAL') || RefundRequest::where('gateway_refund_id', $reference)->where('id', '!=', $locked->id)->exists()) {
+                throw ValidationException::withMessages(['gateway_reference' => 'Enter the refund reference that SSLCommerz shows for this refund (it must not belong to another refund).']);
+            }
+
+            $locked->update([
+                'status' => RefundRequest::STATUS_COMPLETED,
+                'gateway_refund_id' => $reference,
+                'gateway_status' => 'completed',
+                'gateway_response' => ['marked_by_hand' => true, 'by_user_id' => $request->user()->id],
+                'completed_at' => now(),
+                'failure_reason' => null,
+                'processed_by' => $request->user()->id,
+                'admin_note' => trim(($locked->admin_note ? $locked->admin_note . ' | ' : '') . 'Marked refunded by hand (SSLCommerz reference ' . $reference . '): ' . $validated['admin_note']),
+            ]);
+            $locked->booking->update(['status' => 'refunded', 'payment_status' => 'refunded']);
+            $locked->transaction->update(['status' => 'refunded']);
+
+            return $locked->fresh(['user', 'booking.room.property', 'transaction', 'processor']);
+        });
+
+        RefundNotificationMailer::sendCompleted($done);
+
+        return $this->sendSuccess($done, 'Marked as refunded. It is in the money books now.');
     }
 
     /**
@@ -171,6 +335,7 @@ class RefundController extends BaseController
     public function checkStatus(RefundRequest $refund): JsonResponse
     {
         $this->authorizeRefund($refund);
+        $this->adminOnly();
 
         $waiting = $refund->status === RefundRequest::STATUS_PROCESSING
             && filled($refund->gateway_refund_id)
@@ -194,6 +359,7 @@ class RefundController extends BaseController
     public function reject(Request $request, RefundRequest $refund): JsonResponse
     {
         $this->authorizeRefund($refund);
+        $this->adminOnly();
 
         $validated = $request->validate([
             'admin_note' => ['required', 'string', 'max:1000'],
@@ -221,9 +387,19 @@ class RefundController extends BaseController
         return $this->sendSuccess($rejected, 'Refund request rejected.');
     }
 
+    /**
+     * Every guest payment goes to the platform's own SSLCommerz account, so a refund is paid out of the platform's money.
+     * Only the platform admin may approve or reject one (or ask SSLCommerz about it). A vendor sets the refund POLICY of their
+     * property (see PropertyRefundPolicyController) and can SEE the requests of their own bookings, but never moves the money.
+     */
+    private function adminOnly(): void
+    {
+        abort_unless(auth()->user()->is_admin, 403, 'Only the platform admin can approve or reject a refund: all payments are held by the platform, so the platform pays the refund.');
+    }
+
     // ══════════════════════════════════════════════════════
     //  ACCESS SCOPE
-    //  Admin: every refund. Vendor: refunds of bookings in properties they own.
+    //  Admin: every refund. Vendor: refunds of bookings in properties they own (to look at, not to act on).
     //  Anyone else (e.g. a guest account): forbidden. Refunds move money, so no one
     //  but the people who run the property may even see them.
     // ══════════════════════════════════════════════════════

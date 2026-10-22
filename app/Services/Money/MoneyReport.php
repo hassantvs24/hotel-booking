@@ -309,6 +309,33 @@ class MoneyReport
             ->count();
     }
 
+    /**
+     * Refund requests that need the admin, and the vendors' money they hold back.
+     *
+     * @return array{waiting:int,oldest_days:?int,urgent:int,held_paisa:int,in_progress:int,failed:int}
+     */
+    public function refundsWaiting(): array
+    {
+        $today = CarbonImmutable::now(MoneyRules::TZ)->startOfDay();
+        $rows  = DB::table('refund_requests as rr')->join('bookings as b', 'b.id', '=', 'rr.booking_id')
+            ->whereIn('rr.status', ['requested', 'approved', 'processing', 'failed'])
+            ->get(['rr.status', 'rr.requested_at', 'b.booking_number', 'b.checkin']);
+
+        $asking  = $rows->where('status', 'requested');
+        $oldest  = $asking->min('requested_at');
+        $urgent  = $asking->filter(fn ($r) => CarbonImmutable::parse(substr((string) $r->checkin, 0, 10), MoneyRules::TZ)->lte($today->addDays(2)))->count();   // check-in within 2 days, or already begun
+        $numbers = $rows->pluck('booking_number')->filter()->map(fn ($n) => (int) $n)->unique()->values()->all();
+
+        return [
+            'waiting'     => $asking->count(),
+            'oldest_days' => $oldest ? (int) CarbonImmutable::parse($oldest, 'UTC')->diffInDays(CarbonImmutable::now('UTC')) : null,
+            'urgent'      => $urgent,
+            'held_paisa'  => $numbers ? max(0, (int) DB::table('ledger_entries')->whereIn('booking_number', $numbers)->sum('vendor_paisa')) : 0,
+            'in_progress' => $rows->whereIn('status', ['approved', 'processing'])->count(),
+            'failed'      => $rows->where('status', 'failed')->count(),
+        ];
+    }
+
     /** The checks behind the "your books are in order" line */
     public function health(): array
     {

@@ -136,7 +136,7 @@ class SslCommerzRefundService
             ]);
 
             // no previous exception on purpose: its message carries the web address, and with it the store password
-            throw new RuntimeException('Could not connect to SSLCommerz.');
+            throw new GatewayUnreachableException('Could not connect to SSLCommerz.');
         }
 
         if (!$response->successful()) {
@@ -145,7 +145,7 @@ class SslCommerzRefundService
                 'body' => $response->body(),
             ]);
 
-            throw new RuntimeException(
+            throw new GatewayUnreachableException(
                 "SSLCommerz refund request returned HTTP {$response->status()}."
             );
         }
@@ -153,7 +153,7 @@ class SslCommerzRefundService
         $data = $response->json();
 
         if (!is_array($data)) {
-            throw new RuntimeException('SSLCommerz returned an invalid refund response.');
+            throw new GatewayUnreachableException('SSLCommerz returned an invalid refund response.');
         }
 
         return $data;
@@ -182,7 +182,8 @@ class SslCommerzRefundService
     private function gatewayTransactionId(RefundRequest $refund): string
     {
         $id = str_pad((string) $refund->id, 8, '0', STR_PAD_LEFT);
-        $hash = substr(hash('sha256', $refund->idempotency_key), 0, 20);
+        // one id per TRY: the same try sent twice is recognised by SSLCommerz, a later "try again" is a new request
+        $hash = substr(hash('sha256', $refund->idempotency_key . '|' . (int) ($refund->gateway_attempt ?: 1)), 0, 20);
 
         return substr("RF{$id}{$hash}", 0, 30);
     }

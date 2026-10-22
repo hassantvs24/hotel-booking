@@ -26,6 +26,7 @@ class MoneyChecks
         'room_moved'        => 'The booking was moved to a room of another property after the guest paid.',
         'duplicate_payment' => 'The guest was charged more than once for this booking.',
         'manual_hold'       => 'The money for this booking is on hold (set by the admin).',
+        'refund_pending'    => 'A refund for this booking is not finished yet (waiting for a decision, being paid, or failed at the bank). The money is held until it is settled.',
     ];
 
     /** @var array<int,string>|null booking number => reason code */
@@ -84,6 +85,14 @@ class MoneyChecks
                 ->mapWithKeys(fn ($r) => [$r->booking_number . '|' . $r->reason => true]);
 
             $out = array_filter($out, fn ($reason, $number) => !isset($released[$number . '|' . $reason]), ARRAY_FILTER_USE_BOTH);
+        }
+
+        // A refund that is not finished (waiting for the admin, being paid, or failed at the bank) always holds the booking's money:
+        // the vendor must not be paid for a booking the guest may still get back. Only settling the refund lifts it, a review cannot.
+        $open = DB::table('refund_requests as rr')->join('bookings as b', 'b.id', '=', 'rr.booking_id')
+            ->whereIn('rr.status', ['requested', 'approved', 'processing', 'failed'])->pluck('b.booking_number');
+        foreach ($open as $number) {
+            $out[(int) $number] = 'refund_pending';
         }
 
         // A hold the admin put on a booking always counts, and a review cannot lift it (only lifting the hold does)

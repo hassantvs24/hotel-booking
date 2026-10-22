@@ -63,6 +63,7 @@ class DashboardController extends BaseController
             'total_earnings' => $totalEarnings,
             'monthly_revenue' => $monthly,
             'earnings' => $earnings,
+            'refunds_waiting' => $user->is_admin ? app(\App\Services\Money\MoneyReport::class)->refundsWaiting() : null,
             'user' => $user
         ];
 

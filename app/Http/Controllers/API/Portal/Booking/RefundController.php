@@ -107,6 +107,7 @@ class RefundController extends BaseController
         });
 
         $refund->load(['booking.room.property', 'transaction']);
+        $this->forGuest($refund);
 
         // The bell in the admin panel (admins and the property's owner). A notification problem must never
         // undo or hide the refund request the guest just made.
@@ -135,6 +136,7 @@ class RefundController extends BaseController
             ])
             ->latest('requested_at')
             ->paginate(min(100, max(1, $request->integer('per_page', 15))));
+        $refunds->getCollection()->each(fn (RefundRequest $r) => $this->forGuest($r));
 
         return $this->sendSuccess($refunds);
     }
@@ -144,11 +146,7 @@ class RefundController extends BaseController
         $this->ensureRefundOwnership($request, $refund);
 
         return $this->sendSuccess(
-            $refund->load([
-                'booking.room.property',
-                'transaction',
-                'processor:id,name',
-            ])
+            $this->forGuest($refund->load(['booking.room.property', 'transaction']))
         );
     }
 
@@ -175,6 +173,19 @@ class RefundController extends BaseController
         });
 
         return $this->sendSuccess([], 'Refund request cancelled.');
+    }
+
+    /**
+     * What a guest sees of their own refund: the request, the amounts, the status. Not the admin's private notes, not what
+     * SSLCommerz answered, not the inside of the payment record (it holds the platform's gateway fee and card details).
+     */
+    private function forGuest(RefundRequest $refund): RefundRequest
+    {
+        $refund->makeHidden(RefundRequest::INTERNAL_FIELDS);
+        $refund->unsetRelation('processor');
+        $refund->transaction?->makeHidden(['meta', 'transaction_reference', 'user_id']);
+
+        return $refund;
     }
 
     private function ensureOwnership(Request $request, Booking $booking): void
