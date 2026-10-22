@@ -58,21 +58,44 @@ class BankDepositService
     }
 
     /**
-     * The next stretch to check: it starts the day after the last deposit's period ends (or when the books began) and is as
-     * long as the "bank check" setting, never going into today.
+     * The next stretch to check: it starts the day after the last deposit's period ends (or, before any deposit, the day the first
+     * REAL payment came in: test payments never reach the bank) and is as long as the "bank check" setting, never going into today.
+     * It is only "overdue" when that stretch holds real money to confirm: with nothing real in it there is nothing to check.
      *
      * @return array{from:string,to:string,due_on:string,overdue:bool,today:string}
      */
     public function next(): array
     {
         $today = CarbonImmutable::now(MoneyRules::TZ)->startOfDay();
-        $from  = $this->last() ? CarbonImmutable::parse($this->last()->period_to->toDateString(), MoneyRules::TZ)->addDay() : $this->rules->startsAt()->startOfDay();
+        $from  = $this->last() ? CarbonImmutable::parse($this->last()->period_to->toDateString(), MoneyRules::TZ)->addDay() : $this->firstDay();
         $to    = $from->addDays($this->checkDays() - 1);
+        $shown = $to->gte($today) ? $today->subDay() : $to;
+
+        $hasMoney = false;
+        if ($shown->gte($from)) {
+            $e = $this->expected($from->toDateString(), $shown->toDateString());
+            $hasMoney = $e['payment_count'] > 0 || $e['refunds'] > 0;
+        }
 
         return [
-            'from' => $from->toDateString(), 'to' => ($to->gte($today) ? $today->subDay() : $to)->toDateString(),
-            'due_on' => $to->addDay()->toDateString(), 'overdue' => $today->gt($to), 'today' => $today->toDateString(),
+            'from' => $from->toDateString(), 'to' => $shown->toDateString(),
+            'due_on' => $to->addDay()->toDateString(), 'overdue' => $today->gt($to) && $hasMoney, 'today' => $today->toDateString(),
         ];
+    }
+
+    /** Where the first bank check starts: the first real payment (never before the books began) */
+    private function firstDay(): CarbonImmutable
+    {
+        $start = $this->rules->startsAt()->startOfDay();
+        $first = LedgerEntry::query()->where('is_test', false)->min('occurred_on');
+
+        if (!$first) {
+            return $start;
+        }
+
+        $day = CarbonImmutable::parse(substr((string) $first, 0, 10), MoneyRules::TZ)->startOfDay();
+
+        return $day->gt($start) ? $day : $start;
     }
 
     /** Payments recorded after the last deposit's period: not yet confirmed in the bank (can be a long way from "missing") */
