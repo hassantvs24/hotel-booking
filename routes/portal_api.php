@@ -153,6 +153,9 @@ Route::prefix('portal')->group(function () {
         // Creates the country / division / district too, so only for signed-in owners (and rate-limited)
         Route::post('/resolve', [\App\Http\Controllers\API\Portal\Location\LocationController::class, 'resolve'])
             ->middleware(['auth:sanctum', 'throttle:30,1']);
+        // The divisions of a country, the districts of a division, the upazilas of a district (the property form, one step at a time)
+        Route::get('/children', [\App\Http\Controllers\API\Portal\Location\LocationChildrenController::class, 'index'])
+            ->middleware(['auth:sanctum', 'throttle:120,1']);
     });
 
     Route::middleware('auth:sanctum')->group(function () {

@@ -12,6 +12,7 @@ use App\Models\PropertyRequest;
 use App\Models\PropertyRule;
 use App\Models\State;
 use App\Models\User;
+use App\Services\Location\AreaPlace;
 use App\Notifications\Admin\AdminNotification;
 use App\Traits\MediaMan;
 use Illuminate\Http\JsonResponse;
@@ -29,11 +30,10 @@ class PropertyDraftController extends BaseController
     public function options() : JsonResponse
     {
         $propertyTypes = PropertyCategory::select('id', 'name')->get();
-        $countries = Country::select('id', 'name')->get();
+        // The countries come from the world list; the divisions, districts and upazilas of a country are asked for one
+        // step at a time (GET /portal/location/children) as the owner picks, so the form does not load the whole world.
+        $countries = Country::select('id', 'name')->orderBy('name')->get();
 
-        $states = State::select('id', 'name', 'country_id')->get();
-        $cities = City::select('id', 'name', 'state_id')->get();
-        $places = Place::select('id', 'name', 'city_id')->get();
         $facilities = FacilitySub::with('facility:id,name')
         ->select('id', 'name', 'facility_id')
         ->get();
@@ -42,9 +42,6 @@ class PropertyDraftController extends BaseController
         return $this->sendSuccess([
             'property_types' => $propertyTypes,
             'countries' => $countries,
-            'states' => $states,
-            'cities' => $cities,
-            'places' => $places,
             'facilities' => $facilities,
             'rules' => $rules
         ]);
@@ -108,6 +105,12 @@ class PropertyDraftController extends BaseController
         $draft = $this->getDraft($request, $id);
 
         $stepData = $request->input('data', []);
+
+        // An upazila / area picked from the world list becomes the property's place
+        if ((int) $step === 3) {
+            $stepData = $this->placeFromArea($stepData);
+        }
+
         $draftData = $draft->draft_data ?? [];
 
         // Merge this step's data into the draft JSON
@@ -285,6 +288,24 @@ class PropertyDraftController extends BaseController
         if (!empty($data['description'])) $updates['description']     = $data['description'];
         if (!empty($data['email']))        $updates['owner_email']     = $data['email'];
         if (!empty($data['phone']))        $updates['contact_number']  = $data['phone'];
+    }
+
+    private function placeFromArea(array $data): array
+    {
+        if (empty($data['area_id'])) {
+            return $data;
+        }
+
+        $place = app(AreaPlace::class)->forArea(
+            (int) $data['area_id'],
+            $data['city_id'] ?? 0,
+            isset($data['latitude']) && $data['latitude'] !== '' ? (float) $data['latitude'] : null,
+            isset($data['longitude']) && $data['longitude'] !== '' ? (float) $data['longitude'] : null,
+        );
+
+        $data['place_id'] = $place->id;
+
+        return $data;
     }
 
     private function syncStep3(array &$updates, array $data): void

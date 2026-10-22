@@ -11,6 +11,7 @@ use App\Http\Controllers\API\Admin\Dashboard\DashboardController;
 use App\Http\Controllers\API\Admin\Location\CityController;
 use App\Http\Controllers\API\Admin\Location\CountryController;
 use App\Http\Controllers\API\Admin\Location\LocationBrowseController;
+use App\Http\Controllers\API\Admin\Location\LocationManageController;
 use App\Http\Controllers\API\Admin\Location\PlaceController;
 use App\Http\Controllers\API\Admin\Location\StateController;
 use App\Http\Controllers\API\Admin\Property\Facility\FacilityController;
@@ -64,6 +65,10 @@ Route::middleware(['auth:sanctum', 'staff'])->prefix('admin')->group(function ()
     Route::prefix('location')->middleware('admin.write')->group(function () {
         Route::get('browse',        [LocationBrowseController::class, 'index']);
         Route::get('browse/search', [LocationBrowseController::class, 'search']);
+
+        Route::post('world/{level}',          [LocationManageController::class, 'store']);
+        Route::put('world/{level}/{id}',      [LocationManageController::class, 'update'])->whereNumber('id');
+        Route::delete('world/{level}/{id}',   [LocationManageController::class, 'destroy'])->whereNumber('id');
 
         Route::apiResource('countries', CountryController::class)->except(['create', 'show', 'edit']);
         Route::apiResource('states',    StateController::class  )->except(['create', 'show', 'edit']);
