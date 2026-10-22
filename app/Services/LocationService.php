@@ -34,7 +34,14 @@ class LocationService
             ->limit(4)->get()
             ->map(fn($p) => $this->formatPlace($p));
 
+        // Only areas with a place under them are offered: the full world list is in the database, but a guest
+        // or owner typing "Ba" should not be shown hundreds of countries and districts that have no hotel.
+        $cityIdsWithPlaces = Place::select('city_id')->whereNotNull('city_id');
+        $stateIdsWithPlaces = City::select('state_id')->whereIn('id', $cityIdsWithPlaces);
+        $countryIdsWithPlaces = State::select('country_id')->whereIn('id', $stateIdsWithPlaces);
+
         $cities = City::with('state.country')
+            ->whereIn('id', $cityIdsWithPlaces)
             ->where('name', 'like', "%{$q}%")
             ->limit(3)->get()
             ->map(fn($c) => [
@@ -51,6 +58,7 @@ class LocationService
             ]);
 
         $states = State::with('country')
+            ->whereIn('id', $stateIdsWithPlaces)
             ->where('name', 'like', "%{$q}%")
             ->limit(2)->get()
             ->map(fn($s) => [
@@ -67,7 +75,8 @@ class LocationService
             ]);
 
         // ── Country match ──────────────────────────────────
-        $countries = Country::where('name', 'like', "%{$q}%")
+        $countries = Country::whereIn('id', $countryIdsWithPlaces)
+            ->where('name', 'like', "%{$q}%")
             ->limit(2)->get()
             ->map(fn($c) => [
                 'type'        => 'country',

@@ -25,6 +25,11 @@ class City extends Model
         return $this->morphOne(Media::class, 'media');
     }
 
+    public function areas(): HasMany
+    {
+        return $this->hasMany(Area::class);
+    }
+
     public function properties(): HasMany
     {
         return $this->hasMany(Property::class);
@@ -40,12 +45,7 @@ class City extends Model
      ----------------------------------------*/
     public function getPhotoUrlAttribute(): string
     {
-        $iconUrl = asset('assets/default/default_icon.svg');
-
-        if ($this->photo()->exists()) {
-            $iconUrl = $this->relations['photo']->url;
-        }
-
-        return $iconUrl;
+        // The photo is always loaded with the city, so a long list of cities does not ask the database once per row
+        return $this->photo?->url ?? asset('assets/default/default_icon.svg');
     }
 }
