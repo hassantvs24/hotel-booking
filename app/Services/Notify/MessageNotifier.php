@@ -43,17 +43,21 @@ class MessageNotifier
         $text = trim((string) $message->message);
         $snippet = $text !== '' ? Str::limit($text, 90) : 'Sent you a file';
 
+        // the property's owner and active staff, and the platform admins (who see every hotel's chats)
         $recipientIds = $property->staffs->filter(fn ($s) => (bool) $s->pivot->is_active)->pluck('id')
-            ->push($property->user_id)->unique()->reject(fn ($id) => (int) $id === (int) $message->sender_id);
+            ->push($property->user_id)->merge(User::admins()->pluck('id'))->unique()->reject(fn ($id) => (int) $id === (int) $message->sender_id);
 
         foreach (User::whereIn('id', $recipientIds)->get() as $user) {
             $earlier = $this->unreadFor($user, $conversation->id);
             $count = $earlier->sum(fn ($n) => max(1, (int) ($n->data['count'] ?? 1))) + 1;
             $earlier->each->delete();
 
+            // the admin sees every hotel, so the title says which one
+            $where = $user->is_admin ? " — {$property->name}" : '';
+
             $user->notify(new AdminNotification(
                 'message',
-                $count > 1 ? "{$count} new messages from {$guest}" : "New message from {$guest}",
+                ($count > 1 ? "{$count} new messages from {$guest}" : "New message from {$guest}") . $where,
                 $snippet,
                 'bx-message-dots',
                 'teal',

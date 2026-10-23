@@ -35,9 +35,9 @@ class VendorAlerts
             $guest = $review->user?->name ?: 'A guest';
             $stars = number_format((float) $review->overall_rating, 1);
 
-            $this->tell($this->team($property), 'review', "New review: {$stars}/10",
+            $this->tell($this->watchers($property), 'review', "New review: {$stars}/10",
                 $comment !== '' ? "{$guest}: " . Str::limit($comment, 90) : "{$guest} rated {$property->name}",
-                ['property_id' => $property->id, 'review_submission_id' => $review->id, 'booking_number' => $review->booking?->booking_number]);
+                ['property_id' => $property->id, 'review_submission_id' => $review->id, 'booking_number' => $review->booking?->booking_number], $property->name);
         });
     }
 
@@ -103,10 +103,10 @@ class VendorAlerts
 
             $minutes = max(1, (int) now()->diffInMinutes($bid->request_expiration_time, false));
 
-            $this->tell($this->team($property), 'bid_expiring', 'An offer is about to run out',
+            $this->tell($this->watchers($property), 'bid_expiring', 'An offer is about to run out',
                 ($bid->user?->name ?: 'A guest') . "'s offer of BDT " . number_format((float) $bid->discount_price) . '/night on ' . ($bid->room->name ?? 'a room')
                     . " runs out in about {$minutes} minutes. Answer it before then.",
-                ['property_id' => $property->id, 'room_request_id' => $bid->id]);
+                ['property_id' => $property->id, 'room_request_id' => $bid->id], $property->name);
         });
     }
 
@@ -137,6 +137,32 @@ class VendorAlerts
         });
     }
 
+    /** The platform admin: one line a day, for all hotels together (the hotels' own people get their own line) */
+    public function arrivingTomorrowEverywhere(int $guests, int $hotels): void
+    {
+        $this->safely(function () use ($guests, $hotels) {
+            if ($guests < 1) {
+                return;
+            }
+
+            foreach (User::admins()->get() as $admin) {
+                $already = $admin->notifications()->whereDate('created_at', today())
+                    ->get(['data'])->contains(fn ($x) => ($x->data['type'] ?? null) === 'reminder' && !isset($x->data['property_id']));
+
+                if (!$already) {
+                    $this->tell(collect([$admin]), 'reminder', $guests === 1 ? '1 guest arrives tomorrow' : "{$guests} guests arrive tomorrow",
+                        $hotels === 1 ? 'At 1 hotel.' : "Across {$hotels} hotels.", ['count' => $guests]);
+                }
+            }
+        });
+    }
+
+    /** The owner and the staff who are switched on for this property, and the platform admins (who see every hotel) */
+    public function watchers(Property $property): Collection
+    {
+        return $this->team($property)->merge(User::admins()->get())->unique('id')->values();
+    }
+
     /** The owner and the staff who are switched on for this property */
     public function team(Property $property): Collection
     {
@@ -147,12 +173,15 @@ class VendorAlerts
         return User::whereIn('id', $ids)->get();
     }
 
-    private function tell(Collection $users, string $type, string $title, string $message, array $extra): void
+    /** $where: the hotel's name, added to the title for the admin (who sees every hotel and needs to know which one) */
+    private function tell(Collection $users, string $type, string $title, string $message, array $extra, ?string $where = null): void
     {
         $look = NotificationCategories::ALL[NotificationCategories::of($type)];
 
         foreach ($users as $user) {
-            $user->notify(new AdminNotification($type, $title, $message, $look['icon'], $look['color'], $extra + ['always' => true]));
+            $line = $where && $user->is_admin ? "{$title} — {$where}" : $title;
+
+            $user->notify(new AdminNotification($type, $line, $message, $look['icon'], $look['color'], $extra + ['always' => true]));
         }
     }
 

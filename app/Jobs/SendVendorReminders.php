@@ -61,6 +61,8 @@ class SendVendorReminders
             }
         }
 
+        $alerts->arrivingTomorrowEverywhere($bookings->count(), $groups->count());
+
         return $bookings->count();
     }
 }
