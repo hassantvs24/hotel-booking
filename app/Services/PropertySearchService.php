@@ -179,7 +179,8 @@ class PropertySearchService
             $ratings = array_map('intval', (array) $params['rating']);
             $query->where(function ($q) use ($ratings) {
                 foreach ($ratings as $r) {
-                    $q->orWhereBetween('rating', [$r, $r + 0.99]);
+                    // the guests' score once there are reviews (the same score the list is sorted by), otherwise the starting score
+                    $q->orWhereRaw('IF(reviews_count > 0, reviews_avg_rating, rating) BETWEEN ? AND ?', [$r, $r + 0.99]);
                 }
             });
         }

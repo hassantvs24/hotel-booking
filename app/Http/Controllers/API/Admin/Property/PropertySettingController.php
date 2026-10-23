@@ -130,10 +130,6 @@ class PropertySettingController extends BaseController
             'phone_number'         => ['nullable', 'string', 'max:30'],
             'email'                => ['nullable', 'email', 'max:255'],
             'website'              => ['nullable', 'url', 'max:255'],
-            'total_room'           => ['nullable', 'integer', 'min:0', 'max:100000'],
-            'currency'             => ['nullable', 'string', 'max:10'],
-            'rating'               => ['nullable', 'numeric', 'between:0,10'],
-            'google_review'        => ['nullable', 'string', 'max:255'],
             'property_class'       => ['required', Rule::in(self::CLASSES)],
             'property_category_id' => ['nullable', 'integer', Rule::exists('property_categories', 'id')->whereNull('deleted_at')],
             'check_in_time'        => ['nullable', 'date_format:H:i,H:i:s'],
@@ -221,10 +217,11 @@ class PropertySettingController extends BaseController
 
     private function saveBasic(Request $request, Property $property, array $d): void
     {
+        // What the system works out is not typed here: the guests' rating (from their reviews), the number of rooms (the rooms
+        // that are listed) and the currency (everything is in taka). Asking to change them changes nothing.
         $map = [
             'propertyName' => 'name', 'description' => 'description', 'zip_code' => 'zip_code', 'lat' => 'lat', 'long' => 'long',
-            'phone_number' => 'phone_number', 'email' => 'email', 'website' => 'website', 'total_room' => 'total_room',
-            'currency' => 'currency', 'rating' => 'rating', 'google_review' => 'google_review', 'property_class' => 'property_class',
+            'phone_number' => 'phone_number', 'email' => 'email', 'website' => 'website', 'property_class' => 'property_class',
             'property_category_id' => 'property_category_id',
         ];
 
