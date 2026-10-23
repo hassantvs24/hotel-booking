@@ -308,6 +308,7 @@ Route::middleware(['auth:sanctum', 'staff'])->prefix('admin')->group(function ()
         Route::put('preferences', [NotificationPreferenceController::class, 'update']);
         Route::put('{id}/read',   [NotificationController::class, 'markRead']);
         Route::put('read-all',    [NotificationController::class, 'markAllRead']);
+        Route::put('category/{category}/read', [NotificationController::class, 'markCategoryRead']);
     });
 
     /*----------------------------------------------------------

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\API\Admin\Notification;
 
 use App\Http\Controllers\BaseController;
+use App\Services\Notify\NotificationCategories;
 use App\Services\Notify\NotificationPresenter;
 use Illuminate\Http\JsonResponse;
 
@@ -41,6 +42,18 @@ class NotificationController extends BaseController
             ?->markAsRead();
 
         return $this->sendSuccess(null, 'Notification marked as read');
+    }
+
+    /** The person opened the page of one kind of notification (their menu shows a number there): all of that kind are read */
+    public function markCategoryRead(string $category): JsonResponse
+    {
+        if (!array_key_exists($category, NotificationCategories::ALL)) {
+            return $this->sendError('Unknown kind of notification.', [], 422);
+        }
+
+        auth()->user()->unreadNotifications->filter(fn ($n) => NotificationPresenter::categoryOf($n) === $category)->each->markAsRead();
+
+        return $this->sendSuccess(null, 'Marked as read');
     }
 
     public function markAllRead(): JsonResponse
