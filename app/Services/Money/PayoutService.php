@@ -298,6 +298,7 @@ class PayoutService
         });
 
         $this->tellVendor($paid);
+        app(\App\Services\Notify\VendorAlerts::class)->payoutPaid($paid);
 
         return $paid->fresh();
     }

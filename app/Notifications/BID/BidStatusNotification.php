@@ -3,6 +3,7 @@
 namespace App\Notifications\BID;
 
 use App\Models\RoomRequest;
+use App\Services\Notify\BellFields;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Notification;
@@ -88,18 +89,18 @@ class BidStatusNotification extends Notification implements ShouldQueue
 
     public function toDatabase($notifiable): array
     {
-        return array_merge($this->content(), [
+        return BellFields::add(array_merge($this->content(), [
             'bid_id'  => $this->bid->id,
             'room_id' => $this->bid->room_id,
-        ]);
+        ]));
     }
 
     public function toBroadcast($notifiable): BroadcastMessage
     {
-        return new BroadcastMessage(array_merge(
+        return new BroadcastMessage(BellFields::add(array_merge(
             $this->content(),
             ['created_at' => now()->toISOString()]
-        ));
+        )));
     }
 
     public function toWebPush($notifiable, $notification): WebPushMessage

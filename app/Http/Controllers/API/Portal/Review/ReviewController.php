@@ -95,6 +95,8 @@ class ReviewController extends BaseController
         $submission->load('booking.room.property');
         $this->ratingService->recalculate($submission->booking->room->property);
 
+        app(\App\Services\Notify\VendorAlerts::class)->review($submission);
+
         return $this->sendSuccess(
             $submission->load(['categoryRatings.reviewCategory']),
             'Review submitted. Thank you!',

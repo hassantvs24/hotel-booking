@@ -2,6 +2,7 @@
 
 namespace App\Notifications\BID;
 
+use App\Services\Notify\BellFields;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Notification;
@@ -26,7 +27,7 @@ class BidReceivedNotification extends Notification implements ShouldQueue
 
     public function toDatabase($notifiable): array
     {
-        return [
+        return BellFields::add([
             'type'       => 'bid_received',
             'title'      => 'New bid on ' . $this->room->name,
             'body'       => ($this->guest->name ?? 'A guest') . ' offered BDT ' . number_format($this->bid->discount_price) . '/night',
@@ -34,18 +35,18 @@ class BidReceivedNotification extends Notification implements ShouldQueue
             'bid_id'     => $this->bid->id,
             'room_id'    => $this->room->id,
             'bid_number' => $this->bid->bid_number,
-        ];
+        ]);
     }
 
     public function toBroadcast($notifiable): BroadcastMessage
     {
-        return new BroadcastMessage([
+        return new BroadcastMessage(BellFields::add([
             'type'       => 'bid_received',
             'title'      => 'New bid on ' . $this->room->name,
             'body'       => ($this->guest->name ?? 'A guest') . ' offered BDT ' . number_format($this->bid->discount_price) . '/night',
             'bid_id'     => $this->bid->id,
             'created_at' => now()->toISOString(),
-        ]);
+        ]));
     }
 
     public function toWebPush($notifiable, $notification): WebPushMessage

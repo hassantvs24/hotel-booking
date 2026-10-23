@@ -2,7 +2,12 @@
 
 namespace App\Notifications\Admin;
 
+use App\Models\User;
+use App\Services\Notify\NotificationCategories;
+use App\Services\Notify\NotificationPreferences;
 use Illuminate\Bus\Queueable;
+use Illuminate\Notifications\Messages\BroadcastMessage;
+use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
 class AdminNotification extends Notification
@@ -17,11 +22,44 @@ class AdminNotification extends Notification
         private string $color   = 'teal',
         private array  $extra   = [],
         private string $channel = 'admin',
-    ) {}
+    ) {
+        $this->kept = new \ArrayObject();
+    }
 
+    /**
+     * Every notification is kept for the bell and sent live to the person's own channel; an email goes too
+     * when they asked for one for this kind of notification.
+     */
     public function via(object $notifiable): array
     {
-        return ['database'];
+        $via = ['database', 'broadcast'];
+
+        if ($notifiable instanceof User && app(NotificationPreferences::class)->wants($notifiable, $this->category(), 'email')) {
+            $via[] = 'mail';
+        }
+
+        return $via;
+    }
+
+    private function category(): string
+    {
+        return NotificationCategories::of($this->type, $this->extra['category'] ?? null);
+    }
+
+    public function toBroadcast(object $notifiable): BroadcastMessage
+    {
+        return new BroadcastMessage($this->toDatabase($notifiable));
+    }
+
+    /** The live message keeps the word the notification was made with ("message", "bid_received"...) as its type */
+    public function broadcastType(): string
+    {
+        return $this->type;
+    }
+
+    public function toMail(object $notifiable): MailMessage
+    {
+        return (new MailMessage)->subject($this->title)->line($this->message);
     }
 
     /**
@@ -35,6 +73,25 @@ class AdminNotification extends Notification
      * 4. title+message  → anything else, 60s window
      */
     public function shouldSend(object $notifiable, string $channel): bool
+    {
+        // Laravel asks once per way of sending, and the bell line saved first would make every later way see "a repeat":
+        // so the question is asked once (at the bell list) and the live message and the email follow the same answer.
+        $key = method_exists($notifiable, 'getKey') ? $notifiable->getKey() : spl_object_id($notifiable);
+
+        if ($channel === 'database' || !isset($this->kept[$key])) {
+            $this->kept[$key] = $this->isNew($notifiable);
+        }
+
+        return $this->kept[$key];
+    }
+
+    /**
+     * per person: was this notification new, or a repeat of one they already have.
+     * (An object, because Laravel sends each way from its own clone of the notification and a clone still shares it.)
+     */
+    private \ArrayObject $kept;
+
+    private function isNew(object $notifiable): bool
     {
         // a notification that is a new event every time (a report, a name request) is never taken for a repeat
         if (!empty($this->extra['always'])) {
@@ -87,6 +144,7 @@ class AdminNotification extends Notification
     {
         return array_merge([
             'type'       => $this->type,
+            'category'   => $this->category(),
             'title'      => $this->title,
             'message'    => $this->message,
             'icon'       => $this->icon,

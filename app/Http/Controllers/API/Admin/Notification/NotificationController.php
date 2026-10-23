@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\API\Admin\Notification;
 
 use App\Http\Controllers\BaseController;
+use App\Services\Notify\NotificationPresenter;
 use Illuminate\Http\JsonResponse;
 
 class NotificationController extends BaseController
@@ -15,20 +16,19 @@ class NotificationController extends BaseController
             ->latest()
             ->take(30)
             ->get()
-            ->map(fn($n) => [
-                'id'         => $n->id,
-                'type'       => $n->data['type']    ?? 'info',
-                'title'      => $n->data['title']   ?? 'Notification',
-                'message'    => $n->data['message'] ?? '',
-                'icon'       => $n->data['icon']    ?? 'bx-bell',
-                'color'      => $n->data['color']   ?? 'teal',
-                'read'       => !is_null($n->read_at),
-                'created_at' => $n->created_at->toISOString(),
-            ]);
+            ->map(fn ($n) => NotificationPresenter::present($n));
+
+        // how many are still unread in each kind (the Messages menu shows its own count from this)
+        $byCategory = [];
+        foreach ($user->unreadNotifications()->get(['data']) as $n) {
+            $category = NotificationPresenter::categoryOf($n);
+            $byCategory[$category] = ($byCategory[$category] ?? 0) + 1;
+        }
 
         return $this->sendSuccess([
-            'notifications' => $notifications,
-            'unread_count'  => $user->unreadNotifications()->count(), // () is fine for count()
+            'notifications'      => $notifications,
+            'unread_count'       => array_sum($byCategory),
+            'unread_by_category' => (object) $byCategory,
         ]);
     }
 

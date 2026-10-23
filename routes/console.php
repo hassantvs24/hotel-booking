@@ -21,6 +21,10 @@ Schedule::job(new \App\Jobs\ExpireUnpaidBookings)->everyFiveMinutes();
 // A guest who paid and never came back to the site (closed the tab...) is found by asking SSLCommerz, so a paid booking is never left waiting
 Schedule::command('payments:pickup-sandbox --days=1')->everyFiveMinutes()->withoutOverlapping(15)->runInBackground();
 Schedule::job(new \App\Jobs\ExpireRoomRequests)->everyFiveMinutes();
+// "an offer runs out within the hour" and "guests arrive tomorrow" for the property's people (dispatchSync: no queue worker needed)
+// lines the property wrote to a guest while a mail had just gone out are emailed together once the quiet time is over
+Schedule::call(fn () => app(\App\Services\Notify\GuestMessageMailer::class)->catchUp())->name('guest-message-catch-up')->everyMinute()->withoutOverlapping(5);
+Schedule::call(fn () => \App\Jobs\SendVendorReminders::dispatchSync())->name('vendor-reminders')->everyFiveMinutes()->withoutOverlapping(10);
 
 // Empty property drafts (nothing typed) left alone for 3 days; a draft with the owner's own content is never removed here
 Schedule::job(new \App\Jobs\DeleteEmptyDrafts)->dailyAt('03:30');

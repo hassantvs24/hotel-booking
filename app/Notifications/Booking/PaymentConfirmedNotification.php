@@ -2,6 +2,7 @@
 
 namespace App\Notifications\Booking;
 
+use App\Services\Notify\BellFields;
 use Carbon\Carbon;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -51,17 +52,17 @@ class PaymentConfirmedNotification extends Notification implements ShouldQueue
 
     public function toDatabase($notifiable): array
     {
-        return array_merge($this->content(), [
+        return BellFields::add(array_merge($this->content(), [
             'booking_number' => $this->booking->booking_number,
-        ]);
+        ]));
     }
 
     public function toBroadcast($notifiable): BroadcastMessage
     {
-        return new BroadcastMessage(array_merge(
+        return new BroadcastMessage(BellFields::add(array_merge(
             $this->content(),
-            ['created_at' => now()->toISOString()]
-        ));
+            ['created_at' => now()->toISOString(), 'booking_number' => $this->booking->booking_number]
+        )));
     }
 
     public function toWebPush($notifiable, $notification): WebPushMessage

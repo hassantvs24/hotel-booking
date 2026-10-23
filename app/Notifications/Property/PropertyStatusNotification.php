@@ -4,6 +4,7 @@ namespace App\Notifications\Property;
 
 use App\Models\Property;
 use App\Models\PropertyRequest;
+use App\Services\Notify\BellFields;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\BroadcastMessage;
@@ -68,12 +69,12 @@ class PropertyStatusNotification extends Notification implements ShouldQueue
 
     public function toDatabase($notifiable): array
     {
-        return array_merge($this->content(), ['property_id' => $this->propertyId, 'property_request_id' => $this->requestId]);
+        return BellFields::add(array_merge($this->content(), ['property_id' => $this->propertyId, 'property_request_id' => $this->requestId]));
     }
 
     public function toBroadcast($notifiable): BroadcastMessage
     {
-        return new BroadcastMessage(array_merge($this->content(), ['created_at' => now()->toISOString()]));
+        return new BroadcastMessage(BellFields::add(array_merge($this->content(), ['created_at' => now()->toISOString(), 'property_id' => $this->propertyId])));
     }
 
     public function toWebPush($notifiable, $notification): WebPushMessage

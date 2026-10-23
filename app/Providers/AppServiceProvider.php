@@ -33,6 +33,13 @@ class AppServiceProvider extends ServiceProvider
     {
         Paginator::useBootstrapFive();
 
+        // the owner hears when a refund on one of their bookings is approved, declined or paid
+        \App\Models\RefundRequest::updated(function (\App\Models\RefundRequest $refund) {
+            if ($refund->wasChanged('status')) {
+                app(\App\Services\Notify\VendorAlerts::class)->refundChanged($refund);
+            }
+        });
+
         // Live pushes must never fail the request that triggered them
         $this->app->make(BroadcastManager::class)->extend('reverb', function ($app, array $config) {
             return new FailSoftReverbBroadcaster($app->make(BroadcastManager::class)->pusher($config));

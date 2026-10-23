@@ -12,6 +12,8 @@ use App\Models\ChatMessage;
 use App\Models\ChatMessageRead;
 use App\Models\ChatSpecialRequest;
 use App\Services\Chat\ChatAccessService;
+use App\Services\Notify\GuestMessageMailer;
+use App\Services\Notify\MessageNotifier;
 use App\Traits\MediaMan;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -299,6 +301,9 @@ class ChatController extends BaseController
 
         broadcast(new MessageSent($message))->toOthers();
 
+        app(MessageNotifier::class)->notify($message);
+        app(GuestMessageMailer::class)->notify($message);
+
         return $this->sendSuccess(
             $this->messagePayload($message),
             "Message sent.",
@@ -317,6 +322,9 @@ class ChatController extends BaseController
         $this->authorizeConversation($request, $conversation, $access);
 
         $userId = $request->user()->id;
+
+        // the person has seen this conversation: its line in the bell is done
+        app(MessageNotifier::class)->clear($request->user(), $conversation->id);
 
         $isCustomer = $conversation->customer_id === $userId;
 
