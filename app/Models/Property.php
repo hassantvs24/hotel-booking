@@ -177,7 +177,26 @@ class Property extends Model
             set: fn ($value) => serialize($value)
         );
     }
-     public function bankDetails() : Attribute
+     /**
+     * The address as it is kept: street, apartment, city and country (the `address` attribute is only these joined for reading).
+     *
+     * @return array{address: ?string, apartment: ?string, city: ?string, country: ?string}
+     */
+    public function addressParts(): array
+    {
+        $first = @unserialize((string) ($this->attributes['address'] ?? ''));
+        $parts = is_string($first) ? @unserialize($first) : $first;
+        $parts = is_array($parts) ? $parts : [];
+
+        return [
+            'address'   => $parts['address'] ?? null,
+            'apartment' => $parts['apartment'] ?? null,
+            'city'      => $parts['city'] ?? null,
+            'country'   => $parts['country'] ?? null,
+        ];
+    }
+
+    public function bankDetails() : Attribute
      {
          return new Attribute(
              fn($value) => unserialize($value),

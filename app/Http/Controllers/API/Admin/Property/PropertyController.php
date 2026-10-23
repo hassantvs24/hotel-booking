@@ -392,6 +392,9 @@ class PropertyController extends BaseController
             'reviews'
         ]);
 
+        // the parts of the address, for the edit form (the plain `address` is these joined)
+        $property->setAttribute('address_parts', $property->addressParts());
+
         return $this->sendSuccess($property);
     }
 
