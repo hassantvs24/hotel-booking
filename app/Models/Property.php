@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\MorphOne;
 
@@ -41,6 +42,29 @@ class Property extends Model
     public function primaryImage(): MorphOne
     {
         return $this->morphOne(Media::class, 'media')->where('media_role', 'property_image');
+    }
+
+    /** Every photo of the property, whatever it is used for */
+    public function media(): MorphMany
+    {
+        return $this->morphMany(Media::class, 'media');
+    }
+
+    /** Photos the team has hidden (guests do not see them; the owner does, with the reason) */
+    public function hiddenImages(): MorphMany
+    {
+        return $this->morphMany(Media::class, 'media')->where('media_role', 'hidden_image');
+    }
+
+    public function nameRequests(): HasMany
+    {
+        return $this->hasMany(PropertyNameRequest::class);
+    }
+
+    /** The new name that is waiting for the admin, if any */
+    public function pendingNameRequest(): HasOne
+    {
+        return $this->hasOne(PropertyNameRequest::class)->where('status', 'pending')->latestOfMany();
     }
 
     public function images(): MorphMany

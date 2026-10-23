@@ -146,6 +146,10 @@ Route::prefix('portal')->group(function () {
     // the countries a guest can choose in their profile (public: the list is the same for everybody)
     Route::get('/countries', [\App\Http\Controllers\API\Portal\Location\CountryListController::class, 'index']);
 
+    // A guest reports a property (wrong photos, misleading information ...): a few a day, and only when signed in
+    Route::post('/properties/{property}/report', [\App\Http\Controllers\API\Portal\Property\PropertyReportController::class, 'store'])
+        ->middleware(['auth:sanctum', 'throttle:10,60'])->whereNumber('property');
+
     // Location Routes
     Route::prefix('location')->group(function () {
         Route::get('/suggestions', [\App\Http\Controllers\API\Portal\Location\LocationController::class, 'suggestions']);

@@ -24,6 +24,9 @@ Schedule::job(new \App\Jobs\ExpireRoomRequests)->everyFiveMinutes();
 
 // Empty property drafts (nothing typed) left alone for 3 days; a draft with the owner's own content is never removed here
 Schedule::job(new \App\Jobs\DeleteEmptyDrafts)->dailyAt('03:30');
+
+// photos an owner removed are kept 30 days (the admin can bring them back), then deleted
+Schedule::command('property:purge-removed-photos')->dailyAt('03:45');
 // SSLCommerz finishes a refund within minutes (sandbox) — ask often so the page and the email do not lag behind.
 // It only calls SSLCommerz when a refund is actually waiting, so running it every minute costs nothing otherwise.
 Schedule::job(new \App\Jobs\CheckRefundStatuses)->everyMinute();

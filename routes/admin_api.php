@@ -146,6 +146,30 @@ Route::middleware(['auth:sanctum', 'staff'])->prefix('admin')->group(function ()
 
     Route::put('properties/{property}/properties-setting', [PropertySettingController::class, 'update']);
 
+    // A new property name waits for the admin; the owner can see and take back their own request
+    Route::get('properties/{property}/name-request',    [\App\Http\Controllers\API\Admin\Property\PropertyChangeController::class, 'ownRequest']);
+    Route::delete('properties/{property}/name-request', [\App\Http\Controllers\API\Admin\Property\PropertyChangeController::class, 'cancelOwnRequest']);
+
+    // Platform admin: name requests, the log of every change (with undo), reports from guests and hiding photos / properties
+    Route::prefix('property-changes')->middleware('admin.only')->group(function () {
+        $changes = \App\Http\Controllers\API\Admin\Property\PropertyChangeController::class;
+        $moderation = \App\Http\Controllers\API\Admin\Property\PropertyModerationController::class;
+
+        Route::get('name-requests',               [$changes, 'nameRequests']);
+        Route::put('name-requests/{id}/approve',  [$changes, 'approveName'])->whereNumber('id');
+        Route::put('name-requests/{id}/reject',   [$changes, 'rejectName'])->whereNumber('id');
+        Route::get('log',                         [$changes, 'log']);
+        Route::post('log/{id}/revert',            [$changes, 'revert'])->whereNumber('id');
+
+        Route::get('reports',                     [$moderation, 'reports']);
+        Route::get('properties/{property}/photos', [$moderation, 'photos']);
+        Route::post('reports/{id}/dismiss',       [$moderation, 'dismiss'])->whereNumber('id');
+        Route::post('reports/{id}/hide-photo',    [$moderation, 'hidePhoto'])->whereNumber('id');
+        Route::post('reports/{id}/hide-property', [$moderation, 'hideProperty'])->whereNumber('id');
+        Route::post('properties/{property}/unhide', [$moderation, 'unhideProperty']);
+        Route::post('photos/{media}/unhide',      [$moderation, 'unhidePhoto'])->whereNumber('media');
+    });
+
     // VAT and service charge: platform rates (admin) and each property's own default (owner or admin)
     Route::get('settings/tax',  [\App\Http\Controllers\API\Admin\Property\TaxRateController::class, 'platform']);
     Route::put('settings/tax',  [\App\Http\Controllers\API\Admin\Property\TaxRateController::class, 'updatePlatform']);

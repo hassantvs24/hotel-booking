@@ -389,7 +389,9 @@ class PropertyController extends BaseController
             'place',
             'user',
             'staffs',
-            'reviews'
+            'reviews',
+            'hiddenImages',        // photos the team has hidden (the owner sees them, with the reason)
+            'pendingNameRequest',  // a new name that waits for the admin
         ]);
 
         // the parts of the address, for the edit form (the plain `address` is these joined)

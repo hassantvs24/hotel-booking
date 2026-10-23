@@ -36,6 +36,11 @@ class AdminNotification extends Notification
      */
     public function shouldSend(object $notifiable, string $channel): bool
     {
+        // a notification that is a new event every time (a report, a name request) is never taken for a repeat
+        if (!empty($this->extra['always'])) {
+            return true;
+        }
+
         $since = now()->subHour();
 
         $recent = $notifiable->notifications()
