@@ -8,18 +8,41 @@ namespace App\Services\Notify;
  */
 final class NotificationCategories
 {
-    /** category => what the preferences page calls it and how its bell line looks by default */
+    /**
+     * category => what the preferences page calls it and how its bell line looks by default.
+     * "label" and "hint" are what a hotel's owner or staff read; "admin_label" / "admin_hint" are what the platform
+     * admin reads (the admin gets these for every hotel, and a few of them are about different things).
+     */
     public const ALL = [
-        'messages'  => ['label' => 'Messages',          'hint' => 'A guest writes to you',                              'icon' => 'bx-message-dots', 'color' => 'teal'],
-        'bookings'  => ['label' => 'Bookings',          'hint' => 'A new booking, or one that was cancelled',           'icon' => 'bx-calendar-check', 'color' => 'blue'],
-        'payments'  => ['label' => 'Payments',          'hint' => 'Money received for a booking',                       'icon' => 'bx-credit-card', 'color' => 'green'],
-        'offers'    => ['label' => 'Offers',            'hint' => 'A guest\'s offer, an answer, an offer about to run out', 'icon' => 'bx-tag', 'color' => 'amber'],
-        'reviews'   => ['label' => 'Reviews',           'hint' => 'A guest reviewed your property',                     'icon' => 'bx-star', 'color' => 'amber'],
-        'refunds'   => ['label' => 'Refunds',           'hint' => 'A refund was asked for, approved, declined or paid', 'icon' => 'bx-undo', 'color' => 'red'],
-        'payouts'   => ['label' => 'Payouts',           'hint' => 'Money was sent to you',                              'icon' => 'bx-wallet', 'color' => 'green'],
-        'property'  => ['label' => 'Your property',     'hint' => 'Approvals, name changes, photos hidden, documents',  'icon' => 'bx-buildings', 'color' => 'teal'],
-        'reminders' => ['label' => 'Reminders',         'hint' => 'Guests arriving tomorrow',                           'icon' => 'bx-bell', 'color' => 'blue'],
+        'messages'  => ['label' => 'Messages',          'hint' => 'A guest writes to you',                              'admin_hint' => 'A guest writes to any hotel',
+                        'icon' => 'bx-message-dots', 'color' => 'teal'],
+        'bookings'  => ['label' => 'Bookings',          'hint' => 'A new booking, or one that was cancelled',           'admin_hint' => 'A new booking, or one that was cancelled, at any hotel',
+                        'icon' => 'bx-calendar-check', 'color' => 'blue'],
+        'payments'  => ['label' => 'Payments',          'hint' => 'Money received for a booking',                       'admin_hint' => 'Money received for a booking, at any hotel',
+                        'icon' => 'bx-credit-card', 'color' => 'green'],
+        'offers'    => ['label' => 'Offers',            'hint' => 'A guest\'s offer, an answer, an offer about to run out', 'admin_hint' => 'A guest\'s offer, an answer, an offer about to run out, at any hotel',
+                        'icon' => 'bx-tag', 'color' => 'amber'],
+        'reviews'   => ['label' => 'Reviews',           'hint' => 'A guest reviewed your property',                     'admin_hint' => 'A guest reviewed any hotel',
+                        'icon' => 'bx-star', 'color' => 'amber'],
+        'refunds'   => ['label' => 'Refunds',           'hint' => 'A refund was asked for, approved, declined or paid', 'admin_hint' => 'A guest asks for a refund',
+                        'icon' => 'bx-undo', 'color' => 'red'],
+        'payouts'   => ['label' => 'Payouts',           'hint' => 'Money was sent to you',                              'admin_hint' => 'A vendor changed the account their payouts go to',
+                        'icon' => 'bx-wallet', 'color' => 'green'],
+        'property'  => ['label' => 'Your property',     'hint' => 'Approvals, name changes, photos hidden, documents',  'admin_label' => 'Properties', 'admin_hint' => 'A new property to approve, a name change to decide, a guest\'s report',
+                        'icon' => 'bx-buildings', 'color' => 'teal'],
+        'reminders' => ['label' => 'Reminders',         'hint' => 'Guests arriving tomorrow',                           'admin_hint' => 'Once a day: how many guests arrive tomorrow, across all hotels',
+                        'icon' => 'bx-bell', 'color' => 'blue'],
     ];
+
+    /** What the preferences page shows for one kind: the owner's wording, or the platform admin's */
+    public static function wording(string $category, bool $forAdmin): array
+    {
+        $kind = self::ALL[$category];
+
+        return $forAdmin
+            ? ['label' => $kind['admin_label'] ?? $kind['label'], 'hint' => $kind['admin_hint']]
+            : ['label' => $kind['label'], 'hint' => $kind['hint']];
+    }
 
     /** the notification "type" words used so far (the old ones included) → category */
     private const TYPES = [
