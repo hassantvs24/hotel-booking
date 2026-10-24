@@ -6,6 +6,7 @@ use App\Models\Booking;
 use App\Models\Property;
 use App\Models\PropertyNameRequest;
 use App\Models\PropertyReport;
+use App\Models\PropertyRequest;
 use App\Models\RefundRequest;
 use App\Models\RoomRequest;
 use App\Models\User;
@@ -49,6 +50,9 @@ class DashboardInsights
         $refundsAsked = RefundRequest::query()->where('status', RefundRequest::STATUS_REQUESTED)
             ->when($ids !== null, fn ($q) => $q->whereHas('booking.room', fn ($r) => $r->whereIn('property_id', $ids)))->count();
 
+        // the same applications the "Property Request" page lists as pending: submitted ones, never half-filled drafts
+        $applications = fn () => PropertyRequest::where('is_draft', false)->where('status', PropertyRequest::STATUS_PENDING)->count();
+
         // "Needs you": only what this person can act on, each with the page where they do it
         $needs = [
             ['key' => 'refunds', 'label' => 'Refund requests to answer', 'count' => $refundsAsked, 'to' => 'refunds', 'tone' => 'rose'],
@@ -56,7 +60,7 @@ class DashboardInsights
         ];
 
         if ($user->is_admin) {
-            $needs[] = ['key' => 'properties', 'label' => 'Properties waiting for approval', 'count' => Property::where('status', Property::STATUS_PENDING)->count(), 'to' => 'propertyRequest', 'tone' => 'teal'];
+            $needs[] = ['key' => 'properties', 'label' => 'Property applications to review', 'count' => $applications(), 'to' => 'propertyRequest', 'tone' => 'teal'];
             $needs[] = ['key' => 'names', 'label' => 'Name changes to decide', 'count' => PropertyNameRequest::where('status', 'pending')->count(), 'to' => 'property-name-requests', 'tone' => 'sky'];
             $needs[] = ['key' => 'reports', 'label' => "Guests' reports to look at", 'count' => PropertyReport::where('status', 'open')->count(), 'to' => 'property-reports', 'tone' => 'violet'];
         } else {
@@ -71,7 +75,7 @@ class DashboardInsights
                 'tomorrow'  => $stay($tomorrow),
             ],
             'overview' => $user->is_admin
-                ? ['properties' => Property::count(), 'offers' => (clone $offers)->count(), 'users' => User::count(), 'pending_properties' => Property::where('status', Property::STATUS_PENDING)->count()]
+                ? ['properties' => Property::count(), 'offers' => (clone $offers)->count(), 'users' => User::count(), 'pending_properties' => $applications()]
                 : ['properties' => count($ids), 'offers' => (clone $offers)->count()],
             'activity' => $user->notifications()->latest()->take(8)->get()->map(fn ($n) => NotificationPresenter::present($n))->values(),
         ];
