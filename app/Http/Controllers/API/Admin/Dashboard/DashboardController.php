@@ -6,6 +6,7 @@ use App\Http\Controllers\BaseController;
 use App\Models\Booking;
 use App\Models\Review;
 use App\Models\Room;
+use App\Services\Dashboard\DashboardInsights;
 use App\Services\Money\LedgerSync;
 use App\Services\Money\VendorMoney;
 use Illuminate\Http\JsonResponse;
@@ -25,8 +26,7 @@ class DashboardController extends BaseController
             ? $query
             : $query->whereHas('room', fn($q) => $q->whereIn('property_id', $propertyIds));
 
-        $bookings = $scoped(Booking::with(['room', 'room.property', 'room.property.place.city', 'user', 'user.profile']))
-            ->latest()->take(3)->get();
+        $insights = app(DashboardInsights::class);
         $bookingCount = $scoped(Booking::query())->count();
         $roomCount = $propertyIds === null
             ? Room::count()
@@ -54,8 +54,9 @@ class DashboardController extends BaseController
             $monthly = $earnings['month']['share_paisa'] / 100;
         }
 
-        $data = [
-            'bookings' => $bookings,
+        $data = $insights->build($user) + [
+            // the newest four, only what the list shows (never the guests' records or ID numbers)
+            'recent_bookings' => $insights->recentBookings($user),
             'total_bookings' => $bookingCount,
             'total_rooms' => $roomCount,
             'booking_counts_by_status' => $bookingCountsByStatus,
@@ -64,7 +65,7 @@ class DashboardController extends BaseController
             'monthly_revenue' => $monthly,
             'earnings' => $earnings,
             'refunds_waiting' => $user->is_admin ? app(\App\Services\Money\MoneyReport::class)->refundsWaiting() : null,
-            'user' => $user
+            'user' => ['id' => $user->id, 'name' => $user->name, 'is_admin' => (bool) $user->is_admin],
         ];
 
         return $this->sendSuccess($data);

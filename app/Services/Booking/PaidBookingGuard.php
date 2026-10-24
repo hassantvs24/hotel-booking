@@ -61,7 +61,17 @@ class PaidBookingGuard
     /** @return string|null why the status cannot be set by hand, or null when it can */
     public function whyNotStatus(Booking $booking, string $new): ?string
     {
-        if (!in_array($new, ['cancelled', 'refunded', 'pending', 'reserved'], true) || $new === $booking->status) {
+        if ($new === $booking->status) {
+            return null;
+        }
+
+        // A booking is confirmed by the guest's payment, never by hand: "approved" (and "completed", a finished stay)
+        // without money would leave a confirmed room that nobody paid for, and the unpaid-booking clean-up would skip it.
+        if (in_array($new, ['approved', 'completed'], true) && !$this->holdsMoney($booking)) {
+            return "This booking has not been paid, so it cannot be set to \"{$new}\" by hand. It is confirmed automatically when the guest pays.";
+        }
+
+        if (!in_array($new, ['cancelled', 'refunded', 'pending', 'reserved'], true)) {
             return null;
         }
 
