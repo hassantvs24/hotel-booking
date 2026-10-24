@@ -98,6 +98,20 @@ class User extends Authenticatable
         return 'App.Models.User.' . $this->id;
     }
 
+    /**
+     * A notification (the bell line, the live message, a push, an email) is only news about the work that sent it.
+     * Whatever goes wrong in sending it must never stop that work (a bid, a booking, a payment, a refund, a payout):
+     * the problem is written to the log and the work carries on.
+     */
+    public function notify($instance)
+    {
+        try {
+            app(\Illuminate\Contracts\Notifications\Dispatcher::class)->send($this, $instance);
+        } catch (\Throwable $e) {
+            report($e);
+        }
+    }
+
     /*----------------------------------------
     | Static helpers
     ----------------------------------------*/

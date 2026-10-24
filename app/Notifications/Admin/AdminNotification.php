@@ -3,6 +3,7 @@
 namespace App\Notifications\Admin;
 
 use App\Models\User;
+use App\Notifications\Channels\SafeMailChannel;
 use App\Services\Notify\NotificationCategories;
 use App\Services\Notify\NotificationPreferences;
 use Illuminate\Bus\Queueable;
@@ -34,11 +35,21 @@ class AdminNotification extends Notification
     {
         $via = ['database', 'broadcast'];
 
-        if ($notifiable instanceof User && app(NotificationPreferences::class)->wants($notifiable, $this->category(), 'email')) {
-            $via[] = 'mail';
+        if ($this->wantsEmail($notifiable)) {
+            $via[] = SafeMailChannel::class;
         }
 
         return $via;
+    }
+
+    /** The email is only a nicety: if even looking up the person's choice fails, no email goes, and the work carries on */
+    private function wantsEmail(object $notifiable): bool
+    {
+        try {
+            return $notifiable instanceof User && app(NotificationPreferences::class)->wants($notifiable, $this->category(), 'email');
+        } catch (\Throwable $e) {
+            return false;
+        }
     }
 
     private function category(): string
