@@ -29,6 +29,7 @@ use App\Http\Controllers\API\Admin\Review\ReviewCategoryController;
 use App\Http\Controllers\API\Admin\Review\ReviewController;
 use App\Http\Controllers\API\Admin\Surrounding\SurroundingController;
 use App\Http\Controllers\API\Admin\Surrounding\SurroundingPlaceController;
+use App\Http\Controllers\API\Admin\Profile\AdminProfileController;
 use App\Http\Controllers\API\Admin\Notification\NotificationController;
 use App\Http\Controllers\API\Admin\Notification\NotificationPreferenceController;
 use App\Http\Controllers\API\ChatController;
@@ -298,6 +299,15 @@ Route::middleware(['auth:sanctum', 'staff'])->prefix('admin')->group(function ()
     Route::get('room-request/{id}/show',        [RoomRequestController::class, 'show']);
     Route::put('room-request/update/{id}',      [RoomRequestController::class, 'updateStatus']);
     Route::apiResource('room-request', RoomRequestController::class)->except(['create', 'show', 'edit']);
+
+    /*----------------------------------------------------------
+    | My profile: the signed-in person's own name, phone and password (admin and hotel owners)
+    ----------------------------------------------------------*/
+    Route::prefix('profile')->group(function () {
+        Route::get('/',         [AdminProfileController::class, 'show']);
+        Route::put('/',         [AdminProfileController::class, 'update']);
+        Route::put('password',  [AdminProfileController::class, 'changePassword'])->middleware('throttle:6,1');
+    });
 
     /*----------------------------------------------------------
     | Notifications
