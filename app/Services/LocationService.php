@@ -5,7 +5,10 @@ namespace App\Services;
 use App\Models\City;
 use App\Models\Country;
 use App\Models\Place;
+use App\Models\Property;
 use App\Models\State;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
@@ -13,96 +16,75 @@ use Illuminate\Support\Facades\Log;
  * LocationService
  *
  * Handles ALL geo and place concerns:
- *   - Typeahead suggestions (local DB + Nominatim)
- *   - Place ID resolution: place / city / state / country / freetext
+ *   - Typeahead suggestions (our own areas that have hotels, map results when we have few)
+ *   - Place ID resolution: place / city / state / country / typed words
  *   - Nominatim search, store, and deduplication
  *   - Place formatting for API responses
  */
 class LocationService
 {
+    /** The countries, divisions, districts and places by name, built once per request (about 5,500 rows) */
+    private ?array $index = null;
+
     // ══════════════════════════════════════════════════════
     //  SUGGESTIONS
-    //  Local DB first → Nominatim fallback when sparse
+    //  Only areas where a guest can really book a hotel are offered, each with how many hotels it has,
+    //  so nobody picks an area and then finds "no property". Spelling does not matter ("Chattogram" finds
+    //  "Chittagong", "Cox Bazar" finds "Cox's Bazar"). The map service is asked only when we have fewer than 3 answers.
     // ══════════════════════════════════════════════════════
 
-    public function getSuggestions(string $q): array
+    /**
+     * @param bool $forListing true for an owner filling the property form: there it is the PLACES an area holds that
+     *                         matter (the first hotel of a district has nobody before it), not the hotels
+     */
+    public function getSuggestions(string $q, bool $forListing = false): array
     {
-        if (strlen(trim($q)) < 2) return [];
+        $q = trim($q);
+        if (mb_strlen($q) < 2) return [];
 
-        $places = Place::with('city.state.country')
-            ->where('name', 'like', "%{$q}%")
-            ->limit(4)->get()
-            ->map(fn($p) => $this->formatPlace($p));
+        $needle = $this->normalizeName($q);
+        if ($needle === '') return [];
 
-        // Only areas with a place under them are offered: the full world list is in the database, but a guest
-        // or owner typing "Ba" should not be shown hundreds of countries and districts that have no hotel.
-        $cityIdsWithPlaces = Place::select('city_id')->whereNotNull('city_id');
-        $stateIdsWithPlaces = City::select('state_id')->whereIn('id', $cityIdsWithPlaces);
-        $countryIdsWithPlaces = State::select('country_id')->whereIn('id', $stateIdsWithPlaces);
+        $index   = $this->areaIndex();
+        $counts  = $this->hotelCounts();
+        $results = [];
+        $seen    = [];
 
-        $cities = City::with('state.country')
-            ->whereIn('id', $cityIdsWithPlaces)
-            ->where('name', 'like', "%{$q}%")
-            ->limit(3)->get()
-            ->map(fn($c) => [
-                'type'        => 'city',
-                'id'          => $c->id,
-                'external_id' => null,
-                'name'        => $c->name,
-                'city'        => null,
-                'state'       => $c->state?->name,
-                'country'     => $c->state?->country?->name,
-                'lat'         => $c->lat  ?? null,
-                'long'        => $c->long ?? null,
-                'source'      => 'local',
-            ]);
+        // [which part of the index, how many to offer]
+        foreach (['place' => ['places', 4], 'city' => ['cities', 3], 'state' => ['states', 2], 'country' => ['countries', 2]] as $type => [$bucket, $limit]) {
+            $found = [];
+            foreach ($index[$bucket] as $id => $row) {
+                if (str_contains($row['norm'], $needle)) {
+                    $found[$id] = $row['norm'] === $needle ? 0 : (str_starts_with($row['norm'], $needle) ? 1 : 2);   // exact, "starts with", "contains"
+                }
+            }
+            asort($found);
 
-        $states = State::with('country')
-            ->whereIn('id', $stateIdsWithPlaces)
-            ->where('name', 'like', "%{$q}%")
-            ->limit(2)->get()
-            ->map(fn($s) => [
-                'type'        => 'state',
-                'id'          => $s->id,
-                'external_id' => null,
-                'name'        => $s->name,
-                'city'        => null,
-                'state'       => null,
-                'country'     => $s->country?->name,
-                'lat'         => null,
-                'long'        => null,
-                'source'      => 'local',
-            ]);
+            $offered = 0;
+            foreach (array_keys($found) as $id) {
+                if ($offered >= $limit) break;
 
-        // ── Country match ──────────────────────────────────
-        $countries = Country::whereIn('id', $countryIdsWithPlaces)
-            ->where('name', 'like', "%{$q}%")
-            ->limit(2)->get()
-            ->map(fn($c) => [
-                'type'        => 'country',
-                'id'          => $c->id,
-                'external_id' => null,
-                'name'        => $c->name,
-                'city'        => null,
-                'state'       => null,
-                'country'     => $c->name,
-                'lat'         => null,
-                'long'        => null,
-                'source'      => 'local',
-            ]);
+                $placeIds = $this->placeIdsUnder($type, $id, $index);
+                $hotels   = $this->sumHotels($placeIds, $counts);
+                $size     = $forListing ? count($placeIds) : $hotels;
+                if ($size === 0) continue;   // nothing to book there: not offered
 
-        $results = array_merge(
-            $places->toArray(),
-            $cities->toArray(),
-            $states->toArray(),
-            $countries->toArray()
-        );
+                // a district, a division and a "City" row that mean the same area (the same name, the same places with hotels) are one suggestion
+                $sorted = $forListing ? $placeIds : array_values(array_filter($placeIds, fn ($pid) => isset($counts[$pid])));
+                sort($sorted);
+                $key    = $type === 'place' ? "place|{$id}" : $index[$bucket][$id]['norm'] . '|' . md5(implode(',', $sorted));
+                if (isset($seen[$key])) continue;
+                $seen[$key] = true;
 
-        // Enrich with Nominatim when local results are sparse
+                $results[] = $this->suggestionFor($type, $id, $index) + ($forListing ? [] : ['hotels' => $hotels]);
+                $offered++;
+            }
+        }
+
+        // Enrich with the map service when our own answers are few
         if (count($results) < 3) {
-            $nominatim   = $this->nominatimSuggestions($q);
             $existingIds = collect($results)->pluck('external_id')->filter()->toArray();
-            foreach ($nominatim as $nr) {
+            foreach ($this->nominatimSuggestions($q) as $nr) {
                 if (!in_array($nr['external_id'], $existingIds)) {
                     $results[] = $nr;
                 }
@@ -110,6 +92,45 @@ class LocationService
         }
 
         return array_slice($results, 0, 8);
+    }
+
+    private function suggestionFor(string $type, int $id, array $index): array
+    {
+        if ($type === 'place') {
+            $p = $index['places'][$id];
+            $c = $index['cities'][$p['city_id']] ?? null;
+            $s = $c ? ($index['states'][$c['state_id']] ?? null) : null;
+            $k = $s ? ($index['countries'][$s['country_id']] ?? null) : null;
+
+            return [
+                'type' => 'place', 'id' => $id, 'external_id' => $p['external_id'], 'name' => $p['name'],
+                'city' => $c['name'] ?? null, 'state' => $s['name'] ?? null, 'country' => $k['name'] ?? null,
+                'city_id' => $p['city_id'], 'state_id' => $c['state_id'] ?? null, 'country_id' => $s['country_id'] ?? null,
+                'lat' => $p['lat'], 'long' => $p['long'], 'source' => $p['source'],
+            ];
+        }
+
+        if ($type === 'city') {
+            $c = $index['cities'][$id];
+            $s = $index['states'][$c['state_id']] ?? null;
+            $k = $s ? ($index['countries'][$s['country_id']] ?? null) : null;
+
+            return ['type' => 'city', 'id' => $id, 'external_id' => null, 'name' => $c['name'], 'city' => null,
+                'state' => $s['name'] ?? null, 'country' => $k['name'] ?? null, 'lat' => $c['lat'], 'long' => $c['long'], 'source' => 'local'];
+        }
+
+        if ($type === 'state') {
+            $s = $index['states'][$id];
+            $k = $index['countries'][$s['country_id']] ?? null;
+
+            return ['type' => 'state', 'id' => $id, 'external_id' => null, 'name' => $s['name'], 'city' => null,
+                'state' => null, 'country' => $k['name'] ?? null, 'lat' => null, 'long' => null, 'source' => 'local'];
+        }
+
+        $k = $index['countries'][$id];
+
+        return ['type' => 'country', 'id' => $id, 'external_id' => null, 'name' => $k['name'], 'city' => null,
+            'state' => null, 'country' => $k['name'], 'lat' => null, 'long' => null, 'source' => 'local'];
     }
 
     // ══════════════════════════════════════════════════════
@@ -129,6 +150,7 @@ class LocationService
             // A place saved earlier without its district gets it now
             if (!$existing->city_id && $chain['city']) {
                 $existing->update(['city_id' => $chain['city']->id]);
+                $this->index = null;
             }
 
             return $existing;
@@ -145,6 +167,7 @@ class LocationService
             'external_source' => 'nominatim',
             'full_address'    => $data['full_address'] ?? $data['name'],
         ]);
+        $this->index = null;
 
         Log::info("Place stored from Nominatim: {$place->name} (external_id: {$place->external_id})");
 
@@ -154,84 +177,238 @@ class LocationService
     // ══════════════════════════════════════════════════════
     //  RESOLVE PLACE IDs FROM PARAMS
     //
+    //  Whatever the guest picked or typed, the answer is "the places under that area":
+    //   - an area picked from the list (a place, a district, a division, a country)
+    //   - if that area has no hotel (a map result saved earlier, an empty district), the NAME the guest sees is looked up instead
+    //   - typed words: "Cox's Bazar District, Chattogram Division, Bangladesh" is tried part by part, the first part first,
+    //     and the first part that has hotels wins; spelling, "District/Division/City" and apostrophes do not matter
+    //  Nothing here ever writes to the database.
+    // ══════════════════════════════════════════════════════
+
     public function resolvePlaceIds(array $params): array
     {
+        $location = trim((string) ($params['location'] ?? ''));
+        $index    = $this->areaIndex();
+        $counts   = $this->hotelCounts();
+
         if (!empty($params['place_id'])) {
-            $id   = (int) $params['place_id'];
-            $type = $params['place_type'] ?? 'place';
+            $ids = $this->placeIdsUnder((string) ($params['place_type'] ?? 'place'), (int) $params['place_id'], $index);
 
-            return match ($type) {
-
-                'city' => Place::where('city_id', $id)
-                    ->pluck('id')->toArray(),
-
-                'state' => Place::whereHas('city', fn($q) =>
-                $q->whereHas('state', fn($s) => $s->where('id', $id))
-                )->pluck('id')->toArray(),
-
-                'country' => Place::whereHas('city', fn($q) =>
-                $q->whereHas('state', fn($s) =>
-                $s->whereHas('country', fn($c) => $c->where('id', $id))
-                )
-                )->pluck('id')->toArray(),
-
-                // Place picked directly
-                default => [$id],
-            };
+            if ($this->sumHotels($ids, $counts) > 0 || $location === '') {
+                return $ids;
+            }
+        } elseif ($location === '') {
+            return [];
         }
 
-        if (empty($params['location'])) return [];
-
-        $location = trim($params['location']);
-        $ids      = [];
-
-        $ids = array_merge($ids,
-            Place::where('name', 'like', "%{$location}%")->pluck('id')->toArray()
-        );
-
-        $cityIds = City::where('name', 'like', "%{$location}%")->pluck('id');
-        if ($cityIds->isNotEmpty()) {
-            $ids = array_merge($ids,
-                Place::whereIn('city_id', $cityIds)->pluck('id')->toArray()
-            );
-        }
-
-        $stateIds = State::where('name', 'like', "%{$location}%")->pluck('id');
-        if ($stateIds->isNotEmpty()) {
-            $stateCityIds = City::whereIn('state_id', $stateIds)->pluck('id');
-            if ($stateCityIds->isNotEmpty()) {
-                $ids = array_merge($ids,
-                    Place::whereIn('city_id', $stateCityIds)->pluck('id')->toArray()
-                );
+        $sets = [];
+        foreach (array_filter(array_map('trim', explode(',', $location))) as $part) {
+            if ($ids = $this->placeIdsForName($part, $index)) {
+                $sets[] = $ids;
             }
         }
 
-        // Country wise search resolved
-        $countryIds = Country::where('name', 'like', "%{$location}%")->pluck('id');
-        if ($countryIds->isNotEmpty()) {
-            $countryStateIds = State::whereIn('country_id', $countryIds)->pluck('id');
-            if ($countryStateIds->isNotEmpty()) {
-                $countryCityIds = City::whereIn('state_id', $countryStateIds)->pluck('id');
-                if ($countryCityIds->isNotEmpty()) {
-                    $ids = array_merge($ids,
-                        Place::whereIn('city_id', $countryCityIds)->pluck('id')->toArray()
-                    );
+        // what ALL the parts say together ("Beta's Bazar, Zedland" is the one in Zedland) ...
+        if (count($sets) > 1) {
+            $together = array_values(array_intersect(...$sets));
+
+            if ($this->sumHotels($together, $counts) > 0) {
+                return $together;
+            }
+        }
+
+        // ... otherwise the first part that has hotels
+        foreach ($sets as $ids) {
+            if ($this->sumHotels($ids, $counts) > 0) {
+                return $ids;
+            }
+        }
+
+        return [];
+    }
+
+    /** Where a wording is on the map (nothing is stored), so the hotels near it can be found; null when the map does not know it */
+    public function geocode(string $text): ?array
+    {
+        $text = trim($text);
+        if (mb_strlen($text) < 3) return null;
+
+        $key = 'location.geocode.' . md5(mb_strtolower($text));
+        $hit = Cache::get($key);
+        if ($hit !== null) return $hit === false ? null : $hit;
+
+        try {
+            $response = $this->nominatimClient(5)->get('https://nominatim.openstreetmap.org/search', [
+                'q' => $text, 'format' => 'json', 'limit' => 1, 'accept-language' => 'en',
+            ])->json();
+        } catch (\Throwable $e) {
+            Log::warning('Nominatim geocode failed: ' . $e->getMessage());
+
+            return null;   // not remembered: the next search tries again
+        }
+
+        $first = is_array($response) ? ($response[0] ?? null) : null;
+        $geo   = $first && isset($first['lat'], $first['lon']) ? ['lat' => (float) $first['lat'], 'long' => (float) $first['lon']] : null;
+
+        Cache::put($key, $geo ?? false, $geo ? now()->addDay() : now()->addMinutes(30));
+
+        return $geo;
+    }
+
+    // ── the areas, by name, in memory ────────────
+    private function areaIndex(): array
+    {
+        if ($this->index !== null) {
+            return $this->index;
+        }
+
+        $idx = ['countries' => [], 'states' => [], 'cities' => [], 'places' => [],
+            'cityPlaces' => [], 'stateCities' => [], 'countryStates' => [], 'statesByNorm' => [], 'citiesByNorm' => []];
+
+        foreach (Country::query()->get(['id', 'name']) as $k) {
+            $idx['countries'][$k->id] = ['name' => $k->name, 'norm' => $this->normalizeName((string) $k->name)];
+        }
+
+        foreach (State::query()->get(['id', 'name', 'country_id']) as $s) {
+            $norm = $this->normalizeName((string) $s->name);
+            $idx['states'][$s->id] = ['name' => $s->name, 'norm' => $norm, 'country_id' => $s->country_id];
+            $idx['countryStates'][$s->country_id][] = $s->id;
+            $idx['statesByNorm'][$norm][] = $s->id;
+        }
+
+        foreach (City::query()->get() as $c) {
+            $norm = $this->normalizeName((string) $c->name);
+            $idx['cities'][$c->id] = ['name' => $c->name, 'norm' => $norm, 'state_id' => $c->state_id, 'lat' => $c->lat ?? null, 'long' => $c->long ?? null];
+            $idx['stateCities'][$c->state_id][] = $c->id;
+            $idx['citiesByNorm'][$norm][] = $c->id;
+        }
+
+        foreach (Place::query()->get() as $p) {
+            $idx['places'][$p->id] = ['name' => $p->name, 'norm' => $this->normalizeName((string) $p->name), 'city_id' => $p->city_id,
+                'lat' => $p->lat, 'long' => $p->long, 'external_id' => $p->external_id, 'source' => $p->external_source ?? 'local'];
+            if ($p->city_id) {
+                $idx['cityPlaces'][$p->city_id][] = $p->id;
+            }
+        }
+
+        return $this->index = $idx;
+    }
+
+    /**
+     * The places under one area. Our older data keeps "Cox's Bazar" as a division AND as a district (and a division
+     * is listed under another one), so an area also takes the rows of the same name in the same country.
+     */
+    private function placeIdsUnder(string $type, int $id, array $index): array
+    {
+        $stateIds = [];
+        $cityIds  = [];
+
+        if ($type === 'place') {
+            return [$id];
+        } elseif ($type === 'city' && isset($index['cities'][$id])) {
+            $cityIds  = [$id];
+            $norm     = $index['cities'][$id]['norm'];
+            $country  = $index['states'][$index['cities'][$id]['state_id']]['country_id'] ?? null;
+
+            foreach ($index['citiesByNorm'][$norm] ?? [] as $namesake) {
+                if (($index['states'][$index['cities'][$namesake]['state_id']]['country_id'] ?? null) === $country) {
+                    $cityIds[] = $namesake;
+                }
+            }
+            foreach ($index['statesByNorm'][$norm] ?? [] as $namesake) {
+                if ($index['states'][$namesake]['country_id'] === $country) {
+                    $stateIds[] = $namesake;
+                }
+            }
+        } elseif ($type === 'state' && isset($index['states'][$id])) {
+            $stateIds = [$id];
+        } elseif ($type === 'country' && isset($index['countries'][$id])) {
+            $stateIds = $index['countryStates'][$id] ?? [];
+        }
+
+        return $this->placeIdsOfAreas($stateIds, $cityIds, $index);
+    }
+
+    /** The places under these divisions (and their districts) and under these districts */
+    private function placeIdsOfAreas(array $stateIds, array $cityIds, array $index): array
+    {
+        $stateIds = array_values(array_unique($stateIds));
+
+        // a division also takes the divisions named like one of its districts
+        foreach ($stateIds as $sid) {
+            $country = $index['states'][$sid]['country_id'];
+
+            foreach ($index['stateCities'][$sid] ?? [] as $cid) {
+                foreach ($index['statesByNorm'][$index['cities'][$cid]['norm']] ?? [] as $namesake) {
+                    if ($index['states'][$namesake]['country_id'] === $country) {
+                        $stateIds[] = $namesake;
+                    }
                 }
             }
         }
 
-        $ids = array_unique(array_values($ids));
-
-        // ── 5. Nothing in local DB — try Nominatim ─────────
-        if (empty($ids)) {
-            $stored = $this->nominatimResolve($location);
-            if ($stored) {
-                Log::info("Nominatim resolved '{$location}' → place #{$stored->id}");
-                $ids = [$stored->id];
-            }
+        foreach (array_unique($stateIds) as $sid) {
+            $cityIds = array_merge($cityIds, $index['stateCities'][$sid] ?? []);
         }
 
-        return $ids;
+        $placeIds = [];
+        foreach (array_unique($cityIds) as $cid) {
+            $placeIds = array_merge($placeIds, $index['cityPlaces'][$cid] ?? []);
+        }
+
+        return array_values(array_unique($placeIds));
+    }
+
+    /** The places of every area (place, district, division, country) that carries this wording as its name */
+    private function placeIdsForName(string $wording, array $index): array
+    {
+        $n = $this->normalizeName($wording);
+        if ($n === '') return [];
+
+        // the rows named exactly so; when there is none, the rows containing it (3 letters at least)
+        $match = function (array $rows) use ($n) {
+            $exact = array_keys(array_filter($rows, fn ($r) => $r['norm'] === $n));
+
+            return $exact ?: (mb_strlen($n) >= 3 ? array_keys(array_filter($rows, fn ($r) => str_contains($r['norm'], $n))) : []);
+        };
+
+        $ids = $match($index['places']);
+
+        foreach ($match($index['cities']) as $cid) {
+            $ids = array_merge($ids, $this->placeIdsUnder('city', $cid, $index));
+        }
+        foreach ($match($index['states']) as $sid) {
+            $ids = array_merge($ids, $this->placeIdsUnder('state', $sid, $index));
+        }
+        foreach ($match($index['countries']) as $kid) {
+            $ids = array_merge($ids, $this->placeIdsUnder('country', $kid, $index));
+        }
+
+        return array_values(array_unique($ids));
+    }
+
+    /** How many hotels a guest can find in each place (published, with a room: the same rule the search uses), by place id */
+    private function hotelCounts(): array
+    {
+        return Property::query()
+            ->where('status', Property::STATUS_PUBLISHED)
+            ->whereHas('rooms')
+            ->whereNotNull('place_id')
+            ->select('place_id', DB::raw('count(*) as hotels'))
+            ->groupBy('place_id')
+            ->pluck('hotels', 'place_id')
+            ->map(fn ($n) => (int) $n)
+            ->all();
+    }
+
+    private function sumHotels(array $placeIds, array $counts): int
+    {
+        $sum = 0;
+        foreach ($placeIds as $id) {
+            $sum += $counts[$id] ?? 0;
+        }
+
+        return $sum;
     }
 
     // ══════════════════════════════════════════════════════
@@ -328,6 +505,8 @@ class LocationService
                 ]) : null);
         }
 
+        $this->index = null;
+
         return ['country' => $country, 'state' => $state, 'city' => $city];
     }
 
@@ -339,17 +518,32 @@ class LocationService
         return $query->get()->first(fn ($row) => $this->normalizeName($row->name) === $wanted);
     }
 
-    private function normalizeName(string $name): string
+    /**
+     * A name the way the map, our data and a guest at a keyboard may all write it:
+     * "Cox's Bazar District", "Coxs Bazar", "Cox Bazar" and "coxbazar" are all "cox bazar"; "Chattogram Division" is "chittagong".
+     */
+    public function normalizeName(string $name): string
     {
         $n = mb_strtolower(trim($name));
-        $n = preg_replace('/\b(division|district|zila|city|metropolitan)\b/u', '', $n);
-        $n = trim(preg_replace('/\s+/u', ' ', $n));
+        $n = preg_replace("/['’`ʼ]s\b/u", '', $n);          // Cox's → Cox
+        $n = preg_replace("/['’`ʼ]/u", '', $n);
+        $n = preg_replace('/[^\p{L}\p{N}\s]+/u', ' ', $n);   // commas, dots, dashes
+        $n = preg_replace('/\b(division|district|zila|zilla|city|metropolitan)\b/u', ' ', $n);
 
         // Spellings the map and our own data disagree on
-        return strtr($n, [
-            'chattogram' => 'chittagong', 'barisal' => 'barishal', 'comilla' => 'cumilla',
-            'bogra' => 'bogura', 'jessore' => 'jashore', 'dacca' => 'dhaka',
-        ]);
+        foreach ([
+            'chattogram' => 'chittagong', 'chattagram' => 'chittagong', 'chittagram' => 'chittagong',
+            'barisal' => 'barishal', 'comilla' => 'cumilla', 'bogra' => 'bogura', 'jessore' => 'jashore', 'dacca' => 'dhaka',
+            'coxbazar' => 'cox bazar', 'coxsbazar' => 'cox bazar', 'coxsbazaar' => 'cox bazar', 'bazaar' => 'bazar',
+            'sylet' => 'sylhet',
+        ] as $from => $to) {
+            $n = preg_replace('/\b' . $from . '\b/u', $to, $n);
+        }
+
+        // "Betas" and "Beta's" are one word to a guest at a keyboard: a closing s is left out (on both sides of every comparison)
+        $n = preg_replace('/\b(\p{L}{3,})s\b/u', '$1', $n);
+
+        return trim(preg_replace('/\s+/u', ' ', $n));
     }
 
     private function cleanName(string $name, array $words): string
@@ -367,28 +561,6 @@ class LocationService
             'User-Agent'      => config('app.name') . '/1.0 (contact@oystay.com)',
             'Accept-Language' => 'en',
         ])->timeout($timeout);
-    }
-
-    private function nominatimResolve(string $location): ?Place
-    {
-        try {
-            $response = $this->nominatimClient(8)
-                ->get('https://nominatim.openstreetmap.org/search', [
-                    'q'               => $location,
-                    'format'          => 'json',
-                    'limit'           => 1,
-                    'addressdetails'  => 1,
-                    'accept-language' => 'en',
-                ])->json();
-
-            if (empty($response)) return null;
-
-            return $this->nominatimStore($response[0]);
-
-        } catch (\Exception $e) {
-            Log::warning('Nominatim resolve failed: ' . $e->getMessage());
-            return null;
-        }
     }
 
     private function nominatimSuggestions(string $q): array
@@ -423,30 +595,5 @@ class LocationService
             Log::warning('Nominatim suggestions failed: ' . $e->getMessage());
             return [];
         }
-    }
-
-    private function nominatimStore(array $r): Place
-    {
-        $cityName = $r['address']['city']
-            ?? $r['address']['town']
-            ?? $r['address']['village']
-            ?? $r['address']['suburb']
-            ?? null;
-
-        $city = $cityName
-            ? City::where('name', 'like', "%{$cityName}%")->first()
-            : null;
-
-        return Place::firstOrCreate(
-            ['external_id' => (string) $r['place_id']],
-            [
-                'city_id'         => $city?->id,
-                'name'            => $r['display_name'],
-                'lat'             => $r['lat'],
-                'long'            => $r['lon'],
-                'external_source' => 'nominatim',
-                'full_address'    => $r['display_name'],
-            ]
-        );
     }
 }

@@ -28,6 +28,9 @@ class PropertySearchService
 {
     const DEFAULT_RADIUS_KM = 20;
 
+    // Distance in km between (?, ?) and a hotel: bindings are lat, long, lat. Backtick on `long` required — reserved MySQL keyword
+    private const HAVERSINE = '6371 * acos(cos(radians(?)) * cos(radians(lat)) * cos(radians(`long`) - radians(?)) + sin(radians(?)) * sin(radians(lat)))';
+
     public function __construct(
         protected LocationService $locationService
     ) {}
@@ -113,18 +116,9 @@ class PropertySearchService
         // ── 1. Geo ────────────────────────────────────────
         if ($lat && $long) {
             // Haversine — properties within $radius km of coordinates
-            // Backtick on `long` required — reserved MySQL keyword
-            $haversine = "
-                6371 * acos(
-                    cos(radians(?)) * cos(radians(lat))
-                    * cos(radians(`long`) - radians(?))
-                    + sin(radians(?)) * sin(radians(lat))
-                )
-            ";
-
             $query
-                ->selectRaw("properties.*, ({$haversine}) AS distance_km", [$lat, $long, $lat])
-                ->whereRaw("({$haversine}) <= ?", [$lat, $long, $lat, $radius]);
+                ->selectRaw('properties.*, (' . self::HAVERSINE . ') AS distance_km', [$lat, $long, $lat])
+                ->whereRaw('(' . self::HAVERSINE . ') <= ?', [$lat, $long, $lat, $radius]);
 
         } else {
             // No coordinates — delegate to LocationService
@@ -133,11 +127,21 @@ class PropertySearchService
             if (!empty($placeIds)) {
                 $query->whereIn('place_id', $placeIds);
             } elseif (!empty($params['location'])) {
-                // Last resort — serialized address LIKE
-                $query->whereRaw(
-                    'LOWER(address) LIKE ?',
-                    ['%' . strtolower(trim($params['location'])) . '%']
-                );
+                $text = '%' . strtolower(trim($params['location'])) . '%';
+
+                $inAddress = Property::query()
+                    ->where('status', Property::STATUS_PUBLISHED)
+                    ->whereRaw('LOWER(address) LIKE ?', [$text])
+                    ->exists();
+
+                // The words are in no hotel's address: ask the map where they are and take the hotels around that spot
+                $spot = $inAddress ? null : $this->locationService->geocode(trim($params['location']));
+
+                if ($spot) {
+                    $query->whereRaw('(' . self::HAVERSINE . ') <= ?', [$spot['lat'], $spot['long'], $spot['lat'], $radius]);
+                } else {
+                    $query->whereRaw('LOWER(address) LIKE ?', [$text]);
+                }
             }
         }
 

@@ -77,7 +77,7 @@ class DashboardInsights
             'overview' => $user->is_admin
                 ? ['properties' => Property::count(), 'offers' => (clone $offers)->count(), 'users' => User::count(), 'pending_properties' => $applications()]
                 : ['properties' => count($ids), 'offers' => (clone $offers)->count()],
-            'activity' => $user->notifications()->latest()->take(8)->get()->map(fn ($n) => NotificationPresenter::present($n))->values(),
+            'activity' => $user->notifications()->latest()->orderByDesc('data->created_at')->take(8)->get()->map(fn ($n) => NotificationPresenter::present($n))->values(),
         ];
     }
 

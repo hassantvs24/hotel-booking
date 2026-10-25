@@ -28,7 +28,8 @@ class LocationController extends BaseController
     public function suggestions(Request $request): JsonResponse
     {
         $results = $this->locationService->getSuggestions(
-            trim($request->input('q', ''))
+            trim($request->input('q', '')),
+            $request->boolean('listing')   // the owner's property form wants areas by their places, a guest wants areas with hotels
         );
 
         return $this->sendSuccess($results);
