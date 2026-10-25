@@ -71,37 +71,21 @@ class BidStatusUpdated implements ShouldBroadcastNow
     }
 
     /**
-     * Call ONCE from the controller after event().
-     * Notifies admin (DB) + guest (DB + WebPush via BidStatusNotification).
+     * Call ONCE from the controller after the status is saved. Tells the guest, the hotel's people and the admin,
+     * except the person who did it (see BidAlerts: it never lets a failed bell hold anything up). "Done" is settled
+     * by a paid booking, which has its own notifications.
      */
     public function notifyAll(): void
     {
-        $payload = $this->broadcastWith();
-        $status  = $this->roomRequest->status;
+        $event = match ($this->roomRequest->status) {
+            'Approved' => 'accepted',
+            'Counter'  => 'countered',
+            'Declined' => 'declined',
+            default    => null,
+        };
 
-        // Admin DB — deduped by room_request_id + status combo
-        User::admins()->each(fn($admin) =>
-        $admin->notify(new AdminNotification(
-            type:    'bid',
-            title:   $payload['title'],
-            message: $payload['message'],
-            icon:    $payload['icon'],
-            color:   $payload['color'],
-            extra:   ['room_request_id' => $this->roomRequest->id . '_' . $status],
-            channel: 'admin',
-        ))
-        );
-
-        // Guest DB + WebPush — uses existing BidStatusNotification
-        if ($this->roomRequest->user) {
-            $action = match($status) {
-                'Approved', 'Done' => 'accepted',
-                'Counter'  => 'countered',
-                default    => 'declined',
-            };
-            $this->roomRequest->user->notify(
-                new BidStatusNotification($this->roomRequest, $action)
-            );
+        if ($event) {
+            app(\App\Services\Notify\BidAlerts::class)->answered($this->roomRequest, $event, auth()->user());
         }
     }
 }

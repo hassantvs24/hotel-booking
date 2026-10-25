@@ -55,7 +55,7 @@ class ExpireUnpaidBookings implements ShouldQueue
                 continue;
             }
 
-            DB::transaction(function () use ($booking) {
+            $released = DB::transaction(function () use ($booking) {
                 // a payment that arrives at this very moment wins: only a booking still unpaid is cancelled
                 $locked = Booking::where('id', $booking->id)->lockForUpdate()->first();
 
@@ -77,12 +77,21 @@ class ExpireUnpaidBookings implements ShouldQueue
                 if (!$stillHeld && $booking->room) {
                     $booking->room->update(['status' => 'Available']);
                 }
+
+                return true;
             });
+
+            if (!$released) {
+                continue;   // it was paid at this very moment: nothing was cancelled
+            }
 
             Log::info('Expired unpaid booking released', [
                 'booking_number' => $booking->booking_number,
                 'room_id'        => $booking->room_id,
             ]);
+
+            // the guest, the hotel and the admin hear of it (only a bell: it can never undo or stop the clean-up)
+            app(\App\Services\Notify\BookingAlerts::class)->released($booking, self::TIMEOUT_MINUTES);
         }
     }
 

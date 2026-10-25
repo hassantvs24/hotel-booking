@@ -22,6 +22,7 @@ class SendVendorReminders
     public function handle(VendorAlerts $alerts): void
     {
         $this->expiringOffers($alerts);
+        $this->guestReminders(app(\App\Services\Notify\BidAlerts::class));
 
         if (now()->hour >= self::ARRIVAL_HOUR) {
             $this->arrivals($alerts);
@@ -45,6 +46,28 @@ class SendVendorReminders
         return $due->count();
     }
 
+    /**
+     * The guest's side: a counter offer with about an hour left to answer, and an accepted offer with about half an hour left
+     * to pay, each get one reminder (BidAlerts makes sure it is only ever one).
+     */
+    public function guestReminders(\App\Services\Notify\BidAlerts $alerts): int
+    {
+        $sent = 0;
+
+        foreach ([['Counter', 'counter_expiring', 60], ['Approved', 'pay_expiring', 30]] as [$status, $event, $window]) {
+            $due = RoomRequest::where('status', $status)
+                ->whereBetween('request_expiration_time', [now(), now()->addMinutes($window)])
+                ->get();
+
+            foreach ($due as $bid) {
+                $minutes = max(1, (int) now()->diffInMinutes($bid->request_expiration_time, false));
+                $sent += $alerts->guestReminder($bid, $event, $minutes) ? 1 : 0;
+            }
+        }
+
+        return $sent;
+    }
+
     /** Confirmed bookings checking in tomorrow, grouped by property */
     public function arrivals(VendorAlerts $alerts): int
     {
@@ -62,6 +85,12 @@ class SendVendorReminders
         }
 
         $alerts->arrivingTomorrowEverywhere($bookings->count(), $groups->count());
+
+        // and the guests themselves hear that their stay starts tomorrow (once each; a bell only)
+        $guests = app(\App\Services\Notify\GuestAlerts::class);
+        foreach ($bookings as $booking) {
+            $guests->arrivalReminder($booking);
+        }
 
         return $bookings->count();
     }

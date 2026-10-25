@@ -200,14 +200,9 @@ class BookingController extends BaseController
 
                     // Real-time broadcast to admin + owner channels
                     // notifyAll() handles admin DB + guest DB
-                    // BidReceivedNotification (owner) is sent only here, below
+                    // (the guest, the hotel's people and the admin are all told by BidAlerts)
                     $bidEvent = new BidSubmitted($bid->load(['room', 'room.property', 'user']));
                     $bidEvent->notifyAll();
-
-                    // Owner notification — the only place it is sent (notifyAll skips owners)
-                    $room->property->user?->notify(
-                        new BidReceivedNotification($bid, $room, $user)
-                    );
 
                     // The live push is best-effort: if the websocket server (Reverb) is
                     // down the bid must still go through — the saved notifications above

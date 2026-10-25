@@ -21,15 +21,21 @@ class NotificationController extends BaseController
 
         // how many are still unread in each kind (the Messages menu shows its own count from this)
         $byCategory = [];
+        $bySubkind = [];
         foreach ($user->unreadNotifications()->get(['data']) as $n) {
             $category = NotificationPresenter::categoryOf($n);
             $byCategory[$category] = ($byCategory[$category] ?? 0) + 1;
+
+            if ($sub = NotificationPresenter::subkindOf((array) $n->data)) {
+                $bySubkind[$sub] = ($bySubkind[$sub] ?? 0) + 1;
+            }
         }
 
         return $this->sendSuccess([
             'notifications'      => $notifications,
             'unread_count'       => array_sum($byCategory),
-            'unread_by_category' => (object) $byCategory,
+            // (the pages of the property approvals, name changes and reports each show their own number: not part of the total)
+            'unread_by_category' => (object) ($byCategory + $bySubkind),
         ]);
     }
 
@@ -47,11 +53,15 @@ class NotificationController extends BaseController
     /** The person opened the page of one kind of notification (their menu shows a number there): all of that kind are read */
     public function markCategoryRead(string $category): JsonResponse
     {
-        if (!array_key_exists($category, NotificationCategories::ALL)) {
+        $isSub = in_array($category, NotificationPresenter::SUBKINDS, true);
+
+        if (!$isSub && !array_key_exists($category, NotificationCategories::ALL)) {
             return $this->sendError('Unknown kind of notification.', [], 422);
         }
 
-        auth()->user()->unreadNotifications->filter(fn ($n) => NotificationPresenter::categoryOf($n) === $category)->each->markAsRead();
+        auth()->user()->unreadNotifications->filter(fn ($n) => $isSub
+            ? NotificationPresenter::subkindOf((array) $n->data) === $category
+            : NotificationPresenter::categoryOf($n) === $category)->each->markAsRead();
 
         return $this->sendSuccess(null, 'Marked as read');
     }

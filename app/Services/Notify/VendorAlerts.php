@@ -104,7 +104,7 @@ class VendorAlerts
             $minutes = max(1, (int) now()->diffInMinutes($bid->request_expiration_time, false));
 
             $this->tell($this->watchers($property), 'bid_expiring', 'An offer is about to run out',
-                ($bid->user?->name ?: 'A guest') . "'s offer of BDT " . number_format((float) $bid->discount_price) . '/night on ' . ($bid->room->name ?? 'a room')
+                'Bid ' . max(1, (int) $bid->bid_number) . ' of ' . RoomRequest::MAX_BIDS . ': ' . ($bid->user?->name ?: 'A guest') . "'s offer of BDT " . number_format((float) $bid->discount_price) . '/night on ' . ($bid->room->name ?? 'a room')
                     . " runs out in about {$minutes} minutes. Answer it before then.",
                 ['property_id' => $property->id, 'room_request_id' => $bid->id], $property->name);
         });

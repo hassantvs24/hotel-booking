@@ -2,8 +2,8 @@
 
 namespace App\Notifications\BID;
 
-use App\Models\RoomRequest;
 use App\Services\Notify\BellFields;
+use App\Services\Notify\BidMessages;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Notification;
@@ -15,10 +15,14 @@ class BidStatusNotification extends Notification implements ShouldQueue
 {
     use Queueable;
 
-    // $action: 'accepted' | 'countered' | 'declined' | 'withdrawn' | 'counter_accepted' | 'expired'
+    // $action: submitted | countered | accepted | declined | withdrawn | counter_accepted | expired | counter_lapsed |
+    //          payment_lapsed | counter_expiring | pay_expiring   (see BidMessages for what each says)
+    // $audience: guest | owner (the hotel's people)
     public function __construct(
         public $bid,
-        public string $action
+        public string $action,
+        public string $audience = 'guest',
+        public array $more = []
     ) {}
 
     public function via($notifiable): array
@@ -26,72 +30,17 @@ class BidStatusNotification extends Notification implements ShouldQueue
         return ['database', 'broadcast', WebPushChannel::class];
     }
 
-    /** Offers the guest still has left on this room for these stay dates (live and declined ones are spent) */
-    private function bidsRemaining(): int
-    {
-        $used = RoomRequest::offersUsed(
-            $this->bid->user_id, $this->bid->room_id, $this->bid->check_in, $this->bid->check_out
-        );
-
-        return max(0, RoomRequest::MAX_BIDS - $used);
-    }
-
     private function content(): array
     {
-        $room = $this->bid->room->name ?? 'your room';
-
-        return match ($this->action) {
-            'accepted' => [
-                'type'  => 'bid_accepted',
-                'title' => 'Bid accepted!',
-                'body'  => "Your offer for {$room} was accepted. Complete payment within " . config('bidding.payment_hours') . " hours.",
-                'url'   => '/profile/my-bids?bid=' . $this->bid->id,
-            ],
-            'countered' => [
-                'type'  => 'bid_countered',
-                'title' => 'Counter offer received',
-                'body'  => "The owner countered your bid on {$room} — BDT " . number_format($this->bid->counter_price) . '/night.',
-                'url'   => '/profile/my-bids?bid=' . $this->bid->id,
-            ],
-            'declined' => [
-                'type'  => 'bid_declined',
-                'title' => 'Bid declined',
-                'body'  => "Your offer for {$room} was not accepted. " . $this->bidsRemaining() . " bid(s) remaining.",
-                'url'   => '/profile/my-bids',
-            ],
-            // the guest took the offer back (sent to the owner)
-            'withdrawn' => [
-                'type'  => 'bid_withdrawn',
-                'title' => 'Offer withdrawn',
-                'body'  => "The guest withdrew their offer for {$room}.",
-                'url'   => '/request?tab=incoming',
-            ],
-            'counter_accepted' => [
-                'type'  => 'counter_accepted',
-                'title' => 'Counter accepted',
-                'body'  => "The guest accepted your counter offer on {$room}. Awaiting payment.",
-                'url'   => '/request?tab=incoming',
-            ],
-            'expired' => [
-                'type'  => 'bid_expired',
-                'title' => 'Bid expired',
-                'body'  => "Your offer for {$room} expired. You can submit a new bid.",
-                'url'   => '/profile/my-bids',
-            ],
-            default => [
-                'type'  => 'bid_update',
-                'title' => 'Bid update',
-                'body'  => 'Your bid status changed.',
-                'url'   => '/request',
-            ],
-        };
+        return BidMessages::for($this->bid, $this->action, $this->audience, $this->more);
     }
 
     public function toDatabase($notifiable): array
     {
         return BellFields::add(array_merge($this->content(), [
-            'bid_id'  => $this->bid->id,
-            'room_id' => $this->bid->room_id,
+            'bid_id'     => $this->bid->id,
+            'room_id'    => $this->bid->room_id,
+            'bid_number' => data_get($this->bid, 'bid_number'),
         ]));
     }
 
@@ -99,7 +48,7 @@ class BidStatusNotification extends Notification implements ShouldQueue
     {
         return new BroadcastMessage(BellFields::add(array_merge(
             $this->content(),
-            ['created_at' => now()->toISOString()]
+            ['bid_id' => $this->bid->id, 'created_at' => now()->toISOString()]
         )));
     }
 

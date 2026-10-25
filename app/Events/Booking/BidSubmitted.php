@@ -50,39 +50,9 @@ class BidSubmitted implements ShouldBroadcastNow
         ];
     }
 
+    /** Tells the guest, the hotel's people and the admin (see BidAlerts: it never lets a failed bell hold anything up) */
     public function notifyAll(): void
     {
-        $room     = $this->roomRequest->room;
-        $payload  = $this->broadcastWith();
-
-        // Admin DB — deduped by room_request_id
-        User::admins()->each(fn($admin) =>
-        $admin->notify(new AdminNotification(
-            type:    'bid',
-            title:   $payload['title'],
-            message: $payload['message'],
-            icon:    'bx-tag',
-            color:   'blue',
-            extra:   ['room_request_id' => $this->roomRequest->id],
-            channel: 'admin',
-        ))
-        );
-
-        // The owner's BidReceivedNotification is sent by the caller
-        // (BookingController::checkout), not here — sending it from both
-        // used to notify non-admin owners twice per bid.
-
-        // Guest DB — confirmation bid was sent
-        if ($this->roomRequest->user) {
-            $this->roomRequest->user->notify(new AdminNotification(
-                type:    'bid',
-                title:   'Bid submitted',
-                message: 'Your offer for ' . ($room?->name ?? 'the room') . ' was sent to the owner',
-                icon:    'bx-tag',
-                color:   'teal',
-                extra:   ['room_request_id' => 'guest_' . $this->roomRequest->id],
-                channel: 'user',
-            ));
-        }
+        app(\App\Services\Notify\BidAlerts::class)->submitted($this->roomRequest);
     }
 }

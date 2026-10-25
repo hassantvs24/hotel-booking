@@ -122,7 +122,7 @@ class RoomRequestController extends BaseController
             );
         });
 
-        $bid->user?->notify(new BidStatusNotification($bid, 'accepted'));
+        app(\App\Services\Notify\BidAlerts::class)->answered($bid, 'accepted', $request->user());
 
         return $this->sendSuccess([
             'message' => 'Offer accepted. Guest has ' . config('bidding.payment_hours') . ' hours to pay.',
@@ -154,7 +154,7 @@ class RoomRequestController extends BaseController
             'request_expiration_time' => Carbon::now()->addHours(config('bidding.pending_hours')),
         ]);
 
-        $bid->user?->notify(new BidStatusNotification($bid, 'countered'));
+        app(\App\Services\Notify\BidAlerts::class)->answered($bid, 'countered', $request->user());
 
         return $this->sendSuccess([
             'message' => 'Counter offer sent to guest.',
@@ -189,9 +189,7 @@ class RoomRequestController extends BaseController
             );
         });
 
-        $bid->room?->property?->user?->notify(
-            new BidStatusNotification($bid, 'counter_accepted')
-        );
+        app(\App\Services\Notify\BidAlerts::class)->guestActed($bid, 'counter_accepted', $request->user());
 
         return $this->sendSuccess([
             'message' => 'Counter accepted. Please pay within ' . config('bidding.payment_hours') . ' hours.',
@@ -215,9 +213,9 @@ class RoomRequestController extends BaseController
 
         $isGuest = $bid->user_id === $user->id;
         if ($isGuest) {
-            $bid->room?->property?->user?->notify(new BidStatusNotification($bid, 'withdrawn'));
+            app(\App\Services\Notify\BidAlerts::class)->guestActed($bid, 'withdrawn', $user);
         } else {
-            $bid->user?->notify(new BidStatusNotification($bid, 'declined'));
+            app(\App\Services\Notify\BidAlerts::class)->answered($bid, 'declined', $user);
         }
 
         return $this->sendSuccess(['message' => 'Offer declined.']);

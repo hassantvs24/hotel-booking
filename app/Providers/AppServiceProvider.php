@@ -37,6 +37,8 @@ class AppServiceProvider extends ServiceProvider
         \App\Models\RefundRequest::updated(function (\App\Models\RefundRequest $refund) {
             if ($refund->wasChanged('status')) {
                 app(\App\Services\Notify\VendorAlerts::class)->refundChanged($refund);
+                // ...and so does the guest who asked for it (a bell only: it never holds a refund up)
+                app(\App\Services\Notify\GuestAlerts::class)->refundChanged($refund);
             }
         });
 

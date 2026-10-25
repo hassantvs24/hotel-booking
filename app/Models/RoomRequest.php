@@ -304,19 +304,36 @@ class RoomRequest extends Model
      */
     public static function expireLapsed(): int
     {
-        $ids = static::expired()->pluck('id');
+        $before = static::expired()->pluck('status', 'id');   // id => the status it ran out in
 
-        if ($ids->isEmpty()) {
+        if ($before->isEmpty()) {
             return 0;
         }
 
-        return \Illuminate\Support\Facades\DB::transaction(function () use ($ids) {
+        $ids = $before->keys();
+        $claimed = [];
+
+        \Illuminate\Support\Facades\DB::transaction(function () use ($ids, &$claimed) {
             RoomRequestAccepted::whereIn('room_requests_id', $ids)->delete();
 
-            return static::whereIn('id', $ids)
-                ->whereIn('status', self::LIVE_STATUSES)
-                ->update(['status' => 'Timeout']);
+            // one by one, so that two requests running this at the same moment never both take the same offer
+            foreach ($ids as $id) {
+                if (static::where('id', $id)->whereIn('status', self::LIVE_STATUSES)->update(['status' => 'Timeout']) > 0) {
+                    $claimed[] = $id;
+                }
+            }
         });
+
+        // only the offers THIS call timed out are told about (a bell that fails changes nothing above)
+        if ($claimed) {
+            try {
+                app(\App\Services\Notify\BidAlerts::class)->lapsed(static::whereIn('id', $claimed)->get(), $before->only($claimed)->all());
+            } catch (\Throwable $e) {
+                report($e);
+            }
+        }
+
+        return count($claimed);
     }
 
     public function isExpired(): bool

@@ -302,6 +302,7 @@ class ChatController extends BaseController
         broadcast(new MessageSent($message))->toOthers();
 
         app(MessageNotifier::class)->notify($message);
+        app(\App\Services\Notify\GuestAlerts::class)->hotelReplied($message);
         app(GuestMessageMailer::class)->notify($message);
 
         return $this->sendSuccess(
