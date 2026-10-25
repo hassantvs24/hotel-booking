@@ -43,8 +43,15 @@ class PropertySearchService
     {
         return [
             'facilities'    => FacilitySub::select('id', 'name')->get(),
-            'hotelClasses'  => ['7 Stars', '6 Stars', '5 Stars', '4 Stars', '3 Stars', '2 Stars', '1 Star', 'Unrated'],
-            'ratings'       => [1, 2, 3, 4, 5],
+            // the official star class of the hotels a guest can find (5 stars first, "Unrated" last): a class nobody has is not offered
+            'hotelClasses'  => Property::query()
+                ->where('status', Property::STATUS_PUBLISHED)
+                ->whereHas('rooms')
+                ->distinct()
+                ->orderBy('property_class')   // an enum sorts in its own order: 7 Stars ... 1 Star, Unrated
+                ->pluck('property_class')
+                ->all(),
+            'ratings'       => [9, 8, 7, 6],   // "9 and above" ... (scores are out of 10, the same scale the cards show)
             'propertyTypes' => PropertyCategory::select('id', 'name')->get(),
             'sortOptions'   => [
                 //['value' => 'rating',  'name' => 'Top Rated'],
@@ -76,8 +83,8 @@ class PropertySearchService
         }
 
         $eagerLoads = $userId
-            ? ['images', 'facilities', 'place.city', 'rooms', 'rooms.images', 'bookingAccepteds']
-            : ['images', 'facilities', 'place.city', 'rooms'];
+            ? ['images', 'facilities', 'place.city', 'propertyCategory:id,name', 'rooms', 'rooms.images', 'bookingAccepteds']
+            : ['images', 'facilities', 'place.city', 'propertyCategory:id,name', 'rooms'];
 
         $sortBy = $params['sortByPrice'] ?? null;
 
@@ -145,22 +152,28 @@ class PropertySearchService
             }
         }
 
-        // ── 2. Availability ───────────────────────────────
-        if (!empty($params['check_in']) && !empty($params['check_out'])) {
-            $ci = $params['check_in'];
-            $co = $params['check_out'];
-            $query->whereHas('rooms', fn($q) =>
-            $q->whereDoesntHave('bookings', fn($b) =>
-            $b->where('checkin', '<', $co)->where('checkout', '>', $ci)
-            )
-            );
-        }
+        // ── 2. + 3. Availability, capacity and the number of rooms ─────────────
+        // One room can do all of it at once: free on those dates (the same rule the property page uses: only reserved /
+        // approved bookings block a room, a cancelled or refunded one does not), in use (not under maintenance), and big
+        // enough for its share of the party. The property needs as many such rooms as the guest asked for.
+        $checkIn  = !empty($params['check_in'])  ? $params['check_in']  : null;
+        $checkOut = !empty($params['check_out']) ? $params['check_out'] : null;
+        $adults   = max(0, (int) ($params['adult'] ?? 0));
+        $wanted   = max(1, (int) ($params['room'] ?? 1));
 
-        // ── 3. Guest capacity ─────────────────────────────
-        if (!empty($params['adult']) && (int) $params['adult'] > 0) {
-            $query->whereHas('rooms', fn($q) =>
-            $q->where('guest_capacity', '>=', (int) $params['adult'])
-            );
+        if ($checkIn && $checkOut || $adults > 0 || $wanted > 1) {
+            $share = $adults > 0 ? (int) ceil($adults / $wanted) : 0;
+
+            $query->whereHas('rooms', function ($q) use ($checkIn, $checkOut, $share) {
+                $q->where(fn ($s) => $s->whereNull('status')->orWhereNotIn('status', ['Maintenance', 'Disabled', 'Inactive']));
+
+                if ($checkIn && $checkOut) {
+                    $q->whereDoesntHave('bookings', fn ($b) => $b->checkDateOverlap([], $checkIn, $checkOut));
+                }
+                if ($share > 0) {
+                    $q->where('guest_capacity', '>=', $share);
+                }
+            }, '>=', $wanted);
         }
 
         // ── 4. Facilities — AND logic ─────────────────────
@@ -178,15 +191,11 @@ class PropertySearchService
             $query->whereIn('property_class', (array) $params['hotelClass']);
         }
 
-        // ── 6. Rating — floor match: "4" = 4.0–4.99 ──────
+        // ── 6. Rating — "7" means a score of 7 and above (the scores are out of 10) ──────
         if (!empty($params['rating'])) {
-            $ratings = array_map('intval', (array) $params['rating']);
-            $query->where(function ($q) use ($ratings) {
-                foreach ($ratings as $r) {
-                    // the guests' score once there are reviews (the same score the list is sorted by), otherwise the starting score
-                    $q->orWhereRaw('IF(reviews_count > 0, reviews_avg_rating, rating) BETWEEN ? AND ?', [$r, $r + 0.99]);
-                }
-            });
+            $least = min(array_map('floatval', (array) $params['rating']));
+            // the guests' score once there are reviews (the same score the list is sorted by), otherwise the starting score
+            $query->whereRaw('IF(reviews_count > 0, reviews_avg_rating, rating) >= ?', [$least]);
         }
 
         // ── 7. Property type ──────────────────────────────

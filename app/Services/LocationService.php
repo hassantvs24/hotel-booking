@@ -265,25 +265,28 @@ class LocationService
         $idx = ['countries' => [], 'states' => [], 'cities' => [], 'places' => [],
             'cityPlaces' => [], 'stateCities' => [], 'countryStates' => [], 'statesByNorm' => [], 'citiesByNorm' => []];
 
-        foreach (Country::query()->get(['id', 'name']) as $k) {
+        // plain rows, not models: about 5,500 of them are read on every suggestion / search, and models are several times slower
+        $live = fn (string $table, array $cols) => DB::table($table)->whereNull('deleted_at')->orderBy('id')->get($cols);
+
+        foreach ($live('countries', ['id', 'name']) as $k) {
             $idx['countries'][$k->id] = ['name' => $k->name, 'norm' => $this->normalizeName((string) $k->name)];
         }
 
-        foreach (State::query()->get(['id', 'name', 'country_id']) as $s) {
+        foreach ($live('states', ['id', 'name', 'country_id']) as $s) {
             $norm = $this->normalizeName((string) $s->name);
             $idx['states'][$s->id] = ['name' => $s->name, 'norm' => $norm, 'country_id' => $s->country_id];
             $idx['countryStates'][$s->country_id][] = $s->id;
             $idx['statesByNorm'][$norm][] = $s->id;
         }
 
-        foreach (City::query()->get() as $c) {
+        foreach ($live('cities', ['id', 'name', 'state_id', 'lat', 'long']) as $c) {
             $norm = $this->normalizeName((string) $c->name);
-            $idx['cities'][$c->id] = ['name' => $c->name, 'norm' => $norm, 'state_id' => $c->state_id, 'lat' => $c->lat ?? null, 'long' => $c->long ?? null];
+            $idx['cities'][$c->id] = ['name' => $c->name, 'norm' => $norm, 'state_id' => $c->state_id, 'lat' => $c->lat, 'long' => $c->long];
             $idx['stateCities'][$c->state_id][] = $c->id;
             $idx['citiesByNorm'][$norm][] = $c->id;
         }
 
-        foreach (Place::query()->get() as $p) {
+        foreach ($live('places', ['id', 'name', 'city_id', 'lat', 'long', 'external_id', 'external_source']) as $p) {
             $idx['places'][$p->id] = ['name' => $p->name, 'norm' => $this->normalizeName((string) $p->name), 'city_id' => $p->city_id,
                 'lat' => $p->lat, 'long' => $p->long, 'external_id' => $p->external_id, 'source' => $p->external_source ?? 'local'];
             if ($p->city_id) {
@@ -565,8 +568,15 @@ class LocationService
 
     private function nominatimSuggestions(string $q): array
     {
+        // the same words are asked again and again (every guest types "Cox", then "Cox'"...): the answer is kept for 6 hours
+        $key = 'location.suggestions.' . md5(mb_strtolower($q));
+        $hit = Cache::get($key);
+        if (is_array($hit)) {
+            return $hit;
+        }
+
         try {
-            $response = $this->nominatimClient(5)
+            $response = $this->nominatimClient(3)
                 ->get('https://nominatim.openstreetmap.org/search', [
                     'q'               => $q,
                     'format'          => 'json',
@@ -575,7 +585,7 @@ class LocationService
                     'accept-language' => 'en',
                 ])->json();
 
-            return collect($response)->map(fn($r) => [
+            $found = collect($response)->map(fn($r) => [
                 'type'        => 'place',
                 'id'          => null,
                 'external_id' => (string) $r['place_id'],
@@ -590,6 +600,10 @@ class LocationService
                 'full_address'=> $r['display_name'],
                 'source'      => 'nominatim',
             ])->toArray();
+
+            Cache::put($key, $found, now()->addHours(6));
+
+            return $found;
 
         } catch (\Exception $e) {
             Log::warning('Nominatim suggestions failed: ' . $e->getMessage());
