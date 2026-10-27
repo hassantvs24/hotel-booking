@@ -173,6 +173,7 @@ class CartController extends BaseController
             'rooms_count'  => $items->count(),
             'removed_unavailable' => $removedOffline,                     // rooms taken out because the hotel is offline now
             'pending_hours'       => (int) config('bidding.pending_hours'),   // how long an owner has to answer an offer
+            'pay_minutes'         => \App\Jobs\ExpireUnpaidBookings::TIMEOUT_MINUTES,   // how long a booked room waits for its payment
         ]);
     }
 

@@ -18,7 +18,7 @@ class ExpireUnpaidBookings implements ShouldQueue
 {
     use Dispatchable, Queueable;
 
-    private const TIMEOUT_MINUTES = 30;
+    public const TIMEOUT_MINUTES = 30;   // read by the cart / checkout pages: "the room is held this long while you pay"
 
     /**
      * Create a new job instance.

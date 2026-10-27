@@ -56,6 +56,8 @@ class BookingController extends BaseController
     {
         $user = $request->user();
 
+        $request->validate(['notes' => 'nullable|string|max:255']);
+
         // Clean expired non-bid carts
         BookingCart::where('user_id', $user->id)
             ->where('is_bid', false)
@@ -186,7 +188,9 @@ class BookingController extends BaseController
                     // Offers already spent on this room for these dates (live + declined)
                     $used = RoomRequest::offersUsed($user->id, $room->id, $item->check_in, $item->check_out);
 
-                    if ($used >= RoomRequest::MAX_BIDS) { continue; }
+                    if ($used >= RoomRequest::MAX_BIDS) {
+                        throw new \Exception('You have used all ' . RoomRequest::MAX_BIDS . " offers for \"{$room->name}\" and these dates. Remove it from your cart and try again.");
+                    }
 
                     // The cart was checked when the offer was added, but an owner counter
                     // may have arrived since — hold the same negotiation window here
@@ -238,6 +242,10 @@ class BookingController extends BaseController
                 return ['bookings' => $bookings, 'group' => $group, 'bids' => $createdBids];
             });
 
+        } catch (\Illuminate\Database\QueryException $e) {
+            Log::error('Checkout failed: ' . $e->getMessage(), ['user_id' => $user->id]);
+
+            return $this->sendError('We could not create your booking. Nothing was charged. Please try again.', [], 500);
         } catch (\Exception $e) {
             return $this->sendError($e->getMessage(), [], 422);
         }
@@ -771,7 +779,7 @@ class BookingController extends BaseController
 
         $profile  = $user->profile;
         $customer = Customer::createFromArray([
-            'name'     => ($profile->first_name ?? '') . ' ' . ($profile->last_name ?? $user->name),
+            'name'     => trim(($profile->first_name ?? '') . ' ' . ($profile->last_name ?? '')) ?: (string) $user->name,
             'email'    => $user->email,
             'phone'    => $user->phone ?? 'N/A',
             'address1' => $profile->address  ?? 'N/A',
