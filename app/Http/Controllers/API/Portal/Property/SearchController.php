@@ -26,10 +26,21 @@ class SearchController extends BaseController
     // ── Initial property search (page load from SearchBox) ──
     public function search(Request $request): JsonResponse
     {
-        $properties = $this->searchService->searchProperties(
-            $request->all()
+        $request->validate(PropertySearchService::rules(), PropertySearchService::messages());
+
+        $result = $this->searchService->searchPage(
+            $request->all(),
+            (int) $request->input('page', 1),
+            (int) $request->input('per_page', 12)
         );
 
-        return $this->sendSuccess($properties);
+        return $this->sendSuccess([
+            'properties' => $result['items'],   // this page's hotels, in full
+            'pins'       => $result['pins'],    // every matching hotel, small (the map)
+            'total'      => $result['total'],
+            'page'       => $result['page'],
+            'per_page'   => $result['per_page'],
+            'has_more'   => $result['has_more'],
+        ]);
     }
 }

@@ -21,6 +21,9 @@ class Property extends Model
 
     protected $casts = ['refund_policy' => 'array'];
 
+    /** What of a property never goes to a guest's browser (the owner's account and e-mail, the admin's notes). The phone number is separate: only some pages show it. */
+    public const PRIVATE_FOR_GUESTS = ['email', 'user_id', 'website', 'google_review', 'meta', 'hidden_reason', 'hidden_by_admin_at', 'verified_at', 'seo_title', 'seo_meta', 'deleted_at'];
+
     public const STATUS_PUBLISHED = 'Published';
     public const STATUS_UNPUBLISHED = 'Unpublished';
     public const STATUS_PENDING = 'Pending';

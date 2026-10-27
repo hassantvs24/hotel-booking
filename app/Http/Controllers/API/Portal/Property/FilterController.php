@@ -34,6 +34,8 @@ class FilterController extends BaseController
     // ── Search page — filter form submit ───────────────────
     public function getFilteredProperties(Request $request): JsonResponse
     {
+        $request->validate(PropertySearchService::rules(), PropertySearchService::messages());
+
         $properties = $this->searchService->searchProperties(
             $request->all()
         );
@@ -44,6 +46,8 @@ class FilterController extends BaseController
     // ── Request page — filter form submit [auth:sanctum] ───
     public function getFilteredPropertiesByRequest(Request $request): JsonResponse
     {
+        $request->validate(PropertySearchService::rules(), PropertySearchService::messages());
+
         $properties = $this->searchService->searchProperties(
             $request->all(),
             $request->user()->id

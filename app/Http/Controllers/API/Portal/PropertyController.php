@@ -32,7 +32,8 @@ class PropertyController extends BaseController
             ->whereHas('rooms')
             ->where('status', Property::STATUS_PUBLISHED)
             ->with(['images', 'logoImage', 'facilities', 'place.city'])
-            ->get();
+            ->get()
+            ->each->makeHidden(array_merge(Property::PRIVATE_FOR_GUESTS, ['phone_number']));
 
         return $this->sendSuccess(['properties' => $properties]);
     }
@@ -52,7 +53,8 @@ class PropertyController extends BaseController
                 'place_id' => $place->id,
                 'status'   => Property::STATUS_PUBLISHED,
             ])
-            ->get();
+            ->get()
+            ->each->makeHidden(array_merge(Property::PRIVATE_FOR_GUESTS, ['phone_number']));
 
         return $this->sendSuccess(['properties' => $properties]);
     }
@@ -100,6 +102,9 @@ class PropertyController extends BaseController
             'faqs.answer',
         ]);
 
+        // the owner's account and the admin's notes are not for the guest's browser (the phone number is, the page shows it)
+        $property->makeHidden(array_diff(Property::PRIVATE_FOR_GUESTS, ['verified_at', 'deleted_at']));
+
         return $this->sendSuccess([
             'property'      => $property,
             'refund_policy' => app(RefundPolicyService::class)->summary($property),
@@ -120,9 +125,18 @@ class PropertyController extends BaseController
     {
         $this->ensureVisible($request, $propertyId);
 
+        // What the cart would refuse is not shown as available: no stay of zero nights, none in the past, no nonsense
+        $request->validate([
+            'check_in'  => 'nullable|required_with:check_out|date|after_or_equal:today',
+            'check_out' => 'nullable|required_with:check_in|date|after:check_in',
+            'adult'     => 'nullable|integer|min:1|max:50',
+            'child'     => 'nullable|integer|min:0|max:50',
+        ], \App\Services\PropertySearchService::messages());
+
         $checkIn  = $request->input('check_in');
         $checkOut = $request->input('check_out');
         $adult    = (int) $request->input('adult', 1);
+        $guests   = $adult + (int) $request->input('child', 0);   // everybody who sleeps in the room counts for its size
 
         // ── 1. Get all room IDs for this property ──────────
         $allRooms = Room::where('property_id', $propertyId)
@@ -174,7 +188,7 @@ class PropertyController extends BaseController
             $name = $members->count() > 1 ? $grouper->baseName($room->name) : $room->name;
 
             // Too small for the party: not offered, but the guest is told, so they know why it is missing
-            if ($room->guest_capacity < $adult) {
+            if ($room->guest_capacity < $guests) {
                 $hiddenCapacity[] = ['name' => $name, 'guest_capacity' => (int) $room->guest_capacity, 'count' => $free->count()];
                 continue;
             }

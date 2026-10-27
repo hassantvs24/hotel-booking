@@ -49,8 +49,10 @@ class CartController extends BaseController
             abort(422, 'This property is not available for booking.');
         }
 
-        if ((int) $room->guest_capacity > 0 && (int) $data['adult'] > (int) $room->guest_capacity) {
-            abort(422, "This room takes up to {$room->guest_capacity} adult" . ($room->guest_capacity > 1 ? 's' : '') . '. Please choose a bigger room or fewer guests.');
+        $guests = (int) $data['adult'] + (int) ($data['children'] ?? 0);   // the children sleep in the room too
+
+        if ((int) $room->guest_capacity > 0 && $guests > (int) $room->guest_capacity) {
+            abort(422, "This room takes up to {$room->guest_capacity} guest" . ($room->guest_capacity > 1 ? 's' : '') . '. Please choose a bigger room or fewer guests.');
         }
 
         if ($isBid) {

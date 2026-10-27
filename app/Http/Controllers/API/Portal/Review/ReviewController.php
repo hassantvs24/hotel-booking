@@ -131,6 +131,14 @@ class ReviewController extends BaseController
 
         $reviews = $query->paginate(min(50, max(1, (int) $request->input('per_page', 10))));
 
+        // The public list shows who wrote a review as "First name + initial", nothing else of the account (no id, roles, photo link)
+        $reviews->getCollection()->transform(function (ReviewSubmission $r) {
+            $r->setRelation('user', new \Illuminate\Support\Fluent(['name' => $this->publicName($r->user?->name)]));
+            $r->makeHidden(['user_id', 'booking_id', 'admin_replied_by']);
+
+            return $r;
+        });
+
         $categoryBreakdown = Review::query()
             ->whereHas('reviewSubmission', fn($q) => $q
                 ->where('status', ReviewSubmission::STATUS_PUBLISHED)
@@ -150,6 +158,18 @@ class ReviewController extends BaseController
                 'category_breakdown' => $categoryBreakdown,
             ],
         ]);
+    }
+
+    /** "Rahim Uddin" -> "Rahim U."; one word stays as it is; no name -> "Guest" */
+    private function publicName(?string $name): string
+    {
+        $parts = preg_split('/\s+/u', trim((string) $name), -1, PREG_SPLIT_NO_EMPTY);
+
+        if (!$parts) {
+            return 'Guest';
+        }
+
+        return count($parts) === 1 ? $parts[0] : $parts[0] . ' ' . mb_strtoupper(mb_substr(end($parts), 0, 1)) . '.';
     }
 
     /**
