@@ -62,6 +62,11 @@ class BookingController extends BaseController
             ->where('expires_at', '<', now())
             ->delete();
 
+        // A stay that has already started cannot be booked or offered for (offers wait in the cart with no timer)
+        BookingCart::where('user_id', $user->id)
+            ->where('check_in', '<', now()->toDateString())
+            ->delete();
+
         $cart = BookingCart::where('user_id', $user->id)
             ->whereHas('room')
             ->with('room.property.user')
@@ -69,6 +74,18 @@ class BookingController extends BaseController
 
         if ($cart->isEmpty()) {
             return $this->sendError('Your cart is empty or has expired.', [], 422);
+        }
+
+        // A hotel taken offline after its room went into the cart cannot be booked or offered for: those rows go,
+        // and the guest is told which hotel (nothing is created, nothing is charged)
+        $offline = $cart->filter(fn ($i) => ($i->room->property?->status ?? null) !== \App\Models\Property::STATUS_PUBLISHED);
+
+        if ($offline->isNotEmpty()) {
+            BookingCart::whereIn('id', $offline->pluck('id'))->delete();
+
+            $names = $offline->map(fn ($i) => $i->room->property?->name ?? $i->room->name)->unique()->implode(', ');
+
+            return $this->sendError("{$names} is no longer taking bookings, so it was removed from your cart. Please check your cart and try again.", [], 422);
         }
 
         $direct = $cart->where('is_bid', false)->values();
@@ -267,6 +284,10 @@ class BookingController extends BaseController
         try {
             $booking = DB::transaction(function () use ($validated, $request, $guestId) {
                 $room = Room::lockForUpdate()->findOrFail($validated['room_id']);
+
+                if (($room->property?->status ?? null) !== \App\Models\Property::STATUS_PUBLISHED) {
+                    throw new \Exception('This property is not available for booking.');
+                }
 
                 if (Booking::where('room_id', $room->id)
                     ->whereIn('status', ['reserved', 'approved'])

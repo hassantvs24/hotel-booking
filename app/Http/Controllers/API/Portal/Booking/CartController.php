@@ -36,6 +36,7 @@ class CartController extends BaseController
             'is_bid'      => 'nullable',
             'offer_price' => 'required_if:is_bid,true|nullable|numeric|min:1',
             'bid_message' => 'nullable|string|max:300',
+            'replace_id'  => 'nullable|integer',   // the cart row being edited: it goes only after the new one is saved
         ]);
 
         $user = $request->user();
@@ -79,7 +80,7 @@ class CartController extends BaseController
             $expiresAt = Carbon::now()->addMinutes(self::CART_HOLD_MINUTES);
         }
 
-        BookingCart::updateOrCreate(
+        $row = BookingCart::updateOrCreate(
             ['user_id' => $user->id, 'room_id' => $room->id],
             [
                 'check_in'    => $data['check_in'],
@@ -94,6 +95,15 @@ class CartController extends BaseController
                 'bid_message' => $isBid ? ($data['bid_message'] ?? null) : null,
             ]
         );
+
+        // Editing an item (new dates, or another room of the same type took its place): the old row goes now, not before,
+        // so a refused edit never costs the guest the item they had
+        if (!empty($data['replace_id'])) {
+            BookingCart::where('user_id', $user->id)
+                ->where('id', $data['replace_id'])
+                ->where('id', '!=', $row->id)
+                ->delete();
+        }
 
         return $this->sendSuccess([
             'message'    => $isBid ? 'Offer added to cart.' : 'Room added to cart.',
@@ -115,6 +125,15 @@ class CartController extends BaseController
             ->where('is_bid', false)
             ->whereNotNull('expires_at')
             ->where('expires_at', '<', Carbon::now())
+            ->delete();
+
+        BookingCart::where('user_id', $userId)
+            ->where('check_in', '<', Carbon::today()->toDateString())
+            ->delete();
+
+        // A hotel that was taken offline after the guest added its room: the row goes (the page says so)
+        $removedOffline = BookingCart::where('user_id', $userId)
+            ->whereDoesntHave('room.property', fn ($q) => $q->where('status', Property::STATUS_PUBLISHED))
             ->delete();
 
         $items = BookingCart::where('user_id', $userId)
@@ -152,6 +171,8 @@ class CartController extends BaseController
                 'offers_total'          => round($bids->sum('total_price'), 2),
             ],
             'rooms_count'  => $items->count(),
+            'removed_unavailable' => $removedOffline,                     // rooms taken out because the hotel is offline now
+            'pending_hours'       => (int) config('bidding.pending_hours'),   // how long an owner has to answer an offer
         ]);
     }
 
