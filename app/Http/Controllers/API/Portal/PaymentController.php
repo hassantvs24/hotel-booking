@@ -79,6 +79,10 @@ class PaymentController extends BaseController
             return $this->sendError('This booking is already paid.', [], 422);
         }
 
+        if ($err = $this->notPayable([$booking])) {
+            return $err;
+        }
+
         return $this->initiateSSLPayment($booking, $request->user());
     }
 
@@ -98,6 +102,10 @@ class PaymentController extends BaseController
 
         if ($group->payment_status === 'paid') {
             return $this->sendError('This booking is already paid.', [], 422);
+        }
+
+        if ($err = $this->notPayable($group->bookings)) {
+            return $err;
         }
 
         $primaryBooking = $group->bookings->first();
@@ -128,11 +136,35 @@ class PaymentController extends BaseController
 
         // If part of a group, retry the whole group
         if ($booking->booking_group_id) {
-            $group = BookingGroup::find($booking->booking_group_id);
+            $group = BookingGroup::with('bookings')->find($booking->booking_group_id);
+
+            if ($err = $this->notPayable($group?->bookings ?? [$booking])) {
+                return $err;
+            }
+
             return $this->initiateSSLPayment($booking, $request->user(), $group);
         }
 
+        if ($err = $this->notPayable([$booking])) {
+            return $err;
+        }
+
         return $this->initiateSSLPayment($booking, $request->user());
+    }
+
+    /**
+     * A booking that was cancelled (the time to pay ran out, or the guest cancelled it) or refunded takes no new payment:
+     * its room may belong to somebody else by now.
+     */
+    private function notPayable(iterable $bookings): ?JsonResponse
+    {
+        foreach ($bookings as $b) {
+            if (in_array($b->status, ['cancelled', 'refunded'], true) || in_array($b->payment_status, ['cancelled', 'refunded'], true)) {
+                return $this->sendError('This booking was cancelled, so it cannot be paid any more. Please book the room again.', [], 422);
+            }
+        }
+
+        return null;
     }
 
     // ══════════════════════════════════════════════════════

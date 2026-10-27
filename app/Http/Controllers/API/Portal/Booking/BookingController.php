@@ -627,6 +627,8 @@ class BookingController extends BaseController
 
             if (!$group) return $this->sendError('Group not found.', [], 404);
 
+            $group->bookings->each(fn (Booking $b) => $this->forGuest($b));
+
             return $this->sendSuccess(['booking_group' => $group, 'bookings' => $group->bookings]);
         }
 
@@ -638,7 +640,7 @@ class BookingController extends BaseController
 
             if (!$booking) return $this->sendError('Booking not found.', [], 404);
 
-            return $this->sendSuccess(['booking' => $booking]);
+            return $this->sendSuccess(['booking' => $this->forGuest($booking)]);
         }
 
         return $this->sendError('booking_number or group_ref is required.', [], 422);
@@ -812,6 +814,24 @@ class BookingController extends BaseController
         ]);
 
         return $paymentSession->create($customer, $paymentItem);
+    }
+
+    /**
+     * A booking as the guest's own page shows it: the hotel's private fields (owner email and id, admin notes, SEO)
+     * stay out, and a booking that still waits for its payment says until when the room is held.
+     */
+    private function forGuest(Booking $booking): Booking
+    {
+        $booking->room?->property?->makeHidden(\App\Models\Property::PRIVATE_FOR_GUESTS);
+
+        $waiting = $booking->status === 'reserved' && in_array($booking->payment_status, ['pending', 'failed'], true);
+
+        $booking->setAttribute(
+            'pay_until',
+            $waiting ? $booking->created_at?->copy()->addMinutes(\App\Jobs\ExpireUnpaidBookings::TIMEOUT_MINUTES)->toIso8601String() : null
+        );
+
+        return $booking;
     }
 
     private function checkoutMessage(bool $hasDirect, bool $hasBids): string
