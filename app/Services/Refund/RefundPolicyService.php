@@ -4,6 +4,7 @@ namespace App\Services\Refund;
 
 use App\Models\Booking;
 use App\Models\Property;
+use Carbon\CarbonImmutable;
 use Illuminate\Validation\ValidationException;
 
 /**
@@ -159,6 +160,55 @@ class RefundPolicyService
         return collect($tiers)->contains(fn ($t) => (int) $t['refund_percentage'] > 0)
             ? 'Partial refund if you cancel in time'
             : 'Non-refundable';
+    }
+
+    /**
+     * What the policy means for ONE stay, today: the hotel page used to say "Free cancellation up to 7 days before
+     * check-in" even for a stay that starts today, when that time is long gone. This counts the way a cancellation is
+     * judged (RefundQuoteService): whole hours from now to the start of check-in day in the hotel's time zone.
+     *
+     * @return array{headline:string, percent_now:int, free_until:?string, hours_before:int}
+     */
+    public function forStay(?Property $property, string $checkIn, ?\DateTimeInterface $now = null): array
+    {
+        $tz    = config('refund.timezone', 'Asia/Dhaka');
+        $now   = $now ? CarbonImmutable::instance($now) : CarbonImmutable::now();
+        $start = CarbonImmutable::parse(substr($checkIn, 0, 10), $tz)->startOfDay();
+        $hours = (int) floor($now->diffInHours($start, false));
+        $tiers = $this->tiersFor($property);
+
+        $result = fn (string $headline, int $percent = 0, ?CarbonImmutable $freeUntil = null) => [
+            'headline'     => $headline,
+            'percent_now'  => $percent,
+            'free_until'   => $freeUntil?->toDateString(),
+            'hours_before' => $hours,
+        ];
+
+        // no tier gives anything back
+        if (!collect($tiers)->contains(fn ($t) => (int) $t['refund_percentage'] > 0)) {
+            return $result('Non-refundable');
+        }
+
+        // check-in day has begun: the system refuses every refund from then on
+        if ($hours <= 0) {
+            return $result('No refund: check-in day has already started');
+        }
+
+        $full = collect($tiers)->first(fn ($t) => (int) $t['refund_percentage'] >= 100);
+
+        if ($full && $hours >= (int) $full['minimum_hours_before_checkin']) {
+            // the last day a cancellation is still free (the moment itself is the start of the day before the cut-off)
+            $lastFreeDay = $start->subHours((int) $full['minimum_hours_before_checkin'])->subSecond();
+
+            return $result('Free cancellation until ' . $lastFreeDay->format('j M'), 100, $lastFreeDay);
+        }
+
+        $tier    = $this->resolveTier($property, $hours);
+        $percent = $tier ? (int) $tier['refund_percentage'] : 0;
+
+        return $percent > 0
+            ? $result($percent . '% refunded if you cancel now', $percent)
+            : $result('No refund if you cancel now');
     }
 
     /** The tiers worded for a guest, most generous first, ending with the "no refund" row */

@@ -214,6 +214,10 @@ class PropertyController extends BaseController
             'check_out'           => $checkOut,
             'nights'              => $nights,
             'adult'               => $adult,
+            // what the cancellation policy means for THESE dates, today (the hotel page's "Cancellation" line)
+            'refund_for_stay'     => $checkIn
+                ? app(\App\Services\Refund\RefundPolicyService::class)->forStay(\App\Models\Property::find($propertyId), $checkIn)
+                : null,
         ]);
     }
 

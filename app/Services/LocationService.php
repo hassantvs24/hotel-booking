@@ -233,14 +233,14 @@ class LocationService
         $text = trim($text);
         if (mb_strlen($text) < 3) return null;
 
-        $key = 'location.geocode.' . md5(mb_strtolower($text));
+        $key = 'location.geocode.' . md5(mb_strtolower($text) . '|' . config('locations.map_countries'));
         $hit = Cache::get($key);
         if ($hit !== null) return $hit === false ? null : $hit;
 
         try {
             $response = $this->nominatimClient(5)->get('https://nominatim.openstreetmap.org/search', [
                 'q' => $text, 'format' => 'json', 'limit' => 1, 'accept-language' => 'en',
-            ])->json();
+            ] + $this->mapCountries())->json();
         } catch (\Throwable $e) {
             Log::warning('Nominatim geocode failed: ' . $e->getMessage());
 
@@ -566,10 +566,21 @@ class LocationService
         ])->timeout($timeout);
     }
 
+    /**
+     * Which countries the online map is asked about. Oystay starts in Bangladesh, so a guest who types "Dhak" is no longer
+     * shown villages of India; to open it to the world later, set MAP_COUNTRIES= (empty) in .env (config/locations.php).
+     */
+    private function mapCountries(): array
+    {
+        $codes = strtolower(str_replace(' ', '', (string) config('locations.map_countries', '')));
+
+        return $codes === '' ? [] : ['countrycodes' => $codes];
+    }
+
     private function nominatimSuggestions(string $q): array
     {
         // the same words are asked again and again (every guest types "Cox", then "Cox'"...): the answer is kept for 6 hours
-        $key = 'location.suggestions.' . md5(mb_strtolower($q));
+        $key = 'location.suggestions.' . md5(mb_strtolower($q) . '|' . config('locations.map_countries'));
         $hit = Cache::get($key);
         if (is_array($hit)) {
             return $hit;
@@ -583,7 +594,7 @@ class LocationService
                     'limit'           => 5,
                     'addressdetails'  => 1,
                     'accept-language' => 'en',
-                ])->json();
+                ] + $this->mapCountries())->json();
 
             $found = collect($response)->map(fn($r) => [
                 'type'        => 'place',
