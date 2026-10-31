@@ -24,6 +24,10 @@ class ProfileRequest extends FormRequest
             }
         }
 
+        if (is_string($this->input('phone'))) {
+            $this->merge(['phone' => trim($this->input('phone'))]);
+        }
+
         if (is_string($this->input('gender'))) {
             $this->merge(['gender' => strtolower(trim($this->input('gender'))) ?: null]);
         }
@@ -34,6 +38,7 @@ class ProfileRequest extends FormRequest
         return [
             'first_name.required' => 'Please enter your name.',
             'phone.required' => 'Please enter your phone number.',
+            'phone.regex' => 'Enter a phone number with digits only, for example 01712 345678 (a + at the start is fine).',
             'nid.regex' => 'A NID number has 10, 13 or 17 digits.',
             'passport.regex' => 'A passport number has 6 to 20 letters and digits.',
             'date_of_birth.before' => 'The date of birth must be in the past.',
@@ -46,7 +51,7 @@ class ProfileRequest extends FormRequest
         return [
             'first_name'    => 'sometimes|required|string|max:255',
             'last_name'     => 'sometimes|nullable|string|max:255',
-            'phone'         => 'sometimes|required|string|max:30',
+            'phone'         => ['sometimes', 'required', 'string', 'max:30', 'regex:/^\+?[0-9][0-9 \-]{5,19}$/'],
             'nid'           => ['sometimes', 'nullable', 'regex:/^(\d{10}|\d{13}|\d{17})$/'],
             'passport'      => ['sometimes', 'nullable', 'regex:/^[A-Za-z0-9]{6,20}$/'],
             'date_of_birth' => 'sometimes|nullable|date|before:today',

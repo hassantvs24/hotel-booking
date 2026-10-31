@@ -67,7 +67,9 @@ class ProfileController extends BaseController
 
             return $this->sendSuccess($user->fresh()->load('profile'), 'Profile updated successfully.');
         } catch (\Exception $e) {
-            return $this->sendError('Something went wrong.', [$e->getMessage()]);
+            report($e);   // the cause goes to the log, not to the guest
+
+            return $this->sendError('Something went wrong. Please try again.', []);
         }
     }
 
@@ -115,6 +117,8 @@ class ProfileController extends BaseController
 
     public function updatePreferenceInfo(Request $request): JsonResponse
     {
+        $request->validate(['bio' => 'nullable|string|max:300'], ['bio.max' => 'Please keep it under 300 characters.']);
+
         try {
             $user = $request->user();
 
@@ -127,7 +131,9 @@ class ProfileController extends BaseController
 
             return $this->sendSuccess($user->load('profile'), 'Profile updated successfully.');
         } catch (\Exception $e) {
-            return $this->sendError('Something went wrong.', [$e->getMessage()]);
+            report($e);   // the cause goes to the log, not to the guest
+
+            return $this->sendError('Something went wrong. Please try again.', []);
         }
     }
 }
