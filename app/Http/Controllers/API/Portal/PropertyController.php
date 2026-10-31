@@ -43,20 +43,24 @@ class PropertyController extends BaseController
     //  GET /portal/properties/{place}/place
     // ══════════════════════════════════════════════════════
 
+    /**
+     * Which place is this? The page of a place sends the guest to the Properties page, filtered to that place (the same list,
+     * filters, map and paging as every other search), so all it needs here is the name and how many hotels there are.
+     */
     public function placeWiseProperties(Place $place): JsonResponse
     {
-        // same rule as the main list and search: a property shows once it has a room a guest could book
-        $properties = Property::query()
-            ->whereHas('rooms')
-            ->with(['images', 'facilities', 'place.city'])
-            ->where([
-                'place_id' => $place->id,
-                'status'   => Property::STATUS_PUBLISHED,
-            ])
-            ->get()
-            ->each->makeHidden(array_merge(Property::PRIVATE_FOR_GUESTS, ['phone_number']));
+        $place->loadMissing('city:id,name');
 
-        return $this->sendSuccess(['properties' => $properties]);
+        // same rule as the main list and search: a property shows once it has a room a guest could book
+        $total = Property::query()
+            ->whereHas('rooms')
+            ->where(['place_id' => $place->id, 'status' => Property::STATUS_PUBLISHED])
+            ->count();
+
+        return $this->sendSuccess([
+            'place' => ['id' => $place->id, 'name' => $place->name, 'city' => ['name' => $place->city?->name]],
+            'total' => $total,
+        ]);
     }
 
     // ══════════════════════════════════════════════════════
