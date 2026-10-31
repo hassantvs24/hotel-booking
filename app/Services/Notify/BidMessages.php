@@ -19,7 +19,7 @@ use Throwable;
  */
 final class BidMessages
 {
-    public const EVENTS = ['submitted', 'countered', 'accepted', 'declined', 'withdrawn', 'counter_accepted', 'expired', 'counter_lapsed', 'payment_lapsed', 'counter_expiring', 'pay_expiring'];
+    public const EVENTS = ['submitted', 'countered', 'accepted', 'declined', 'withdrawn', 'counter_accepted', 'expired', 'counter_lapsed', 'payment_lapsed', 'counter_expiring', 'pay_expiring', 'room_taken'];
 
     /** @return array{type:string,event:string,title:string,body:string,url:string,icon:string,color:string} */
     public static function for(object $bid, string $event, string $audience = 'guest', array $more = []): array
@@ -56,6 +56,7 @@ final class BidMessages
                 : ["Payment missed · {$tag}", "{$who} did not pay in time for {$c['room']}, {$c['dates']}, so the room is open again."],
             'counter_expiring' => ["Counter offer ends soon · {$tag}", "{$c['hotel']}'s counter of {$c['counter']}/night for {$c['room']}, {$c['dates']} ends in about " . ($more['minutes'] ?? 60) . ' minutes. Answer it now.'],
             'pay_expiring' => ["Pay soon · {$tag}", "Your accepted offer{$c['at']} for {$c['room']}, {$c['dates']} is released in about " . ($more['minutes'] ?? 30) . ' minutes if you do not pay.'],
+            'room_taken' => ["{$tag} closed", "{$c['room']}{$c['at']}, {$c['dates']} was booked by another guest, so your {$c['offer']}/night offer could not go ahead. This did not use up a bid: you can offer for another room."],
             default => ["Bid update · {$tag}", 'Your bid changed.'],
         };
 

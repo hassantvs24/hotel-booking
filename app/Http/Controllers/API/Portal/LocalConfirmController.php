@@ -198,6 +198,8 @@ class LocalConfirmController extends BaseController
             }
         });
 
+        $group->bookings->each(fn ($b) => RoomRequest::closeForBooking($b));
+
         // One email for the whole group, same as the real payment path
         BookingConfirmationMailer::send($group->fresh());
 
@@ -254,6 +256,8 @@ class LocalConfirmController extends BaseController
                 Log::warning('Notify skipped: ' . $ne->getMessage());
             }
         });
+
+        RoomRequest::closeForBooking($booking);
 
         // Same email the real payment path sends
         BookingConfirmationMailer::send($booking->fresh());

@@ -68,7 +68,14 @@ class RoomRequestController extends BaseController
             ->get()
             ->map(fn($bid) => $this->formatBidForGuest($bid));
 
-        return $this->sendSuccess(['bids' => $bids]);
+        return $this->sendSuccess([
+            'bids'    => $bids,
+            'bidding' => [
+                'max_bids'      => RoomRequest::MAX_BIDS,
+                'pending_hours' => (int) config('bidding.pending_hours'),   // how long an owner has to answer
+                'payment_hours' => (int) config('bidding.payment_hours'),   // how long a guest has to pay an accepted offer
+            ],
+        ]);
     }
 
     public function incoming(Request $request): JsonResponse
@@ -105,9 +112,21 @@ class RoomRequestController extends BaseController
             return $expired;
         }
 
+        // "Yes" holds the room for the guest: it must be one that can be held (not booked, not held for another guest)
+        if (!$this->roomFreeFor($bid)) {
+            return $this->sendError('This room is no longer free for these dates (it is booked, or held for another guest), so this offer cannot be accepted.', [], 422);
+        }
+
         $expiresAt = Carbon::now()->addHours(config('bidding.payment_hours'));
 
-        DB::transaction(function () use ($bid, $expiresAt) {
+        $held = DB::transaction(function () use ($bid, $expiresAt) {
+            // Two answers for the same room at the same moment: queue on the room, then look again, so only the first gets the hold
+            \App\Models\Room::lockForUpdate()->find($bid->room_id);
+
+            if (!$this->roomFreeFor($bid)) {
+                return false;
+            }
+
             $bid->update([
                 'status'                  => 'Approved',
                 'request_expiration_time' => $expiresAt,
@@ -120,7 +139,13 @@ class RoomRequestController extends BaseController
                     'request_expiration_time' => $expiresAt,
                 ]
             );
+
+            return true;
         });
+
+        if (!$held) {
+            return $this->sendError('This room is no longer free for these dates (it is booked, or held for another guest), so this offer cannot be accepted.', [], 422);
+        }
 
         app(\App\Services\Notify\BidAlerts::class)->answered($bid, 'accepted', $request->user());
 
@@ -170,9 +195,20 @@ class RoomRequestController extends BaseController
             return $expired;
         }
 
+        if (!$this->roomFreeFor($bid)) {
+            return $this->sendError('This room is no longer free for these dates, so the owner\'s counter offer cannot be accepted.', [], 422);
+        }
+
         $expiresAt = Carbon::now()->addHours(config('bidding.payment_hours'));
 
-        DB::transaction(function () use ($bid, $expiresAt) {
+        $held = DB::transaction(function () use ($bid, $expiresAt) {
+            // Two answers for the same room at the same moment: queue on the room, then look again, so only the first gets the hold
+            \App\Models\Room::lockForUpdate()->find($bid->room_id);
+
+            if (!$this->roomFreeFor($bid)) {
+                return false;
+            }
+
             $bid->update([
                 // discount_price stays the guest's original offer; the agreed price
                 // is counter_price (see agreedPrice()) so both stay visible afterwards
@@ -187,7 +223,13 @@ class RoomRequestController extends BaseController
                     'request_expiration_time' => $expiresAt,
                 ]
             );
+
+            return true;
         });
+
+        if (!$held) {
+            return $this->sendError('This room is no longer free for these dates, so the owner\'s counter offer cannot be accepted.', [], 422);
+        }
 
         app(\App\Services\Notify\BidAlerts::class)->guestActed($bid, 'counter_accepted', $request->user());
 
@@ -209,16 +251,25 @@ class RoomRequestController extends BaseController
             ->whereIn('status', ['Pending', 'Counter'])
             ->firstOrFail();
 
-        $bid->update(['status' => 'Declined']);
-
         $isGuest = $bid->user_id === $user->id;
+
+        // A guest who takes back an offer the owner has not answered yet CANCELS it completely: after the people concerned are
+        // told, the offer is removed (soft delete: the row stays for the records, but every list, count and price floor ignores
+        // it), so it is not one of the 3 offers. (Saying no to a COUNTER is an answer, and still counts.)
+        $cancel = $isGuest && $bid->status === 'Pending';
+
+        $bid->update(['status' => 'Declined']);
         if ($isGuest) {
             app(\App\Services\Notify\BidAlerts::class)->guestActed($bid, 'withdrawn', $user);
         } else {
             app(\App\Services\Notify\BidAlerts::class)->answered($bid, 'declined', $user);
         }
 
-        return $this->sendSuccess(['message' => 'Offer declined.']);
+        if ($cancel) {
+            $bid->delete();
+        }
+
+        return $this->sendSuccess(['message' => $cancel ? 'Offer withdrawn.' : 'Offer declined.']);
     }
 
     /**
@@ -239,6 +290,17 @@ class RoomRequestController extends BaseController
             );
         }
 
+        // The stay began while the offer waited (an offer is answered within hours, the check-in day may be today)
+        if (Carbon::parse($bid->check_in)->lt(Carbon::today())) {
+            $bid->update(['status' => 'Timeout']);
+
+            return $this->sendError('The check-in date of this offer has passed. Please make a new offer.', [], 422);
+        }
+
+        if (($bid->room?->property?->status ?? null) !== \App\Models\Property::STATUS_PUBLISHED) {
+            return $this->sendError('This hotel is not taking bookings right now, so this offer cannot be paid.', [], 422);
+        }
+
         // An accepted offer becomes a booking now: it needs the name and ID of the person who will stay (the saved one, or typed here)
         $guestId = app(GuestIdentity::class)->fromRequest($request, $request->user());
 
@@ -256,7 +318,9 @@ class RoomRequestController extends BaseController
             ->where('checkin',  '<', $bid->check_out)
             ->where('checkout', '>', $bid->check_in)
             ->where(fn ($q) => $q->whereNull('room_request_id')->orWhere('room_request_id', '!=', $bid->id))
-            ->exists();
+            ->exists()
+            // held for ANOTHER guest whose offer was accepted (this guest's own hold is what lets them pay)
+            || RoomRequest::heldRoomIds(substr((string) $bid->check_in, 0, 10), substr((string) $bid->check_out, 0, 10), [$bid->room_id], $bid->id) !== [];
 
         if ($taken) {
             // The offer was made on one room of a card ("Deluxe"); another room just like it will do
@@ -322,6 +386,12 @@ class RoomRequestController extends BaseController
         return $response;
     }
 
+    /** Is the room of this offer free for its dates (or is another room just like it)? Booked rooms and rooms held for another guest are not */
+    private function roomFreeFor(RoomRequest $bid): bool
+    {
+        return $bid->stayIsServable();
+    }
+
     public function roomRequestNotification(Request $request): JsonResponse
     {
         $bids = RoomRequest::where('user_id', $request->user()->id)
@@ -376,6 +446,14 @@ class RoomRequestController extends BaseController
      */
     private function rejectIfExpired(RoomRequest $bid): ?JsonResponse
     {
+        // An offer is answered within hours, the check-in day can come meanwhile: no yes (or counter) for a stay that began
+        if (Carbon::parse($bid->check_in)->lt(Carbon::today())) {
+            $bid->update(['status' => 'Timeout']);
+            RoomRequestAccepted::where('room_requests_id', $bid->id)->delete();
+
+            return $this->sendError('The check-in date of this offer has passed, so it can no longer go ahead.', [], 422);
+        }
+
         if (!$bid->isExpired()) {
             return null;
         }
@@ -455,6 +533,8 @@ class RoomRequestController extends BaseController
             'seconds_left'            => $bid->request_expiration_time
                 ? max(0, (int) floor(now()->diffInSeconds($bid->request_expiration_time, false)))
                 : 0,
+            // a closed offer whose room has gone to someone else: the card says so (and offers no "same room, same dates" again)
+            'room_taken'              => $bid->status === 'Timeout' && Carbon::parse($bid->check_out)->gte(Carbon::today()) && !$bid->stayIsServable(),
             'created_at'              => $bid->created_at,
         ];
     }
@@ -463,7 +543,9 @@ class RoomRequestController extends BaseController
     {
         return [
             ...$this->formatBidForGuest($bid),
-            'user'         => $bid->user,
+            // the owner's page shows the guest's NAME; the rest of the record (email, roles, is_admin, address, date of birth,
+            // uploaded documents...) is not the owner's business and used to go along with every offer
+            'user'         => $bid->user ? ['id' => $bid->user->id, 'name' => $bid->user->name, 'previous_stays' => $bid->previousStays()] : null,
             'discount_pct' => $bid->room?->base_price
                 ? round((($bid->room->base_price - $bid->discount_price) / $bid->room->base_price) * 100)
                 : 0,

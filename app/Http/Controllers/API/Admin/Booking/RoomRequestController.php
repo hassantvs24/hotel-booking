@@ -35,7 +35,8 @@ class RoomRequestController extends BaseController
         $propertyIds = $this->accessiblePropertyIds();
 
         $query = [
-            'with'     => ['room', 'room.property', 'user', 'property'],
+            // an owner sees the guest's name only (the platform admin sees the whole record)
+            'with'     => ['room', 'room.property', auth()->user()->is_admin ? 'user' : 'user:id,name', 'property'],
             // One line per negotiation (guest + room + stay dates): its latest offer.
             // The earlier offers come back as `history`.
             'where'    => array_merge(
@@ -53,9 +54,11 @@ class RoomRequestController extends BaseController
         ];
 
         $roomRequests = $repo->paginate($query);
-        $roomRequests->getCollection()->each(
-            fn ($bid) => $bid->setAttribute('history', $this->history($bid))
-        );
+        $roomRequests->getCollection()->each(function ($bid) {
+            $bid->setAttribute('history', $this->history($bid));
+            $bid->setAttribute('previous_stays', $bid->previousStays());   // "booked here N times before"
+            $this->guestForOwner($bid);
+        });
 
         return $this->sendSuccess(['room_requests' => $roomRequests]);
     }
@@ -66,12 +69,14 @@ class RoomRequestController extends BaseController
             'room',
             'room.property',
             'room.primaryImage',
-            'user',
+            auth()->user()->is_admin ? 'user' : 'user:id,name',
             'property',
             'acceptedRequest',
         ])->findOrFail($id);
 
         $roomRequest->setAttribute('history', $this->history($roomRequest));
+        $roomRequest->setAttribute('previous_stays', $roomRequest->previousStays());
+        $this->guestForOwner($roomRequest);
 
         return $this->sendSuccess($roomRequest);
     }
@@ -102,6 +107,19 @@ class RoomRequestController extends BaseController
             return $this->sendError('This bid has expired and can no longer be updated.', [], 422);
         }
 
+        // No yes (and no counter) for a stay that has already begun; and no yes for a room that is booked or held for another
+        // guest. (The guest-side controller already had these rules; this page, the one the owner really uses, did not.)
+        if (in_array($status, ['Approved', 'Counter'], true) && Carbon::parse($roomRequest->check_in)->lt(Carbon::today())) {
+            RoomRequestAccepted::where('room_requests_id', $id)->delete();
+            $roomRequest->update(['status' => 'Timeout']);
+
+            return $this->sendError('The check-in date of this offer has passed, so it can no longer go ahead.', [], 422);
+        }
+
+        if ($status === 'Approved' && !$roomRequest->stayIsServable()) {
+            return $this->sendError('This room is no longer free for these dates (it is booked, or held for another guest), so this offer cannot be accepted.', [], 422);
+        }
+
         if ($status === 'Done' && !Booking::where('room_request_id', $roomRequest->id)
                 ->where('payment_status', 'paid')->exists()) {
             return $this->sendError('This bid has no paid booking, so it cannot be marked as done.', [], 422);
@@ -123,6 +141,15 @@ class RoomRequestController extends BaseController
             $basePrice = $request->input('base_price');
 
             if ($status === 'Approved') {
+                // Two offers for the same room answered at the same moment: queue on the room, then look again, so only the first gets the hold
+                \App\Models\Room::lockForUpdate()->find($roomRequest->room_id);
+
+                if (!$roomRequest->stayIsServable()) {
+                    DB::rollBack();
+
+                    return $this->sendError('This room is no longer free for these dates (it is booked, or held for another guest), so this offer cannot be accepted.', [], 422);
+                }
+
                 $expiresAt = Carbon::now()->addHours(config('bidding.payment_hours'));
 
                 RoomRequestAccepted::updateOrCreate(
@@ -224,6 +251,22 @@ class RoomRequestController extends BaseController
         ];
 
         return $this->sendSuccess($stats);
+    }
+
+    /**
+     * An owner is shown the guest's NAME and nothing else of the account (no email, roles, profile, flags): the offer page
+     * uses `user.name`. The platform admin keeps the whole record.
+     */
+    private function guestForOwner(RoomRequest $bid): void
+    {
+        if (auth()->user()->is_admin) {
+            return;
+        }
+
+        $name = $bid->user?->name;
+
+        $bid->unsetRelation('user');
+        $bid->setAttribute('user', ['id' => $bid->user_id, 'name' => $name]);
     }
 
     /** The earlier offers of the same negotiation, for the detail view */

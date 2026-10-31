@@ -249,7 +249,8 @@ class CartController extends BaseController
             ->whereIn('status', ['reserved', 'approved'])
             ->where('checkin',  '<', $checkOut)
             ->where('checkout', '>', $checkIn)
-            ->exists();
+            ->exists()
+            || RoomRequest::heldRoomIds($checkIn, $checkOut, [$roomId]) !== [];   // held for a guest whose offer was accepted
     }
 
     private function enrichItem(BookingCart $item): BookingCart

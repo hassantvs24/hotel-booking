@@ -70,6 +70,87 @@ class RoomRequest extends Model
      * lapsed is dead too, even before the scheduled job flips its status,
      * so the limit never depends on the scheduler running.
      */
+    /**
+     * An offer the owner said yes to, whose guest is still inside the payment window: the room is HELD for that guest.
+     * Nobody else can book it meanwhile (search, hotel page, cart, checkout all count it as taken); when the window
+     * ends the hold ends with it, nothing has to be cleaned up.
+     */
+    public function scopeHolding($query, string $checkIn, string $checkOut)
+    {
+        return $query->where('status', 'Approved')
+            ->where('request_expiration_time', '>', now())
+            ->where('check_in', '<', $checkOut)
+            ->where('check_out', '>', $checkIn);
+    }
+
+    /** The rooms held right now for a stay: only among $roomIds when given, and without the offer $exceptBidId (the guest's own) */
+    public static function heldRoomIds(string $checkIn, string $checkOut, ?array $roomIds = null, ?int $exceptBidId = null): array
+    {
+        return static::holding(substr($checkIn, 0, 10), substr($checkOut, 0, 10))
+            ->when($roomIds !== null, fn ($q) => $q->whereIn('room_id', $roomIds))
+            ->when($exceptBidId, fn ($q) => $q->where('id', '!=', $exceptBidId))
+            ->pluck('room_id')->unique()->values()->all();
+    }
+
+    /** Can the room of this offer (or another one just like it) still be booked for its dates? Booked rooms, and rooms held for another guest, cannot */
+    public function stayIsServable(): bool
+    {
+        $in  = substr((string) $this->check_in, 0, 10);
+        $out = substr((string) $this->check_out, 0, 10);
+
+        $busy = Booking::where('room_id', $this->room_id)
+                ->whereIn('status', ['reserved', 'approved'])
+                ->where('checkin', '<', $out)
+                ->where('checkout', '>', $in)
+                ->exists()
+            || static::heldRoomIds($in, $out, [$this->room_id], $this->id) !== [];
+
+        if (!$busy) {
+            return true;
+        }
+
+        return $this->room && app(\App\Services\Room\RoomGrouper::class)->freeSibling($this->room, $in, $out) !== null;
+    }
+
+    /**
+     * A booking was paid: the offers of other guests still waiting for the same room and dates can no longer be served.
+     * They are closed at once (Timeout: it does not use up one of the guest's offers) and the guest is told, instead of
+     * waiting hours for an answer that cannot be a yes. It can never fail the payment.
+     */
+    public static function closeForBooking(Booking $booking): void
+    {
+        try {
+            static::whereIn('status', ['Pending', 'Counter'])
+                ->where('room_id', $booking->room_id)
+                ->where('check_in', '<', substr((string) $booking->checkout, 0, 10))
+                ->where('check_out', '>', substr((string) $booking->checkin, 0, 10))
+                ->when($booking->room_request_id, fn ($q) => $q->where('id', '!=', $booking->room_request_id))
+                ->with('room.property', 'user')
+                ->get()
+                ->each(function (self $bid) {
+                    if ($bid->stayIsServable()) {
+                        return;
+                    }
+
+                    $bid->update(['status' => 'Timeout']);
+                    app(\App\Services\Notify\BidAlerts::class)->roomTaken($bid);
+                });
+        } catch (\Throwable $e) {
+            report($e);
+        }
+    }
+
+    /** How many times this guest has booked (and paid) at this hotel before: the owner sees it next to the offer */
+    public function previousStays(): int
+    {
+        return Booking::where('user_id', $this->user_id)
+            ->where('payment_status', 'paid')
+            ->whereIn('status', ['approved', 'completed'])
+            ->whereHas('room', fn ($q) => $q->where('property_id', $this->property_id))
+            ->where(fn ($q) => $q->whereNull('room_request_id')->orWhere('room_request_id', '!=', $this->id))
+            ->count();
+    }
+
     public function scopeActive($query)
     {
         return $query->whereIn('status', self::LIVE_STATUSES)

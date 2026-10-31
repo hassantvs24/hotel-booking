@@ -133,7 +133,8 @@ class BookingController extends BaseController
                             ->whereIn('status', ['reserved', 'approved'])
                             ->where('checkin', '<', $item->check_out)
                             ->where('checkout', '>', $item->check_in)
-                            ->exists();
+                            ->exists()
+                            || RoomRequest::heldRoomIds($item->check_in->toDateString(), $item->check_out->toDateString(), [$r->id]) !== [];
 
                         if ($taken($room)) {
                             // Taken meanwhile. If the same room type has another free room (the guest saw one "Deluxe"
@@ -302,6 +303,7 @@ class BookingController extends BaseController
                     ->where('checkin', '<', $validated['check_out'])
                     ->where('checkout', '>', $validated['check_in'])
                     ->exists()
+                    || RoomRequest::heldRoomIds($validated['check_in'], $validated['check_out'], [$room->id]) !== []
                 ) {
                     throw new \Exception('Room is no longer available for the selected dates.');
                 }
@@ -582,7 +584,8 @@ class BookingController extends BaseController
             ->whereIn('status', ['reserved', 'approved'])
             ->where('checkin', '<', $request->check_out)
             ->where('checkout', '>', $request->check_in)
-            ->exists();
+            ->exists()
+            || RoomRequest::heldRoomIds($request->check_in, $request->check_out, [(int) $room]) !== [];
 
         return $this->sendSuccess(['available' => !$conflict]);
     }

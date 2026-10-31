@@ -199,7 +199,10 @@ class BookingController extends BaseController
         }
 
         $roomIds       = Room::where('property_id', $property->id)->pluck('id')->toArray();
-        $bookedRoomIds = Booking::CheckDateOverlap($roomIds, $checkIn, $checkOut)->pluck('room_id')->toArray();
+        $bookedRoomIds = array_merge(
+            Booking::CheckDateOverlap($roomIds, $checkIn, $checkOut)->pluck('room_id')->toArray(),
+            \App\Models\RoomRequest::heldRoomIds($checkIn, $checkOut, $roomIds)   // held for a guest whose offer was accepted
+        );
         $availableRooms = Room::where('property_id', $property->id)
             ->whereNotIn('id', $bookedRoomIds)
             ->get(['id', 'name']);

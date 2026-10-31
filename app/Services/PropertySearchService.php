@@ -248,6 +248,7 @@ class PropertySearchService
 
                 if ($checkIn && $checkOut) {
                     $q->whereDoesntHave('bookings', fn ($b) => $b->checkDateOverlap([], $checkIn, $checkOut));
+                    $q->whereDoesntHave('roomRequests', fn ($r) => $r->holding($checkIn, $checkOut));   // held for a guest whose offer was accepted
                 }
                 if ($share > 0) {
                     $q->where('guest_capacity', '>=', $share);

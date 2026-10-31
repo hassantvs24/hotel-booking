@@ -56,6 +56,14 @@ class BidAlerts
         }
     }
 
+    /** the room of a waiting offer was booked by another guest: the guest is told (the hotel's people are not: it was their booking) */
+    public function roomTaken(RoomRequest $bid): void
+    {
+        $bid->loadMissing('room.property', 'user');
+
+        $this->safely(fn () => $this->deliver($bid, 'room_taken', ['guest' => $bid->user, 'team' => collect(), 'admins' => collect()], null));
+    }
+
     /** the guest has little time left to answer a counter or to pay: one reminder (the guest only) */
     public function guestReminder(RoomRequest $bid, string $event, int $minutes): bool
     {

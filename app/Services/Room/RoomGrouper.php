@@ -70,6 +70,8 @@ class RoomGrouper
             ->pluck('room_id')
             ->all();
 
+        $busy = array_merge($busy, \App\Models\RoomRequest::heldRoomIds($checkIn, $checkOut, $same->pluck('id')->all()));
+
         return $same->first(fn (Room $r) => !in_array($r->id, $busy));
     }
 

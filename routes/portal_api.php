@@ -117,7 +117,6 @@ Route::prefix('portal')->group(function () {
 
     // room request
     Route::prefix('room')->middleware('auth:sanctum')->group(function () {
-        Route::post('/request', [RoomRequestController::class, 'roomRequest']);
         Route::get('/request-notification', [RoomRequestController::class, 'roomRequestNotification']);
         Route::delete('request-notification-remove/{propertyId}', [RoomRequestController::class, 'removeNotification']);
         Route::get('/request-response/{propertyId}', [RoomRequestController::class, 'roomResponselist']);
@@ -131,7 +130,6 @@ Route::prefix('portal')->group(function () {
 
     // ── Room request bid routes ──
     Route::prefix('room-request')->middleware('auth:sanctum')->group(function () {
-        Route::post('/store', [RoomRequestController::class, 'store']);
         Route::get('/bid-count/{roomId}', [RoomRequestController::class, 'bidCount']);
         Route::get('/my-bids', [RoomRequestController::class, 'myBids']);
         Route::get('/incoming', [RoomRequestController::class, 'incoming']);

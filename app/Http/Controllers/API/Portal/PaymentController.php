@@ -413,6 +413,8 @@ class PaymentController extends BaseController
                 ->update(['status' => 'Done']);
         }
 
+        \App\Models\RoomRequest::closeForBooking($booking);
+
         // Fire events AFTER transaction — real-time broadcast to admin bell
         $bookingEvent = new BookingCreated($booking);
         event($bookingEvent);
@@ -486,6 +488,8 @@ class PaymentController extends BaseController
 
         // ONE grouped notification for admin — not one per room
         $this->notifyGroupPayment($group, $firstBooking);
+
+        $group->bookings->each(fn ($b) => \App\Models\RoomRequest::closeForBooking($b));
 
         // One email for the whole group
         BookingConfirmationMailer::send($group);

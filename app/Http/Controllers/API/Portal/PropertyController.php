@@ -162,6 +162,9 @@ class PropertyController extends BaseController
                 ->where('checkout', '>', $checkIn)
                 ->pluck('room_id')
                 ->toArray();
+
+            // a room held for a guest whose offer the owner accepted is not free either
+            $bookedRoomIds = array_merge($bookedRoomIds, \App\Models\RoomRequest::heldRoomIds($checkIn, $checkOut, $allRoomIds));
         }
 
         // ── 3. Group identical rooms, then filter by availability and capacity ──
