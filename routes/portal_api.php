@@ -27,6 +27,7 @@ use Illuminate\Support\Facades\Route;
 Route::prefix('portal')->group(function () {
 
     Route::get('home', [HomeController::class, 'index']);
+    Route::get('help/rules', [HomeController::class, 'rules']);
 
     // the legal pages (privacy policy, terms), public
     Route::get('legal/{slug}', [\App\Http\Controllers\API\Portal\Legal\LegalController::class, 'show'])->where('slug', '[a-z0-9-]+');

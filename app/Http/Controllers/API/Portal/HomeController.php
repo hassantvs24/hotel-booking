@@ -43,4 +43,20 @@ class HomeController extends BaseController
 
         return $this->sendSuccess($data);
     }
+
+    /**
+     * The real limits the Support page quotes (how many offers, how long each step takes, how long a room is held while
+     * a guest pays), so what it says never drifts from the rules. Small, and the same for everybody.
+     */
+    public function rules(): JsonResponse
+    {
+        return $this->sendSuccess([
+            'bidding' => [
+                'max_bids'      => \App\Models\RoomRequest::MAX_BIDS,
+                'pending_hours' => (int) config('bidding.pending_hours', 8),
+                'payment_hours' => (int) config('bidding.payment_hours', 2),
+            ],
+            'pay_minutes' => \App\Jobs\ExpireUnpaidBookings::TIMEOUT_MINUTES,
+        ]);
+    }
 }
