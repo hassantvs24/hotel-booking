@@ -85,6 +85,7 @@ class RoomRequestController extends BaseController
         $propertyIds = $request->user()->properties()->pluck('id');
 
         $bids = RoomRequest::whereIn('property_id', $propertyIds)
+            ->latestPerNegotiation()
             ->active()
             ->with([
                 'room:id,name,base_price,property_id',
@@ -394,7 +395,9 @@ class RoomRequestController extends BaseController
 
     public function roomRequestNotification(Request $request): JsonResponse
     {
+        // only the latest offer of each negotiation: an offer the guest has already replaced has no timer to show
         $bids = RoomRequest::where('user_id', $request->user()->id)
+            ->latestPerNegotiation()
             ->active()
             ->with('room.property')
             ->get();

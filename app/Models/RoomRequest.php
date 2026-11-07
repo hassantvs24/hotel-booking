@@ -253,6 +253,23 @@ class RoomRequest extends Model
             ->orderBy('id');
     }
 
+    /**
+     * The guest made a newer offer for this stay: the earlier ones that were still open (a counter nobody answered) have no
+     * clock any more. They stay as they are and keep counting towards the 3 offers (an offer with no clock never runs out,
+     * so the job does not turn it into "Timeout" 8 hours later, which would have given the guest that offer back), but no
+     * timer is shown for them anywhere. Call it BEFORE the new offer is saved.
+     */
+    public static function stopClocksOfEarlier(int $userId, int $roomId, $checkIn, $checkOut): int
+    {
+        return static::where('user_id', $userId)
+            ->where('room_id', $roomId)
+            ->where('check_in', $checkIn)
+            ->where('check_out', $checkOut)
+            ->whereIn('status', ['Pending', 'Counter'])
+            ->whereNotNull('request_expiration_time')
+            ->update(['request_expiration_time' => null]);
+    }
+
     /** True when the guest has since made a newer offer for the same stay — this one is replaced */
     public function isSuperseded(): bool
     {
@@ -294,7 +311,8 @@ class RoomRequest extends Model
 
         $floor   = $previous->max('discount_price');
         $ceiling = $previous
-            ->filter(fn (self $b) => $b->status === 'Counter' && !$b->isExpired())
+            // an open counter that the guest has not already answered with a newer offer
+            ->filter(fn (self $b) => $b->status === 'Counter' && !$b->isExpired() && !$b->isSuperseded())
             ->min('counter_price');
 
         return [

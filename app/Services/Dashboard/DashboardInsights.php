@@ -41,6 +41,7 @@ class DashboardInsights
         $stay = fn (string $date) => $this->bookings($ids)->where('status', 'approved')->whereDate('checkin', $date)->count();
 
         $offers = RoomRequest::query()
+            ->latestPerNegotiation()   // one line per negotiation: a replaced counter is not another offer
             ->when($ids !== null, fn ($q) => $q->whereIn('property_id', $ids))
             ->whereIn('status', RoomRequest::LIVE_STATUSES)
             ->where(fn ($q) => $q->whereNull('request_expiration_time')->orWhere('request_expiration_time', '>', now()));

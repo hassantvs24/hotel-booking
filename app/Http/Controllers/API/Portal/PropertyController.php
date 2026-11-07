@@ -112,6 +112,7 @@ class PropertyController extends BaseController
         return $this->sendSuccess([
             'property'      => $property,
             'refund_policy' => app(RefundPolicyService::class)->summary($property),
+            'house_info'    => $property->guestHouseInfo(),
         ]);
     }
 

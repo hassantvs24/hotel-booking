@@ -116,6 +116,32 @@ class Property extends Model
         return $this->belongsToMany(FacilitySub::class, 'property_facilities')->withTimestamps();
     }
 
+    /**
+     * What the owner said on the application form that a guest may read (it sits in the private `meta` column, so it is
+     * handed over here as a short, checked list instead). A "No smoking / pets / parties" answer is not here: approval turns
+     * it into a real house rule (see PropertyRequestController), which the owner can change in Property settings.
+     */
+    public function guestHouseInfo(): array
+    {
+        $meta = json_decode((string) $this->getRawOriginal('meta'), true);
+
+        if (!is_array($meta)) {
+            return ['allowed' => [], 'extra_bed' => false, 'distance_to_centre' => null, 'surroundings' => []];
+        }
+
+        $policies = (array) ($meta['policies'] ?? []);
+        $distance = $meta['distance_to_centre'] ?? null;
+
+        return [
+            'allowed'            => array_values(array_filter(['smoking', 'pets', 'parties'], fn ($k) => ($policies[$k] ?? false) === true)),
+            'extra_bed'          => ($policies['extra_bed'] ?? false) === true,
+            'distance_to_centre' => is_numeric($distance) && $distance >= 0 ? round((float) $distance, 1) : null,
+            'surroundings'       => array_values(array_intersect((array) ($meta['surroundings'] ?? []), self::SURROUNDINGS)),
+        ];
+    }
+
+    public const SURROUNDINGS = ['airport', 'bus', 'train', 'mall', 'beach', 'restaurant', 'park', 'hospital'];
+
     public function rules(): HasMany
     {
         return $this->hasMany(PropertyRulesSetup::class, 'property_id', 'id');

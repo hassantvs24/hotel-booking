@@ -104,6 +104,25 @@ class PropertyDraftController extends BaseController
     {
         $draft = $this->getDraft($request, $id);
 
+        // What the form already checks is checked again here: a call that skips the form must not store a bad contact or distance
+        match ((int) $step) {
+            2 => $request->validate([
+                'data.name'        => ['nullable', 'string', 'max:255'],
+                'data.star_rating' => ['nullable', 'integer', 'between:0,5'],
+                'data.email'       => ['nullable', 'email', 'max:255'],
+                'data.phone'       => ['nullable', 'string', 'regex:/^\+?[0-9][0-9\s()-]{6,18}$/'],
+            ], [
+                'data.email.email'  => 'Enter a valid email address, like info@yourproperty.com.',
+                'data.phone.regex'  => 'Enter a valid phone number, for example +880 1234 567890.',
+            ]),
+            6 => $request->validate([
+                'data.distance_to_centre' => ['nullable', 'numeric', 'min:0', 'max:1000'],
+            ], [
+                'data.distance_to_centre.min' => 'Enter the distance in kilometres, 0 or more.',
+            ]),
+            default => null,
+        };
+
         $stepData = $request->input('data', []);
 
         // An upazila / area picked from the world list becomes the property's place

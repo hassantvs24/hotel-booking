@@ -205,6 +205,9 @@ class BookingController extends BaseController
                     // be 1–3 (the limit above stops a fourth)
                     $slot = $used + 1;
 
+                    // the offer this one answers (an owner's counter) has no clock any more: only the new offer has one
+                    RoomRequest::stopClocksOfEarlier($user->id, $room->id, $item->check_in, $item->check_out);
+
                     $bid = RoomRequest::create([
                         'room_id'                 => $room->id,
                         'property_id'             => $room->property_id,

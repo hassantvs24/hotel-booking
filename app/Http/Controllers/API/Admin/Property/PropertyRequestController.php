@@ -94,7 +94,6 @@ class PropertyRequestController extends BaseController
             'surroundings'  => $d['step_6']['surroundings'] ?? [],
             'check_in'      => $s7['check_in_time'] ?? null,
             'check_out'     => $s7['check_out_time'] ?? null,
-            'min_stay'      => $s7['min_stay'] ?? null,
             'house_rules'   => collect($s7['policies'] ?? [])->map(fn ($on) => (bool) $on)->all(),
             'refund_policy' => app(\App\Services\Refund\RefundPolicyService::class)->fromLegacy($s7['cancellation_policy'] ?? null),
             'has_account'   => (bool) $r->user_id,
@@ -317,7 +316,6 @@ class PropertyRequestController extends BaseController
                 'surroundings'        => $step6['surroundings'] ?? [],
                 'distance_to_centre'  => $step6['distance_to_centre'] ?? null,
                 'cancellation_policy' => $step7['cancellation_policy'] ?? null,
-                'min_stay'            => $step7['min_stay'] ?? null,
                 'policies'            => $step7['policies'] ?? [],
             ]),
         ]);
@@ -326,6 +324,8 @@ class PropertyRequestController extends BaseController
         if (!empty($facilityIds)) {
             $property->facilities()->sync($facilityIds);
         }
+
+        $this->houseRulesFromAnswers($property, (array) ($step7['policies'] ?? []));
 
         foreach (($step5['photos'] ?? []) as $index => $photo) {
             if (empty($photo['name']) || empty($photo['path'])) {
@@ -343,6 +343,32 @@ class PropertyRequestController extends BaseController
         }
 
         return $property;
+    }
+
+    /**
+     * "Smoking / pets / parties allowed" switched OFF on the application form becomes the house rule "No Smoking" / "No Pets
+     * Allowed" / "No Parties/Events": the guest sees it under House Rules and the owner edits it in Property settings -> Rules.
+     * (A switch that is ON adds no rule; the hotel page says "allowed" from the saved answer.)
+     */
+    private function houseRulesFromAnswers(Property $property, array $policies): void
+    {
+        $titles = ['smoking' => 'No Smoking', 'pets' => 'No Pets Allowed', 'parties' => 'No Parties/Events'];
+
+        foreach ($titles as $key => $title) {
+            if (!array_key_exists($key, $policies) || filter_var($policies[$key], FILTER_VALIDATE_BOOLEAN)) {
+                continue;
+            }
+
+            $rule = \App\Models\PropertyRule::where('rule_title', $title)->first();
+
+            if ($rule) {
+                $property->rules()->create([
+                    'property_rule_id' => $rule->id,
+                    'rule_description' => $rule->rule_note ?: $title,
+                    'is_active'        => true,
+                ]);
+            }
+        }
     }
 
     private function handleRejection(PropertyRequest $propertyRequest, string $previousStatus): void
