@@ -126,7 +126,7 @@ class Property extends Model
         $meta = json_decode((string) $this->getRawOriginal('meta'), true);
 
         if (!is_array($meta)) {
-            return ['allowed' => [], 'extra_bed' => false, 'distance_to_centre' => null, 'surroundings' => []];
+            return ['allowed' => [], 'distance_to_centre' => null, 'surroundings' => []];
         }
 
         $policies = (array) ($meta['policies'] ?? []);
@@ -134,7 +134,6 @@ class Property extends Model
 
         return [
             'allowed'            => array_values(array_filter(['smoking', 'pets', 'parties'], fn ($k) => ($policies[$k] ?? false) === true)),
-            'extra_bed'          => ($policies['extra_bed'] ?? false) === true,
             'distance_to_centre' => is_numeric($distance) && $distance >= 0 ? round((float) $distance, 1) : null,
             'surroundings'       => array_values(array_intersect((array) ($meta['surroundings'] ?? []), self::SURROUNDINGS)),
         ];
