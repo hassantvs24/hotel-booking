@@ -15,6 +15,7 @@ class BookingCart extends Model
         'adult',
         'children',
         'rooms',
+        'extra_beds',   // extra beds the guest chose (the room's bed price x beds x nights goes on the stay)
         'price',
         'expires_at',
         'is_bid',       // true = bid/offer, false = direct booking

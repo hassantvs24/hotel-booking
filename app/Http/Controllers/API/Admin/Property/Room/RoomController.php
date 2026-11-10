@@ -344,9 +344,19 @@ class RoomController extends BaseController
     private function roomFields(Request $request): array
     {
         $fields = $request->only([
-            'name', 'room_size', 'guest_capacity', 'extra_bed', 'total_balcony', 'total_window', 'base_price',
+            'name', 'room_size', 'guest_capacity', 'extra_bed', 'extra_bed_price', 'total_balcony', 'total_window', 'base_price',
             'notes', 'bed_type_id', 'room_type_id', 'vat_percent', 'service_charge_percent',
         ]);
+
+        // blank = no price set, so the bed is not sold online (0 would mean a free bed)
+        if (array_key_exists('extra_bed_price', $fields) && ($fields['extra_bed_price'] === '' || $fields['extra_bed_price'] === null)) {
+            $fields['extra_bed_price'] = null;
+        }
+
+        // no beds, no bed price
+        if (isset($fields['extra_bed']) && (int) $fields['extra_bed'] === 0) {
+            $fields['extra_bed_price'] = null;
+        }
 
         if (!isset($fields['extra_bed']) || $fields['extra_bed'] === '') {
             unset($fields['extra_bed']);

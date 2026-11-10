@@ -148,8 +148,14 @@
                         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
                             <tr>
                                 <td style="font-family:{{ $sans }}; font-size:13px; color:{{ $slate }};">{{ $l['nights'] }} {{ $l['nights'] > 1 ? 'nights' : 'night' }} × {{ $money($l['per_night']) }}</td>
-                                <td align="right" style="font-family:{{ $sans }}; font-size:13px; color:{{ $ink }};">{{ $money($l['subtotal'] ?? $l['amount']) }}</td>
+                                <td align="right" style="font-family:{{ $sans }}; font-size:13px; color:{{ $ink }};">{{ $money($l['room_subtotal'] ?? $l['amount']) }}</td>
                             </tr>
+                            @if ($l['extra_beds'] > 0)
+                                <tr>
+                                    <td style="padding-top:6px; font-family:{{ $sans }}; font-size:13px; color:{{ $slate }};">{{ $l['extra_beds'] }} extra {{ $l['extra_beds'] > 1 ? 'beds' : 'bed' }} × {{ $l['nights'] }} {{ $l['nights'] > 1 ? 'nights' : 'night' }}</td>
+                                    <td align="right" style="padding-top:6px; font-family:{{ $sans }}; font-size:13px; color:{{ $ink }};">{{ $money($l['extra_bed_amount']) }}</td>
+                                </tr>
+                            @endif
                             @if ($l['subtotal'] !== null && ($l['service_charge'] > 0 || $l['vat'] > 0))
                                 <tr>
                                     <td style="padding-top:6px; font-family:{{ $sans }}; font-size:13px; color:{{ $slate }};">Taxes and fees</td>

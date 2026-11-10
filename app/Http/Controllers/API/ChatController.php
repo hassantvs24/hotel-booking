@@ -38,7 +38,8 @@ class ChatController extends BaseController
             ->with([
                 "property:id,name,user_id",
                 "customer:id,name,profile_photo",
-                "booking:id,booking_number,checkin,checkout,status",
+                "booking:id,booking_number,checkin,checkout,status,room_id",
+                "booking.room:id,extra_bed",
                 "lastMessage.sender:id,name",
                 "lastMessage.attachments",
             ])
@@ -449,6 +450,19 @@ class ChatController extends BaseController
             "details" => ["nullable", "string", "max:2000"],
         ]);
 
+        // an extra bed can only be asked for a room that can take one
+        if (
+            $data["request_type"] === "extra_bed" &&
+            (int) ($conversation->loadMissing("booking.room:id,extra_bed")->booking?->room?->extra_bed ?? 0) < 1
+        ) {
+            return $this->sendError(
+                "The room you booked has no extra bed. " .
+                    "Please send the hotel a message instead.",
+                [],
+                422
+            );
+        }
+
         $specialRequest = $conversation->specialRequests()->create([
             "request_type" => $data["request_type"],
 
@@ -653,7 +667,8 @@ class ChatController extends BaseController
         $conversation->loadMissing([
             "property:id,name,user_id",
             "customer:id,name,profile_photo",
-            "booking:id,booking_number,checkin,checkout,status",
+            "booking:id,booking_number,checkin,checkout,status,room_id",
+            "booking.room:id,extra_bed",
             "lastMessage.sender:id,name,profile_photo",
             "lastMessage.attachments",
         ]);
@@ -690,6 +705,9 @@ class ChatController extends BaseController
                 "checkout" => $conversation->booking?->checkout,
 
                 "status" => $conversation->booking?->status,
+
+                // how many extra beds the booked room can take (0 = none): the guest's "Extra bed" request needs one
+                "room_extra_beds" => max(0, (int) ($conversation->booking?->room?->extra_bed ?? 0)),
             ],
 
             "last_message" => $conversation->lastMessage

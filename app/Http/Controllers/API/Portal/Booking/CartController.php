@@ -12,6 +12,7 @@ use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use App\Services\Pricing\PriceService;
+use App\Services\Room\ExtraBeds;
 use App\Services\Room\RoomGrouper;
 
 class CartController extends BaseController
@@ -33,6 +34,7 @@ class CartController extends BaseController
             'adult'       => 'required|integer|min:1',
             'children'    => 'integer|min:0',
             'rooms'       => 'integer|min:1',
+            'extra_beds'  => 'nullable|integer|min:0|max:20',   // beds on top of the room (the owner's price, per bed per night)
             'is_bid'      => 'nullable',
             'offer_price' => 'required_if:is_bid,true|nullable|numeric|min:1',
             'bid_message' => 'nullable|string|max:300',
@@ -52,8 +54,17 @@ class CartController extends BaseController
 
         $guests = (int) $data['adult'] + (int) ($data['children'] ?? 0);   // the children sleep in the room too
 
-        if ((int) $room->guest_capacity > 0 && $guests > (int) $room->guest_capacity) {
-            abort(422, "This room takes up to {$room->guest_capacity} guest" . ($room->guest_capacity > 1 ? 's' : '') . '. Please choose a bigger room or fewer guests.');
+        // An offer is on the room's price only for now: it cannot carry extra beds (and a party that needs one cannot offer
+        // for that room). Direct booking is where beds are added, so nothing is ever charged for a bed the offer did not include.
+        if ($isBid && ((int) ($data['extra_beds'] ?? 0) > 0 || app(ExtraBeds::class)->needed($room, $guests) > 0)) {
+            abort(422, 'This room needs an extra bed for your guests, and offers cannot include one yet. Book it directly to add the bed.');
+        }
+
+        // the beds this party needs and may have (a room that sleeps 2 with one bookable bed takes 3)
+        $beds = app(ExtraBeds::class)->resolve($room, $guests, (int) ($data['extra_beds'] ?? 0));
+
+        if ($beds['error']) {
+            abort(422, $beds['error']);
         }
 
         if ($isBid) {
@@ -88,6 +99,7 @@ class CartController extends BaseController
                 'adult'       => $data['adult'],
                 'children'    => $data['children'] ?? 0,
                 'rooms'       => $data['rooms']    ?? 1,
+                'extra_beds'  => $beds['beds'],
                 'price'       => $price,
                 'expires_at'  => $expiresAt,
                 'is_bid'      => $isBid,
@@ -139,7 +151,7 @@ class CartController extends BaseController
         $items = BookingCart::where('user_id', $userId)
             ->whereHas('room')   // a deleted room cannot be booked any more
             ->with([
-                'room:id,name,base_price,vat_percent,service_charge_percent,property_id,status',
+                'room:id,name,base_price,vat_percent,service_charge_percent,property_id,status,extra_bed,extra_bed_price,guest_capacity',
                 'room.primaryImage',
                 'room.images',
                 'room.bedType',
@@ -266,7 +278,10 @@ class CartController extends BaseController
         // price = the room price per night (an offer's price for a bid); VAT and service charge go on top.
         // total_price is what the guest pays (or would pay, for an offer), so every screen that adds it up
         // stays right; the parts are there for the price summary.
-        $tax = app(PriceService::class)->forStay($item->room, (float) $item->price, $nights);
+        $tax = app(PriceService::class)->forStay($item->room, (float) $item->price, $nights, null, (int) $item->extra_beds);
+
+        $item->extra_beds            = $tax['extra_beds'];
+        $item->extra_bed_total       = $tax['extra_bed_charge'];   // the beds, before VAT and service charge (already inside base_total)
 
         $item->base_total            = $tax['stay']['base'];
         $item->service_charge_total  = $tax['stay']['service_charge'];

@@ -19,6 +19,7 @@ use App\Models\Transaction;
 use App\Models\User;
 use App\Services\Booking\GuestIdentity;
 use App\Services\Pricing\PriceService;
+use App\Services\Room\ExtraBeds;
 use App\Services\Room\RoomGrouper;
 use App\Notifications\BID\BidReceivedNotification;
 use Carbon\Carbon;
@@ -116,7 +117,8 @@ class BookingController extends BaseController
                                 app(PriceService::class)->bookingFields(
                                     $i->room,
                                     (float) $i->price,
-                                    max(1, Carbon::parse($i->check_in)->diffInDays($i->check_out))
+                                    max(1, Carbon::parse($i->check_in)->diffInDays($i->check_out)),
+                                    (int) $i->extra_beds
                                 )['amount']
                             ),
                             'rooms_count'    => $direct->count(),
@@ -157,13 +159,22 @@ class BookingController extends BaseController
                         }
 
                         $nights    = max(1, Carbon::parse($item->check_in)->diffInDays($item->check_out));
+
+                        // the beds are checked again against the room that is really booked (it may be a sibling, or the owner
+                        // may have changed the beds since the cart): nothing is charged for a bed the room cannot give
+                        $beds = app(ExtraBeds::class)->resolve($room, (int) $item->adult + (int) ($item->children ?? 0), (int) $item->extra_beds);
+
+                        if ($beds['error']) {
+                            throw new \Exception("Room \"{$room->name}\": {$beds['error']}");
+                        }
+
                         $bookings[] = Booking::create([
                             'booking_number'   => date('Ymd') . rand(10000000, 99999999),
                             'room_id'          => $room->id,
                             'user_id'          => $user->id,
                             'checkin'          => $item->check_in,
                             'checkout'         => $item->check_out,
-                            ...app(PriceService::class)->bookingFields($room, (float) $item->price, $nights),
+                            ...app(PriceService::class)->bookingFields($room, (float) $item->price, $nights, $beds['beds']),
                             'adult'            => $item->adult,
                             'children'         => $item->children,
                             'rooms'            => $item->rooms ?? 1,

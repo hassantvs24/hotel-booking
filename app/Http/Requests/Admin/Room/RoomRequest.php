@@ -58,6 +58,9 @@ class RoomRequest extends FormRequest
             'guest_capacity' => 'required|integer',
             'total_balcony'  => 'nullable|integer|min:0',
             'total_window'   => 'nullable|integer|min:0',
+            'extra_bed'       => 'nullable|integer|min:0|max:20',
+            // the price of ONE extra bed for ONE night, before VAT and service charge. Blank = not sold online; 0 = free
+            'extra_bed_price' => 'nullable|numeric|min:0|max:1000000',
             'base_price'     => 'required|integer',
             'notes'          => 'nullable|string',
             'bed_type_id'    => 'required|integer|exists:bed_types,id',

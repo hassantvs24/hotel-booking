@@ -4,6 +4,7 @@ namespace App\Http\Controllers\API\Portal;
 
 use App\Services\Pricing\PriceService;
 use App\Services\Refund\RefundPolicyService;
+use App\Services\Room\ExtraBeds;
 use App\Services\Room\RoomGrouper;
 use App\Http\Controllers\BaseController;
 use Carbon\Carbon;
@@ -178,6 +179,7 @@ class PropertyController extends BaseController
 
         $nights  = $this->nights($checkIn, $checkOut);
         $grouper = app(RoomGrouper::class);
+        $beds    = app(ExtraBeds::class);
 
         $available      = collect();
         $hiddenCapacity = [];
@@ -195,9 +197,9 @@ class PropertyController extends BaseController
             $room = $free->first();
             $name = $members->count() > 1 ? $grouper->baseName($room->name) : $room->name;
 
-            // Too small for the party: not offered, but the guest is told, so they know why it is missing
-            if ($room->guest_capacity < $guests) {
-                $hiddenCapacity[] = ['name' => $name, 'guest_capacity' => (int) $room->guest_capacity, 'count' => $free->count()];
+            // Too small for the party even with the extra beds it can sell: not offered, but the guest is told, so they know why it is missing
+            if ($beds->maxGuests($room) < $guests) {
+                $hiddenCapacity[] = ['name' => $name, 'guest_capacity' => $beds->maxGuests($room), 'count' => $free->count()];
                 continue;
             }
 
@@ -206,7 +208,10 @@ class PropertyController extends BaseController
             $room->nights         = $nights;
             $room->total_price    = $room->resolved_price * $nights;
             $room->booking_type   = 'direct';
+            // the card price is the room's; the extra beds (how many this party cannot do without, how many the room has, the
+            // price of one) come apart in extra_bed_offer, and the cart adds them up with the taxes
             $room->tax            = app(PriceService::class)->forStay($room, (float) $room->resolved_price, $nights);
+            $room->extra_bed_offer = $this->extraBedOffer($room, $beds, $beds->needed($room, $guests), $nights);
             $room->group_key      = $key;
             $room->group_total    = $members->count();
             $room->available_count = $free->count();
@@ -270,6 +275,25 @@ class PropertyController extends BaseController
             });
 
         return $this->sendSuccess(['rooms' => $bookedRooms]);
+    }
+
+    /**
+     * What a room card needs to let a guest add extra beds: how many the room can take, the owner's price of ONE bed for ONE
+     * night (before VAT and service charge, which go on the whole), and how many this party cannot do without.
+     * null = the room sells no bed online (the price is not set).
+     */
+    private function extraBedOffer(Room $room, ExtraBeds $beds, int $needed, int $nights): ?array
+    {
+        if (!$beds->offered($room)) {
+            return null;
+        }
+
+        return [
+            'max'    => $beds->max($room),
+            'price'  => round((float) $room->extra_bed_price, 2),
+            'needed' => $needed,
+            'nights' => $nights,
+        ];
     }
 
     // ══════════════════════════════════════════════════════

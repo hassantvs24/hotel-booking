@@ -251,7 +251,8 @@ class PropertySearchService
                     $q->whereDoesntHave('roomRequests', fn ($r) => $r->holding($checkIn, $checkOut));   // held for a guest whose offer was accepted
                 }
                 if ($share > 0) {
-                    $q->where('guest_capacity', '>=', $share);
+                    // the beds a room can sell online sleep guests too (a room for 2 with one priced extra bed takes 3)
+                    $q->whereRaw('guest_capacity + CASE WHEN extra_bed_price IS NOT NULL THEN extra_bed ELSE 0 END >= ?', [$share]);
                 }
             }, '>=', $wanted);
         }
