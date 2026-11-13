@@ -54,6 +54,8 @@ class RoomController extends BaseController
     /** The room with its tax-inclusive price per night and the rates behind it */
     private function withTax(Room $room): Room
     {
+        $room->makeVisible('auto_accept_min_price');   // the owner's room form needs it (a guest's answer never has it)
+
         $room->tax = app(PriceService::class)->forStay($room, (float) $room->base_price, 1)['per_night']
             + ['rates' => app(PriceService::class)->ratesFor($room)];
 
@@ -344,13 +346,18 @@ class RoomController extends BaseController
     private function roomFields(Request $request): array
     {
         $fields = $request->only([
-            'name', 'room_size', 'guest_capacity', 'extra_bed', 'extra_bed_price', 'total_balcony', 'total_window', 'base_price',
+            'name', 'room_size', 'guest_capacity', 'extra_bed', 'extra_bed_price', 'auto_accept_min_price', 'total_balcony', 'total_window', 'base_price',
             'notes', 'bed_type_id', 'room_type_id', 'vat_percent', 'service_charge_percent',
         ]);
 
         // blank = no price set, so the bed is not sold online (0 would mean a free bed)
         if (array_key_exists('extra_bed_price', $fields) && ($fields['extra_bed_price'] === '' || $fields['extra_bed_price'] === null)) {
             $fields['extra_bed_price'] = null;
+        }
+
+        // blank = the owner answers every offer (no instant accept)
+        if (array_key_exists('auto_accept_min_price', $fields) && ($fields['auto_accept_min_price'] === '' || $fields['auto_accept_min_price'] === null)) {
+            $fields['auto_accept_min_price'] = null;
         }
 
         // no beds, no bed price

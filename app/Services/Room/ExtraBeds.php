@@ -27,6 +27,15 @@ class ExtraBeds
         return $this->offered($room) ? (int) $room->extra_bed : 0;
     }
 
+    /**
+     * Can this room still give the beds an accepted offer was made with? The price is not asked: the offer carries its own.
+     * Only whether the room physically has that many beds.
+     */
+    public function honours(?Room $room, int $beds): bool
+    {
+        return $beds < 1 || ($room !== null && (int) $room->extra_bed >= $beds);
+    }
+
     /** The most guests the room takes, counting the beds it can sell */
     public function maxGuests(?Room $room): int
     {

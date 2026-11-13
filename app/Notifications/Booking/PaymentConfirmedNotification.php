@@ -37,7 +37,7 @@ class PaymentConfirmedNotification extends Notification implements ShouldQueue
             return [
                 'type'  => 'booking_confirmed_owner',
                 'title' => 'New booking confirmed',
-                'body'  => "{$room} booked · {$checkin} → {$checkout}",
+                'body'  => "{$room} booked · {$checkin} → {$checkout}" . $this->fromOffer(),
                 'url'   => '/profile/bookings',
             ];
         }
@@ -48,6 +48,24 @@ class PaymentConfirmedNotification extends Notification implements ShouldQueue
             'body'  => "{$room} at {$hotel} · {$checkin} → {$checkout}",
             'url'   => '/profile/bookings',
         ];
+    }
+
+    /** A booking that came from an offer says so, and says when the room's instant-accept price took it (the owner never answered it) */
+    private function fromOffer(): string
+    {
+        if (!$this->booking->room_request_id) {
+            return '';
+        }
+
+        $bid = \App\Models\RoomRequest::find($this->booking->room_request_id);
+
+        if (!$bid) {
+            return '';
+        }
+
+        return $bid->auto_accepted
+            ? ' · from an offer accepted automatically and now paid'
+            : ' · from an offer, now paid';
     }
 
     public function toDatabase($notifiable): array

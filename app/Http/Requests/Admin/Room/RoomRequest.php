@@ -62,6 +62,20 @@ class RoomRequest extends FormRequest
             // the price of ONE extra bed for ONE night, before VAT and service charge. Blank = not sold online; 0 = free
             'extra_bed_price' => 'nullable|numeric|min:0|max:1000000',
             'base_price'     => 'required|integer',
+            // the lowest price per night at which an offer is accepted without the owner answering it (blank = off). An offer is always
+            // below the room's price and at least 1% of it, so only a price in between can ever be reached.
+            'auto_accept_min_price' => ['nullable', 'numeric', function ($attribute, $value, $fail) {
+                $base = (float) $this->input('base_price');
+
+                if ($value === null || $value === '' || $base <= 0) {
+                    return;
+                }
+                if ((float) $value >= $base) {
+                    $fail('This price must be lower than the room price (BDT ' . number_format($base) . '): an offer from a guest is always below the room price.');
+                } elseif ((float) $value < $base * 0.01) {
+                    $fail('This price is too low: guests cannot offer less than 1% of the room price (BDT ' . number_format($base * 0.01, 2) . ').');
+                }
+            }],
             'notes'          => 'nullable|string',
             'bed_type_id'    => 'required|integer|exists:bed_types,id',
             'room_type_id'   => 'required|integer|exists:room_types,id',

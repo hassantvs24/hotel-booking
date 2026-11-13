@@ -98,6 +98,7 @@ class RoomGrouper
             $room->guest_capacity,
             $room->extra_bed,
             $room->extra_bed_price !== null ? (float) $room->extra_bed_price : null,   // rooms of one card must charge the same for a bed
+            $room->auto_accept_min_price !== null ? (float) $room->auto_accept_min_price : null,   // ...and take an offer on the same terms
             $room->total_balcony,
             $room->total_window,
             (float) $price,

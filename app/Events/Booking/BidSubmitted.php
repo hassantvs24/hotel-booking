@@ -41,7 +41,8 @@ class BidSubmitted implements ShouldBroadcastNow
             'id'              => $this->roomRequest->id,
             'type'            => 'bid',
             'title'           => 'New bid — ' . ($property?->name ?? 'property') . ' · ' . ($room?->name ?? 'room'),
-            'message'         => ($this->roomRequest->user?->name ?? 'Guest') . ' offered BDT ' . number_format($this->roomRequest->discount_price) . '/night',
+            'message'         => ($this->roomRequest->user?->name ?? 'Guest') . ' offered BDT ' . number_format($this->roomRequest->discount_price) . '/night'
+                . ($this->roomRequest->extra_beds > 0 ? ' + ' . $this->roomRequest->extra_beds . ' extra bed' . ($this->roomRequest->extra_beds > 1 ? 's' : '') : ''),
             'icon'            => 'bx-tag',
             'color'           => 'blue',
             'bid_number'      => $this->roomRequest->bid_number,

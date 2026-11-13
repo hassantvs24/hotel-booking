@@ -15,6 +15,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Services\Booking\GuestIdentity;
 use App\Services\Pricing\PriceService;
+use App\Services\Room\ExtraBeds;
 use App\Services\Room\RoomGrouper;
 
 class RoomRequestController extends BaseController
@@ -59,7 +60,7 @@ class RoomRequestController extends BaseController
         $bids = RoomRequest::where('user_id', $request->user()->id)
             ->with([
                 // the rates are needed too: the "with taxes" amounts follow the room's and the property's own VAT / service charge
-                'room:id,name,base_price,vat_percent,service_charge_percent,property_id',
+                'room:id,name,base_price,vat_percent,service_charge_percent,property_id,extra_bed,extra_bed_price,guest_capacity',
                 'room.primaryImage',
                 'room.property:id,name,vat_percent,service_charge_percent',
                 'room.property.place.city',
@@ -342,6 +343,14 @@ class RoomRequestController extends BaseController
 
         $bid->refresh();
 
+        // The offer was made with extra beds: the room has to still have them (another room of the card may have taken its place).
+        // The price of the bed is the one the offer was sent with, so it is not asked of the room again.
+        if (!$existing && !app(ExtraBeds::class)->honours($bid->room, (int) $bid->extra_beds)) {
+            $bid->update(['status' => 'Timeout']);
+
+            return $this->sendError('This room can no longer give the extra bed(s) of your offer. Nothing was charged. Please make a new offer.', [], 422);
+        }
+
         $nights      = max(1, Carbon::parse($bid->check_in)->diffInDays($bid->check_out));
         $agreedPrice = $bid->agreed_price;
 
@@ -352,7 +361,12 @@ class RoomRequestController extends BaseController
             'checkin'         => $bid->check_in,
             'checkout'        => $bid->check_out,
             // the agreed price per night, with VAT and service charge on it
-            ...app(PriceService::class)->bookingFields($bid->room, (float) $agreedPrice, $nights),
+            // (the beds, if any, at the price they had when the offer was sent)
+            ...app(PriceService::class)->bookingFields(
+                $bid->room, (float) $agreedPrice, $nights,
+                (int) $bid->extra_beds,
+                $bid->extra_bed_price !== null ? (float) $bid->extra_bed_price : null
+            ),
             'adult'           => $bid->adult,
             'children'        => $bid->children ?? 0,
             'rooms'           => 1,
@@ -507,7 +521,29 @@ class RoomRequestController extends BaseController
         $svc    = app(PriceService::class);
         $tax    = ['rates' => $svc->ratesFor($bid->room)];
 
+        // The beds of the offer, at the price they had when it was sent: before VAT and service charge, which are worked out on
+        // the room and the beds together (as for a room booked directly)
+        $beds     = (int) $bid->extra_beds;
+        $bedPrice = $bid->extra_bed_price !== null ? (float) $bid->extra_bed_price : null;
+        $bedTotal = $svc->extraBedCharge($bid->room, $beds, $nights, $bedPrice);
+        $withTax  = fn ($roomPerNight) => $roomPerNight !== null && $roomPerNight !== ''
+            ? $svc->breakdown((float) $roomPerNight * $nights + $bedTotal, $tax['rates'])['total']
+            : null;
+
+        // What a NEW offer for this room could carry (the room as it is now): the guest's "make another offer" window uses it.
+        // The price is today's; the new offer saves the price of the moment it is sent.
+        $bedRoom  = app(ExtraBeds::class);
+        $guests   = (int) $bid->adult + (int) ($bid->children ?? 0);
+        $newOffer = $bedRoom->offered($bid->room)
+            ? ['max' => $bedRoom->max($bid->room), 'price' => (float) $bid->room->extra_bed_price, 'needed' => $bedRoom->needed($bid->room, $guests), 'nights' => $nights]
+            : null;
+
         return [
+            'extra_bed_offer'         => $newOffer,
+            'auto_accepted'           => (bool) $bid->auto_accepted,   // accepted on the spot by the room's price rule, not by the owner
+            'extra_beds'              => $beds,
+            'extra_bed_price'         => $beds > 0 ? $bedPrice : null,   // ONE bed, ONE night
+            'extra_bed_total'         => $beds > 0 ? $bedTotal : 0,      // all beds, all nights
             'id'                      => $bid->id,
             'status'                  => $bid->status,
             'room'                    => $bid->room,
@@ -525,9 +561,9 @@ class RoomRequestController extends BaseController
             'total_offered'           => $bid->discount_price * $nights,
             // the same with VAT and service charge on (what the guest really pays)
             'tax_rates'               => $tax['rates'],
-            'agreed_total_with_tax'   => $bid->agreed_price ? $svc->breakdown($bid->agreed_price * $nights, $tax['rates'])['total'] : null,
-            'offered_total_with_tax'  => $svc->breakdown($bid->discount_price * $nights, $tax['rates'])['total'],
-            'counter_total_with_tax'  => $bid->counter_price ? $svc->breakdown($bid->counter_price * $nights, $tax['rates'])['total'] : null,
+            'agreed_total_with_tax'   => $bid->agreed_price ? $withTax($bid->agreed_price) : null,
+            'offered_total_with_tax'  => $withTax($bid->discount_price),
+            'counter_total_with_tax'  => $bid->counter_price ? $withTax($bid->counter_price) : null,
             'room_base_total_with_tax' => $svc->breakdown(($bid->room?->base_price ?? 0) * $nights, $tax['rates'])['total'],
             'room_base_total'         => ($bid->room?->base_price ?? 0) * $nights,
             'superseded'              => $superseded = $bid->isSuperseded(),

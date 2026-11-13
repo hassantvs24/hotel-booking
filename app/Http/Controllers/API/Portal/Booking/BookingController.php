@@ -19,6 +19,7 @@ use App\Models\Transaction;
 use App\Models\User;
 use App\Services\Booking\GuestIdentity;
 use App\Services\Pricing\PriceService;
+use App\Services\Bid\AutoAccept;
 use App\Services\Room\ExtraBeds;
 use App\Services\Room\RoomGrouper;
 use App\Notifications\BID\BidReceivedNotification;
@@ -194,7 +195,9 @@ class BookingController extends BaseController
                 $createdBids = [];
 
                 foreach ($bids as $item) {
-                    $room = Room::with('property.user')->find($item->room_id);
+                    // the room row is locked while the offer is made: two offers for the same room at the same moment are dealt
+                    // with one after the other (the owner's instant-accept price gives the room to the first only)
+                    $room = Room::with('property.user')->lockForUpdate()->find($item->room_id);
                     if (!$room) continue;
 
                     // Offers already spent on this room for these dates (live + declined)
@@ -212,6 +215,15 @@ class BookingController extends BaseController
                         throw new \Exception($err);
                     }
 
+                    // The beds this party needs, checked against the room as it is now (the owner may have changed them since the
+                    // cart). The price of ONE bed is saved with the offer: the owner sees it, and the guest pays it, whatever the
+                    // owner does to the room's bed price afterwards.
+                    $beds = app(ExtraBeds::class)->resolve($room, (int) $item->adult + (int) ($item->children ?? 0), (int) $item->extra_beds);
+
+                    if ($beds['error']) {
+                        throw new \Exception("Room \"{$room->name}\": {$beds['error']}");
+                    }
+
                     // "Bid N of 3": this is the next offer for the room and dates, so it can only
                     // be 1–3 (the limit above stops a fourth)
                     $slot = $used + 1;
@@ -227,6 +239,8 @@ class BookingController extends BaseController
                         'check_out'               => $item->check_out,
                         'adult'                   => $item->adult,
                         'children'                => $item->children ?? 0,
+                        'extra_beds'              => $beds['beds'],
+                        'extra_bed_price'         => $beds['beds'] > 0 ? $room->extra_bed_price : null,
                         'discount_price'          => $item->offer_price,
                         'message'                 => $item->bid_message,
                         'bid_number'              => $slot,
@@ -234,19 +248,36 @@ class BookingController extends BaseController
                         'request_expiration_time' => Carbon::now()->addHours(config('bidding.pending_hours')),
                     ]);
 
-                    // Real-time broadcast to admin + owner channels
-                    // notifyAll() handles admin DB + guest DB
-                    // (the guest, the hotel's people and the admin are all told by BidAlerts)
-                    $bidEvent = new BidSubmitted($bid->load(['room', 'room.property', 'user']));
-                    $bidEvent->notifyAll();
+                    // The owner's lowest price for this room (if they set one): an offer that reaches it is accepted on the spot, the
+                    // room is held for the guest and the payment hours start. Anything else waits for the owner, as always.
+                    $accepted = app(AutoAccept::class)->tryAccept($bid, $room);
+                    $bid->load(['room', 'room.property', 'user']);
 
-                    // The live push is best-effort: if the websocket server (Reverb) is
-                    // down the bid must still go through — the saved notifications above
-                    // are what the owner sees on their next load
-                    try {
-                        event($bidEvent);
-                    } catch (\Throwable $e) {
-                        Log::warning('Bid broadcast failed (is Reverb running?): ' . $e->getMessage());
+                    if ($accepted) {
+                        // everyone is told it was accepted by the room's price rule (the owner is not asked to answer an offer that is
+                        // already answered); the live push is best-effort, the saved notifications are what is seen on the next load
+                        app(\App\Services\Notify\BidAlerts::class)->answered($bid, 'auto_accepted', null);
+
+                        try {
+                            event(new \App\Events\Booking\BidStatusUpdated($bid));
+                        } catch (\Throwable $e) {
+                            Log::warning('Bid broadcast failed (is Reverb running?): ' . $e->getMessage());
+                        }
+                    } else {
+                        // Real-time broadcast to admin + owner channels
+                        // notifyAll() handles admin DB + guest DB
+                        // (the guest, the hotel's people and the admin are all told by BidAlerts)
+                        $bidEvent = new BidSubmitted($bid);
+                        $bidEvent->notifyAll();
+
+                        // The live push is best-effort: if the websocket server (Reverb) is
+                        // down the bid must still go through — the saved notifications above
+                        // are what the owner sees on their next load
+                        try {
+                            event($bidEvent);
+                        } catch (\Throwable $e) {
+                            Log::warning('Bid broadcast failed (is Reverb running?): ' . $e->getMessage());
+                        }
                     }
 
                     $createdBids[] = $bid;

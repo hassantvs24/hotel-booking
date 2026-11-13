@@ -30,7 +30,7 @@ class BidReceivedNotification extends Notification implements ShouldQueue
         return BellFields::add([
             'type'       => 'bid_received',
             'title'      => 'New bid on ' . $this->room->name,
-            'body'       => ($this->guest->name ?? 'A guest') . ' offered BDT ' . number_format($this->bid->discount_price) . '/night',
+            'body'       => ($this->guest->name ?? 'A guest') . ' offered BDT ' . number_format($this->bid->discount_price) . '/night' . ($this->bid->extra_beds > 0 ? ' + ' . $this->bid->extra_beds . ' extra bed' . ($this->bid->extra_beds > 1 ? 's' : '') : ''),
             'action_url' => '/request?tab=incoming&bid=' . $this->bid->id,
             'bid_id'     => $this->bid->id,
             'room_id'    => $this->room->id,
@@ -43,7 +43,7 @@ class BidReceivedNotification extends Notification implements ShouldQueue
         return new BroadcastMessage(BellFields::add([
             'type'       => 'bid_received',
             'title'      => 'New bid on ' . $this->room->name,
-            'body'       => ($this->guest->name ?? 'A guest') . ' offered BDT ' . number_format($this->bid->discount_price) . '/night',
+            'body'       => ($this->guest->name ?? 'A guest') . ' offered BDT ' . number_format($this->bid->discount_price) . '/night' . ($this->bid->extra_beds > 0 ? ' + ' . $this->bid->extra_beds . ' extra bed' . ($this->bid->extra_beds > 1 ? 's' : '') : ''),
             'bid_id'     => $this->bid->id,
             'created_at' => now()->toISOString(),
         ]));
@@ -53,7 +53,7 @@ class BidReceivedNotification extends Notification implements ShouldQueue
     {
         return (new WebPushMessage)
             ->title('New bid — ' . $this->room->name)
-            ->body(($this->guest->name ?? 'A guest') . ' offered BDT ' . number_format($this->bid->discount_price) . '/night')
+            ->body(($this->guest->name ?? 'A guest') . ' offered BDT ' . number_format($this->bid->discount_price) . '/night' . ($this->bid->extra_beds > 0 ? ' + ' . $this->bid->extra_beds . ' extra bed' . ($this->bid->extra_beds > 1 ? 's' : '') : ''))
             ->icon('/icon-192.png')
             ->badge('/badge-72.png')
             ->data(['url' => '/request?tab=incoming&bid=' . $this->bid->id]);

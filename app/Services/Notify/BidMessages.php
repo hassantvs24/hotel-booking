@@ -19,7 +19,7 @@ use Throwable;
  */
 final class BidMessages
 {
-    public const EVENTS = ['submitted', 'countered', 'accepted', 'declined', 'withdrawn', 'counter_accepted', 'expired', 'counter_lapsed', 'payment_lapsed', 'counter_expiring', 'pay_expiring', 'room_taken'];
+    public const EVENTS = ['submitted', 'countered', 'accepted', 'declined', 'withdrawn', 'counter_accepted', 'expired', 'counter_lapsed', 'payment_lapsed', 'counter_expiring', 'pay_expiring', 'room_taken', 'auto_accepted'];
 
     /** @return array{type:string,event:string,title:string,body:string,url:string,icon:string,color:string} */
     public static function for(object $bid, string $event, string $audience = 'guest', array $more = []): array
@@ -32,14 +32,17 @@ final class BidMessages
 
         $line = match ($event) {
             'submitted' => $you
-                ? ["{$tag} sent", "You offered {$c['offer']}/night for {$c['room']}{$c['at']}, {$c['dates']}. The hotel has {$c['hours']} hours to answer."]
-                : ["New bid · {$tag}", "{$who} offered {$c['offer']}/night for {$c['room']}, {$c['dates']} ({$c['nights']}). Answer within {$c['hours']} hours."],
+                ? ["{$tag} sent", "You offered {$c['offer']}/night for {$c['room']}{$c['bed']}{$c['at']}, {$c['dates']}. The hotel has {$c['hours']} hours to answer."]
+                : ["New bid · {$tag}", "{$who} offered {$c['offer']}/night for {$c['room']}{$c['bed']}, {$c['dates']} ({$c['nights']}). Answer within {$c['hours']} hours."],
             'countered' => $you
                 ? ["Counter offer · {$tag}", "{$c['hotel']} countered your {$c['offer']} offer with {$c['counter']}/night for {$c['room']}, {$c['dates']}. Answer within {$c['hours']} hours. {$c['left_line']}"]
                 : ["Counter sent · {$tag}", "A counter of {$c['counter']}/night (offer {$c['offer']}) was sent to {$who} for {$c['room']}, {$c['dates']}."],
             'accepted' => $you
                 ? ["{$tag} accepted!", "{$c['hotel']} accepted {$c['agreed']}/night for {$c['room']}, {$c['dates']}. Pay within {$c['pay_hours']} hours to confirm your booking."]
                 : ["Offer accepted · {$tag}", "{$who}'s offer of {$c['agreed']}/night for {$c['room']}, {$c['dates']} was accepted. Waiting for payment ({$c['pay_hours']} hours)."],
+            'auto_accepted' => $you
+                ? ["{$tag} accepted!", "{$c['hotel']} accepted {$c['offer']}/night for {$c['room']}{$c['bed']}, {$c['dates']} straight away. Pay within {$c['pay_hours']} hours to confirm your booking."]
+                : ["Offer accepted automatically · {$tag}", "{$who}'s offer of {$c['offer']}/night for {$c['room']}{$c['bed']}, {$c['dates']} reached the room's instant-accept price, so it was accepted. Waiting for payment ({$c['pay_hours']} hours)."],
             'declined' => $you
                 ? ["{$tag} declined", "{$c['hotel']} did not accept {$c['offer']}/night for {$c['room']}, {$c['dates']}. {$c['left_line']}"]
                 : ["Offer declined · {$tag}", "{$who}'s offer of {$c['offer']}/night for {$c['room']}, {$c['dates']} was declined."],
@@ -66,7 +69,7 @@ final class BidMessages
         [$icon, $color] = match ($event) {
             'submitted' => ['bx-tag', 'blue'],
             'countered' => ['bx-transfer', 'blue'],
-            'accepted', 'counter_accepted' => ['bx-check-circle', 'green'],
+            'accepted', 'counter_accepted', 'auto_accepted' => ['bx-check-circle', 'green'],
             'declined' => ['bx-x-circle', 'red'],
             default => ['bx-time-five', 'amber'],
         };
@@ -89,7 +92,7 @@ final class BidMessages
         return match ($event) {
             'submitted' => $audience === 'guest' ? 'bid_submitted' : 'bid_received',
             'countered' => 'bid_countered',
-            'accepted' => 'bid_accepted',
+            'accepted', 'auto_accepted' => 'bid_accepted',
             'declined' => 'bid_declined',
             'withdrawn' => 'bid_withdrawn',
             'counter_accepted' => 'counter_accepted',
@@ -117,6 +120,7 @@ final class BidMessages
             'hotel_real' => $hotel ?: null,
             'at'         => $hotel ? " at {$hotel}" : '',
             'room'       => data_get($bid, 'room.name') ?: 'the room',
+            'bed'        => (int) data_get($bid, 'extra_beds', 0) > 0 ? ' + ' . (int) data_get($bid, 'extra_beds') . ' extra bed' . ((int) data_get($bid, 'extra_beds') > 1 ? 's' : '') : '',
             'guest'      => data_get($bid, 'user.name') ?: 'A guest',
             'dates'      => self::dates(data_get($bid, 'check_in'), data_get($bid, 'check_out')),
             'nights'     => self::nights(data_get($bid, 'check_in'), data_get($bid, 'check_out')),

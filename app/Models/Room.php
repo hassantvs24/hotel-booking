@@ -14,6 +14,10 @@ class Room extends Model
     protected $with = ['primaryImage'];
     protected $appends = ['primary_image_url'];
 
+    // The lowest price at which the owner accepts an offer without answering it is the owner's own business: a room is sent to
+    // guests (hotel page, search, cart...) as a whole, so this is kept out of every answer unless it is asked for (makeVisible)
+    protected $hidden = ['auto_accept_min_price'];
+
     /*----------------------------------------
      * Relationships
      ----------------------------------------*/

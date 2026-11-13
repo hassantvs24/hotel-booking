@@ -133,11 +133,11 @@ class PriceService
      *
      * @return array{rates: array, per_night: array, stay: array, nights: int}
      */
-    public function forStay(?Room $room, float $basePerNight, int $nights, ?Property $property = null, int $extraBeds = 0): array
+    public function forStay(?Room $room, float $basePerNight, int $nights, ?Property $property = null, int $extraBeds = 0, ?float $bedPrice = null): array
     {
         $rates  = $this->ratesFor($room, $property);
         $nights = max(1, $nights);
-        $bedsAt = $this->extraBedCharge($room, $extraBeds, $nights);
+        $bedsAt = $this->extraBedCharge($room, $extraBeds, $nights, $bedPrice);
 
         return [
             'rates'           => $rates,
@@ -145,7 +145,7 @@ class PriceService
             'per_night'       => $this->breakdown($basePerNight, $rates),   // the room alone: what a card shows
             // the room and the beds together: VAT and service charge are worked out on the whole
             'stay'            => $this->breakdown($basePerNight * $nights + $bedsAt, $rates),
-            'extra_beds'      => ($room !== null && $room->extra_bed_price !== null) ? max(0, $extraBeds) : 0,
+            'extra_beds'      => (($bedPrice ?? $room?->extra_bed_price) !== null) ? max(0, $extraBeds) : 0,
             'extra_bed_charge' => $bedsAt,                                  // before VAT and service charge, already inside 'stay'
         ];
     }
@@ -153,23 +153,28 @@ class PriceService
     /**
      * What the extra beds cost for the stay, before VAT and service charge: beds x the room's price for one bed x nights.
      * A room with no bed price (NULL) sells no beds, so it is 0 whatever was asked.
+     *
+     * $bedPrice is the price of one bed for one night that was agreed earlier (an offer carries the price it was sent with);
+     * without it the room's price today is used.
      */
-    public function extraBedCharge(?Room $room, int $beds, int $nights): float
+    public function extraBedCharge(?Room $room, int $beds, int $nights, ?float $bedPrice = null): float
     {
-        if ($room === null || $room->extra_bed_price === null || $beds < 1) {
+        $price = $bedPrice ?? ($room?->extra_bed_price !== null ? (float) $room->extra_bed_price : null);
+
+        if ($room === null || $price === null || $beds < 1) {
             return 0.0;
         }
 
-        return round($beds * (float) $room->extra_bed_price * max(1, $nights), 2);
+        return round($beds * $price * max(1, $nights), 2);
     }
 
     /**
      * The columns a booking stores: the total the guest pays in `amount`, and how it was made up.
      * Rates are saved with it, so changing a rate later does not rewrite old bookings.
      */
-    public function bookingFields(?Room $room, float $basePerNight, int $nights, int $extraBeds = 0): array
+    public function bookingFields(?Room $room, float $basePerNight, int $nights, int $extraBeds = 0, ?float $bedPrice = null): array
     {
-        $all  = $this->forStay($room, $basePerNight, $nights, null, $extraBeds);
+        $all  = $this->forStay($room, $basePerNight, $nights, null, $extraBeds, $bedPrice);
         $stay = $all['stay'];
 
         return [

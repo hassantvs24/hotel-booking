@@ -54,13 +54,8 @@ class CartController extends BaseController
 
         $guests = (int) $data['adult'] + (int) ($data['children'] ?? 0);   // the children sleep in the room too
 
-        // An offer is on the room's price only for now: it cannot carry extra beds (and a party that needs one cannot offer
-        // for that room). Direct booking is where beds are added, so nothing is ever charged for a bed the offer did not include.
-        if ($isBid && ((int) ($data['extra_beds'] ?? 0) > 0 || app(ExtraBeds::class)->needed($room, $guests) > 0)) {
-            abort(422, 'This room needs an extra bed for your guests, and offers cannot include one yet. Book it directly to add the bed.');
-        }
-
-        // the beds this party needs and may have (a room that sleeps 2 with one bookable bed takes 3)
+        // the beds this party needs and may have (a room that sleeps 2 with one bookable bed takes 3).
+        // An offer carries them too: the guest bargains over the room's price, the bed stays the owner's price.
         $beds = app(ExtraBeds::class)->resolve($room, $guests, (int) ($data['extra_beds'] ?? 0));
 
         if ($beds['error']) {

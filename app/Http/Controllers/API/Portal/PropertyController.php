@@ -344,7 +344,7 @@ class PropertyController extends BaseController
             return $this->sendError($e->getMessage(), 500);
         }
     }
-
+   
     // ══════════════════════════════════════════════════════
     //  PRIVATE HELPERS
     // ══════════════════════════════════════════════════════

@@ -22,6 +22,9 @@ class RoomRequest extends Model
         'discount_price'          => 'float',
         'counter_price'           => 'float',
         'bid_number'              => 'integer',
+        'extra_beds'              => 'integer',
+        'auto_accepted'           => 'boolean',   // accepted by the owner's lowest-price rule, not by the owner
+        'extra_bed_price'         => 'float',   // the owner's price of ONE bed for ONE night when the offer was sent
     ];
 
     // ══════════════════════════════════════════════════════
@@ -127,12 +130,19 @@ class RoomRequest extends Model
                 ->when($booking->room_request_id, fn ($q) => $q->where('id', '!=', $booking->room_request_id))
                 ->with('room.property', 'user')
                 ->get()
-                ->each(function (self $bid) {
+                ->each(function (self $bid) use ($booking) {
                     if ($bid->stayIsServable()) {
                         return;
                     }
 
                     $bid->update(['status' => 'Timeout']);
+
+                    // The guest's OWN earlier offers of this negotiation (the ones his last offer replaced) are closed too, but he is
+                    // not told "booked by another guest": he booked it himself.
+                    if ((int) $bid->user_id === (int) $booking->user_id) {
+                        return;
+                    }
+
                     app(\App\Services\Notify\BidAlerts::class)->roomTaken($bid);
                 });
         } catch (\Throwable $e) {

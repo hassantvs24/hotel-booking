@@ -101,6 +101,11 @@ class RoomRequestController extends BaseController
             return $this->sendError("A {$current} bid cannot be changed to {$status}.", [], 422);
         }
 
+        // An offer the room's instant-accept price already said yes to is a promise to the guest: it cannot be taken back
+        if ($status === 'Declined' && $current === 'Approved' && $roomRequest->auto_accepted) {
+            return $this->sendError('This offer was accepted automatically (it reached the instant-accept price of the room), so it cannot be cancelled. The guest has the payment hours to pay.', [], 422);
+        }
+
         // Declining is always allowed (clean-up). Done is settled by a paid booking,
         // not by the clock. Anything else on a lapsed bid is too late.
         if (!in_array($status, ['Declined', 'Done'], true) && $roomRequest->isExpired()) {
@@ -215,6 +220,12 @@ class RoomRequestController extends BaseController
         // Resolved outside the try so a 403/404 isn't swallowed into a generic error
         $roomRequest = $this->scoped()->findOrFail($id);
 
+        // An offer accepted by the room's instant-accept price is a promise to the guest until it is paid or runs out: it cannot be
+        // taken back by deleting it either
+        if ($roomRequest->auto_accepted && $roomRequest->status === 'Approved') {
+            return $this->sendError('This offer was accepted automatically (it reached the instant-accept price of the room), so it cannot be deleted while the guest can still pay.', [], 422);
+        }
+
         try {
             $room = Room::find($roomRequest->room_id);
             if ($room) {
@@ -273,7 +284,7 @@ class RoomRequestController extends BaseController
     private function history(RoomRequest $bid)
     {
         return $bid->earlierOffers()->get([
-            'id', 'bid_number', 'status', 'discount_price', 'counter_price',
+            'id', 'bid_number', 'status', 'discount_price', 'counter_price', 'extra_beds', 'extra_bed_price',
             'request_expiration_time', 'created_at', 'updated_at',
         ]);
     }
